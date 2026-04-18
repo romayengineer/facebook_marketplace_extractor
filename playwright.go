@@ -6,9 +6,14 @@ import (
 	"github.com/playwright-community/playwright-go"
 )
 
+type LocatorWrapperInterface interface {
+	Fill(value string) error
+	Click() error
+}
+
 type PageWrapperInterface interface {
 	Goto(url string) error
-	Locator(selector string) playwright.Locator
+	Locator(selector string) LocatorWrapperInterface
 	Close() error
 }
 
@@ -23,6 +28,10 @@ type PlaywrightWrapperInterface interface {
 	Stop() error
 }
 
+type LocatorWrapper struct {
+	Locator playwright.Locator
+}
+
 type PageWrapper struct {
 	Page playwright.Page
 }
@@ -33,6 +42,27 @@ type BrowserWrapper struct {
 
 type PlaywrightWrapper struct {
 	Playwright *playwright.Playwright
+}
+
+func NewLocatorWrapper() (LocatorWrapperInterface, error) {
+	locatorWrapper := LocatorWrapper{}
+	return &locatorWrapper, nil
+}
+
+func (lw *LocatorWrapper) Fill(value string) error {
+	err := lw.Locator.Fill(value)
+	if err != nil {
+		return fmt.Errorf("error on fill: %v", err)
+	}
+	return nil
+}
+
+func (lw *LocatorWrapper) Click() error {
+	err := lw.Locator.Click()
+	if err != nil {
+		return fmt.Errorf("error on click: %v", err)
+	}
+	return nil
 }
 
 func NewPageWrapper(bwi BrowserWrapperInterface) (PageWrapperInterface, error) {
@@ -47,8 +77,12 @@ func (pw *PageWrapper) Goto(url string) error {
 	return nil
 }
 
-func (pw *PageWrapper) Locator(selector string) playwright.Locator {
-	return pw.Page.Locator(selector)
+func (pw *PageWrapper) Locator(selector string) LocatorWrapperInterface {
+	locator := pw.Page.Locator(selector)
+	locatorWrapper := LocatorWrapper{
+		Locator: locator,
+	}
+	return &locatorWrapper
 }
 
 func (pw *PageWrapper) Close() error {
