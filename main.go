@@ -3,34 +3,22 @@ package main
 import (
 	"fmt"
 	"log"
-
-	"github.com/playwright-community/playwright-go"
+	"time"
 )
 
 func main() {
-	// Install only Chromium browser
-	err := playwright.Install(&playwright.RunOptions{
-		Browsers: []string{"chromium"},
-	})
+	playwrightWrapper, err := NewPlaywrightWrapper()
 	if err != nil {
-		log.Fatalf("Could not install browser drivers: %v", err)
+		log.Fatalf("error in main: %v", err)
 	}
 
-	// Start playwright
-	pw, err := playwright.Run()
-	if err != nil {
-		log.Fatalf("Could not start playwright: %v", err)
-	}
-	defer pw.Stop()
+	defer playwrightWrapper.Playwright.Stop()
 
-	headless := false
-	// Launch chromium browser
-	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
-		Headless: &headless,
-	})
+	browser, err := playwrightWrapper.NewBrowser(false)
 	if err != nil {
-		log.Fatalf("Could not launch chromium: %v", err)
+		log.Fatalf("error in main: %v", err)
 	}
+
 	defer browser.Close()
 
 	// Create a new page
@@ -46,4 +34,6 @@ func main() {
 	}
 
 	fmt.Println("Successfully opened www.facebook.com in Chromium")
+
+	time.Sleep(10 * time.Minute)
 }
