@@ -25,6 +25,10 @@ func NewPlaywrightWrapper() (*PlaywrightWrapper, error) {
 }
 
 func (pw *PlaywrightWrapper) Run() error {
+	if pw.Playwright != nil {
+		return fmt.Errorf("playwright already running")
+	}
+
 	// Install only Chromium browser
 	err := playwright.Install(&playwright.RunOptions{
 		Browsers: []string{"chromium"},
