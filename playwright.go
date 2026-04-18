@@ -44,9 +44,11 @@ type PlaywrightWrapper struct {
 	Playwright *playwright.Playwright
 }
 
-func NewLocatorWrapper() (LocatorWrapperInterface, error) {
-	locatorWrapper := LocatorWrapper{}
-	return &locatorWrapper, nil
+func NewLocatorWrapper(locator playwright.Locator) LocatorWrapperInterface {
+	locatorWrapper := LocatorWrapper{
+		Locator: locator,
+	}
+	return &locatorWrapper
 }
 
 func (lw *LocatorWrapper) Fill(value string) error {
@@ -65,8 +67,11 @@ func (lw *LocatorWrapper) Click() error {
 	return nil
 }
 
-func NewPageWrapper(bwi BrowserWrapperInterface) (PageWrapperInterface, error) {
-	return bwi.NewPage()
+func NewPageWrapper(page playwright.Page) PageWrapperInterface {
+	pageWrapper := PageWrapper{
+		Page: page,
+	}
+	return &pageWrapper
 }
 
 func (pw *PageWrapper) Goto(url string) error {
@@ -79,10 +84,8 @@ func (pw *PageWrapper) Goto(url string) error {
 
 func (pw *PageWrapper) Locator(selector string) LocatorWrapperInterface {
 	locator := pw.Page.Locator(selector)
-	locatorWrapper := LocatorWrapper{
-		Locator: locator,
-	}
-	return &locatorWrapper
+	locatorWrapper := NewLocatorWrapper(locator)
+	return locatorWrapper
 }
 
 func (pw *PageWrapper) Close() error {
@@ -98,13 +101,11 @@ func NewBrowserWrapper(browser playwright.Browser) (BrowserWrapperInterface, err
 
 func (ww *BrowserWrapper) NewPage() (PageWrapperInterface, error) {
 	page, err := ww.Browser.NewPage()
-	pageWrapper := PageWrapper{
-		Page: page,
-	}
+	pageWrapper := NewPageWrapper(page)
 	if err != nil {
-		return &pageWrapper, fmt.Errorf("Could not create page: %v", err)
+		return pageWrapper, fmt.Errorf("Could not create page: %v", err)
 	}
-	return &pageWrapper, nil
+	return pageWrapper, nil
 }
 
 func (ww *BrowserWrapper) Close() error {
