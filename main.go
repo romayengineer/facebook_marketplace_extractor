@@ -23,8 +23,11 @@ func main() {
 	}
 	defer pw.Stop()
 
+	headless := false
 	// Launch chromium browser
-	browser, err := pw.Chromium.Launch()
+	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
+		Headless: &headless,
+	})
 	if err != nil {
 		log.Fatalf("Could not launch chromium: %v", err)
 	}
