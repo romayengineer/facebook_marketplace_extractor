@@ -7,6 +7,11 @@ import (
 )
 
 func main() {
+	config, err := NewConfig()
+	if err != nil {
+		log.Fatalf("error in main: %v", err)
+	}
+
 	playwrightWrapper, err := NewPlaywrightWrapper()
 	if err != nil {
 		log.Fatalf("error in main: %v", err)
@@ -37,6 +42,8 @@ func main() {
 	// Select email input field
 	emailInput := page.Locator("input[name=email]")
 	fmt.Println("Selected email input:", emailInput)
+
+	emailInput.Fill(config.UserCredentials.Username)
 
 	time.Sleep(10 * time.Minute)
 }
