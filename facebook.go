@@ -42,6 +42,13 @@ func (fs *FacebookScrapper) Login(userCredentials UserCredentials) error {
 	passwordInput := page.Locator("input[name=pass]")
 	passwordInput.Fill(userCredentials.Password)
 
+	// Find and click the Log In button using getByRole
+	loginButton := page.Locator("span:has-text('Log in')").GetByRole("button")
+	err = loginButton.Click()
+	if err != nil {
+		fmt.Printf("error clicking Log In button: %v", err)
+	}
+
 	time.Sleep(10 * time.Minute)
 
 	return nil

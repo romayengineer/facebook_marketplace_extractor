@@ -9,12 +9,15 @@ import (
 type LocatorWrapperInterface interface {
 	Fill(value string) error
 	Click() error
+	Locator(selector string) LocatorWrapperInterface
+	GetByRole(role playwright.AriaRole) LocatorWrapperInterface
 }
 
 type PageWrapperInterface interface {
 	Goto(url string) error
 	Locator(selector string) LocatorWrapperInterface
 	Close() error
+	GetByRole(role playwright.AriaRole) LocatorWrapperInterface
 }
 
 type BrowserWrapperInterface interface {
@@ -29,7 +32,7 @@ type PlaywrightWrapperInterface interface {
 }
 
 type LocatorWrapper struct {
-	Locator playwright.Locator
+	locator playwright.Locator
 }
 
 type PageWrapper struct {
@@ -46,13 +49,25 @@ type PlaywrightWrapper struct {
 
 func NewLocatorWrapper(locator playwright.Locator) LocatorWrapperInterface {
 	locatorWrapper := LocatorWrapper{
-		Locator: locator,
+		locator: locator,
 	}
 	return &locatorWrapper
 }
 
+func (lw *LocatorWrapper) GetByRole(role playwright.AriaRole) LocatorWrapperInterface {
+	locator := lw.locator.GetByRole(role)
+	locatorWrapper := NewLocatorWrapper(locator)
+	return locatorWrapper
+}
+
+func (lw *LocatorWrapper) Locator(selector string) LocatorWrapperInterface {
+	locator := lw.locator.Locator(selector)
+	locatorWrapper := NewLocatorWrapper(locator)
+	return locatorWrapper
+}
+
 func (lw *LocatorWrapper) Fill(value string) error {
-	err := lw.Locator.Fill(value)
+	err := lw.locator.Fill(value)
 	if err != nil {
 		return fmt.Errorf("error on fill: %v", err)
 	}
@@ -60,7 +75,7 @@ func (lw *LocatorWrapper) Fill(value string) error {
 }
 
 func (lw *LocatorWrapper) Click() error {
-	err := lw.Locator.Click()
+	err := lw.locator.Click()
 	if err != nil {
 		return fmt.Errorf("error on click: %v", err)
 	}
@@ -72,6 +87,11 @@ func NewPageWrapper(page playwright.Page) PageWrapperInterface {
 		Page: page,
 	}
 	return &pageWrapper
+}
+
+func (pw *PageWrapper) GetByRole(role playwright.AriaRole) LocatorWrapperInterface {
+	locator := pw.Page.GetByRole(role)
+	return NewLocatorWrapper(locator)
 }
 
 func (pw *PageWrapper) Goto(url string) error {

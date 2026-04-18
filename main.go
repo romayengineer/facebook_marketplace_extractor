@@ -25,5 +25,8 @@ func main() {
 
 	facebookScrapper := NewFacebookScrapper(browser)
 
-	facebookScrapper.Login(config.UserCredentials)
+	err = facebookScrapper.Login(config.UserCredentials)
+	if err != nil {
+		log.Fatalf("error Login: %v", err)
+	}
 }
