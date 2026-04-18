@@ -8,8 +8,10 @@ import (
 )
 
 func main() {
-	// Install browsers if needed
-	err := playwright.Install()
+	// Install only Chromium browser
+	err := playwright.Install(&playwright.RunOptions{
+		Browsers: []string{"chromium"},
+	})
 	if err != nil {
 		log.Fatalf("Could not install browser drivers: %v", err)
 	}
