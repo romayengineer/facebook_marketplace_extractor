@@ -22,6 +22,7 @@ type PlaywrightWrapperInterface interface {
 	NewBrowser(headless bool) (BrowserWrapperInterface, error)
 	Stop() error
 }
+
 type PageWrapper struct {
 	Page playwright.Page
 }
@@ -40,7 +41,10 @@ func NewPageWrapper(bwi BrowserWrapperInterface) (PageWrapperInterface, error) {
 
 func (pw *PageWrapper) Goto(url string) error {
 	_, err := pw.Page.Goto(url)
-	return err
+	if err != nil {
+		return fmt.Errorf("Could not goto %s: %v", url, err)
+	}
+	return nil
 }
 
 func (pw *PageWrapper) Locator(selector string) playwright.Locator {

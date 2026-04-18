@@ -29,7 +29,7 @@ func main() {
 
 	// Navigate to Facebook
 	if err = page.Goto("https://www.facebook.com"); err != nil {
-		log.Fatalf("Could not goto www.facebook.com: %v", err)
+		log.Fatalf("error in main: %v", err)
 	}
 
 	fmt.Println("Successfully opened www.facebook.com in Chromium")
