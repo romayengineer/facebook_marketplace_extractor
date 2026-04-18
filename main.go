@@ -28,7 +28,7 @@ func main() {
 	defer page.Close()
 
 	// Navigate to Facebook
-	if _, err = page.Goto("https://www.facebook.com"); err != nil {
+	if err = page.Goto("https://www.facebook.com"); err != nil {
 		log.Fatalf("Could not goto www.facebook.com: %v", err)
 	}
 

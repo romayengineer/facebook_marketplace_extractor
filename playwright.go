@@ -6,8 +6,14 @@ import (
 	"github.com/playwright-community/playwright-go"
 )
 
+type PageWrapperInterface interface {
+	Goto(url string) error
+	Locator(selector string) playwright.Locator
+	Close() error
+}
+
 type BrowserWrapperInterface interface {
-	NewPage() (playwright.Page, error)
+	NewPage() (PageWrapperInterface, error)
 	Close() error
 }
 
@@ -15,6 +21,9 @@ type PlaywrightWrapperInterface interface {
 	Run() error
 	NewBrowser(headless bool) (BrowserWrapperInterface, error)
 	Stop() error
+}
+type PageWrapper struct {
+	Page playwright.Page
 }
 
 type BrowserWrapper struct {
@@ -25,6 +34,23 @@ type PlaywrightWrapper struct {
 	Playwright *playwright.Playwright
 }
 
+func NewPageWrapper(bwi BrowserWrapperInterface) (PageWrapperInterface, error) {
+	return bwi.NewPage()
+}
+
+func (pw *PageWrapper) Goto(url string) error {
+	_, err := pw.Page.Goto(url)
+	return err
+}
+
+func (pw *PageWrapper) Locator(selector string) playwright.Locator {
+	return pw.Page.Locator(selector)
+}
+
+func (pw *PageWrapper) Close() error {
+	return pw.Page.Close()
+}
+
 func NewBrowserWrapper(browser playwright.Browser) (BrowserWrapperInterface, error) {
 	browserWrapper := BrowserWrapper{
 		Browser: browser,
@@ -32,12 +58,15 @@ func NewBrowserWrapper(browser playwright.Browser) (BrowserWrapperInterface, err
 	return &browserWrapper, nil
 }
 
-func (ww *BrowserWrapper) NewPage() (playwright.Page, error) {
+func (ww *BrowserWrapper) NewPage() (PageWrapperInterface, error) {
 	page, err := ww.Browser.NewPage()
-	if err != nil {
-		return page, fmt.Errorf("Could not create page: %v", err)
+	pageWrapper := PageWrapper{
+		Page: page,
 	}
-	return page, nil
+	if err != nil {
+		return &pageWrapper, fmt.Errorf("Could not create page: %v", err)
+	}
+	return &pageWrapper, nil
 }
 
 func (ww *BrowserWrapper) Close() error {
