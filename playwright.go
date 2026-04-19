@@ -15,6 +15,12 @@ type LocatorWrapperInterface interface {
 	All() ([]LocatorWrapperInterface, error)
 }
 
+type ContextWrapperInterface interface {
+	NewPage() (PageWrapperInterface, error)
+	Close() error
+	StorageState() (*playwright.StorageState, error)
+}
+
 type PageWrapperInterface interface {
 	Goto(url string) error
 	Locator(selector string) LocatorWrapperInterface
@@ -23,7 +29,7 @@ type PageWrapperInterface interface {
 }
 
 type BrowserWrapperInterface interface {
-	NewPage() (PageWrapperInterface, error)
+	NewContext(storageState *playwright.StorageState) (ContextWrapperInterface, error)
 	Close() error
 }
 
@@ -35,6 +41,10 @@ type PlaywrightWrapperInterface interface {
 
 type LocatorWrapper struct {
 	locator playwright.Locator
+}
+
+type ContextWrapper struct {
+	Context playwright.BrowserContext
 }
 
 type PageWrapper struct {
@@ -137,17 +147,45 @@ func NewBrowserWrapper(browser playwright.Browser) (BrowserWrapperInterface, err
 	return &browserWrapper, nil
 }
 
-func (ww *BrowserWrapper) NewPage() (PageWrapperInterface, error) {
-	page, err := ww.Browser.NewPage()
-	pageWrapper := NewPageWrapper(page)
-	if err != nil {
-		return pageWrapper, fmt.Errorf("Could not create page: %v", err)
+func NewContextWrapper(context playwright.BrowserContext) ContextWrapperInterface {
+	contextWrapper := ContextWrapper{Context: context}
+	return &contextWrapper
+}
+
+func (ww *BrowserWrapper) NewContext(storageState *playwright.StorageState) (ContextWrapperInterface, error) {
+	opts := playwright.BrowserNewContextOptions{}
+	if storageState != nil {
+		opts.StorageState = storageState.ToOptionalStorageState()
 	}
-	return pageWrapper, nil
+	context, err := ww.Browser.NewContext(opts)
+	if err != nil {
+		return nil, fmt.Errorf("Could not create context: %v", err)
+	}
+	return NewContextWrapper(context), nil
 }
 
 func (ww *BrowserWrapper) Close() error {
 	return ww.Browser.Close()
+}
+
+func (cw *ContextWrapper) NewPage() (PageWrapperInterface, error) {
+	page, err := cw.Context.NewPage()
+	if err != nil {
+		return nil, fmt.Errorf("Could not create page: %v", err)
+	}
+	return NewPageWrapper(page), nil
+}
+
+func (cw *ContextWrapper) Close() error {
+	return cw.Context.Close()
+}
+
+func (cw *ContextWrapper) StorageState() (*playwright.StorageState, error) {
+	storageState, err := cw.Context.StorageState()
+	if err != nil {
+		return nil, fmt.Errorf("Could not get storage state: %v", err)
+	}
+	return storageState, nil
 }
 
 func NewPlaywrightWrapper() (PlaywrightWrapperInterface, error) {

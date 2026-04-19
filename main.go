@@ -25,8 +25,11 @@ func main() {
 
 	facebookScrapper := NewFacebookScrapper(browser)
 
-	err = facebookScrapper.Login(config.UserCredentials)
+	ctx, err := facebookScrapper.Login(config.UserCredentials)
 	if err != nil {
 		log.Fatalf("error Login: %v", err)
 	}
+	defer ctx.Close()
+
+	// Context is now authenticated and ready to use
 }
