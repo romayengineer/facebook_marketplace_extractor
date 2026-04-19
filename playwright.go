@@ -11,6 +11,8 @@ type LocatorWrapperInterface interface {
 	Click() error
 	Locator(selector string) LocatorWrapperInterface
 	GetByRole(role playwright.AriaRole) LocatorWrapperInterface
+	Nth(index int) LocatorWrapperInterface
+	All() ([]LocatorWrapperInterface, error)
 }
 
 type PageWrapperInterface interface {
@@ -64,6 +66,22 @@ func (lw *LocatorWrapper) Locator(selector string) LocatorWrapperInterface {
 	locator := lw.locator.Locator(selector)
 	locatorWrapper := NewLocatorWrapper(locator)
 	return locatorWrapper
+}
+
+func (lw *LocatorWrapper) Nth(index int) LocatorWrapperInterface {
+	locator := lw.locator.Nth(index)
+	lw.locator.All()
+	locatorWrapper := NewLocatorWrapper(locator)
+	return locatorWrapper
+}
+
+func (lw *LocatorWrapper) All() ([]LocatorWrapperInterface, error) {
+	locators, err := lw.locator.All()
+	var locatorsWrapper []LocatorWrapperInterface
+	for _, locator := range locators {
+		locatorsWrapper = append(locatorsWrapper, NewLocatorWrapper(locator))
+	}
+	return locatorsWrapper, err
 }
 
 func (lw *LocatorWrapper) Fill(value string) error {
