@@ -1,8 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"time"
+	"os"
 )
 
 type FacebookScrapperInterface interface {
@@ -20,32 +21,48 @@ func NewFacebookScrapper(browser BrowserWrapperInterface) FacebookScrapperInterf
 	return &facebookScrapper
 }
 
+func WaitingForInput() {
+	fmt.Printf("waiting for input: ")
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+}
+
+func isInHomePage(page PageWrapperInterface) bool {
+	page.Locator("div[role=tablist]").WaitFor(10)
+	items, _ := page.Locator("div[role=tablist]").All()
+	return len(items) > 0
+
+}
+
 func (fs *FacebookScrapper) Login(userCredentials UserCredentials) (ContextWrapperInterface, error) {
-	// Try to load existing session
 	savedSession := LoadSession()
 	if savedSession != nil {
 		fmt.Println("Loading existing session...")
-		ctx, err := fs.Browser.NewContext(savedSession)
+		ctx, err := fs.Browser.NewContext(savedSession, true)
 		if err == nil {
 			page, err := ctx.NewPage()
 			if err == nil {
 				// Verify session is still valid
 				err = page.Goto("https://www.facebook.com")
-				time.Sleep(4 * time.Minute)
-				page.Close()
 				if err == nil {
-					fmt.Println("Session restored successfully")
-					return ctx, nil
+					if isInHomePage(page) {
+						fmt.Println("Session restored successfully")
+						page.Close()
+						return ctx, nil
+					}
 				}
+				page.Close()
 			}
 			ctx.Close()
 		}
-		// If session is invalid, delete it and continue with login
+		fmt.Printf("session expired, deletting")
 		DeleteSession()
 	}
 
+	fmt.Printf("creating new session")
+
 	// Create new context without saved session
-	ctx, err := fs.Browser.NewContext(nil)
+	ctx, err := fs.Browser.NewContext(nil, true)
 	if err != nil {
 		return nil, fmt.Errorf("error NewContext: %v", err)
 	}
@@ -73,30 +90,33 @@ func (fs *FacebookScrapper) Login(userCredentials UserCredentials) (ContextWrapp
 
 	// Find and click the Log In button using getByRole
 	loginButtons, _ := page.Locator("span:has-text('Log in')").All()
-	if len(loginButtons) != 4 {
-		return nil, fmt.Errorf("something changed")
+	if len(loginButtons) != 1 {
+		return nil, fmt.Errorf("log in button must be 1")
 	}
-	loginButton := page.Locator("span:has-text('Log in')").Nth(1)
+	loginButton := page.Locator("span:has-text('Log in')").Nth(0)
 	err = loginButton.Click()
 	if err != nil {
 		return nil, fmt.Errorf("error clicking Log In button: %v", err)
 	}
 
-	// Wait for navigation after login
-	time.Sleep(4 * time.Minute)
+	WaitingForInput()
+
+	if isInHomePage(page) == false {
+		return nil, fmt.Errorf("not in home page")
+	}
 
 	// Save the session for future use
 	storageState, err := ctx.StorageState()
 	if err != nil {
-		fmt.Printf("warning: could not save session: %v\n", err)
-	} else {
-		err = SaveSession(storageState)
-		if err != nil {
-			fmt.Printf("warning: could not persist session: %v\n", err)
-		} else {
-			fmt.Println("Session saved successfully")
-		}
+		return nil, fmt.Errorf("error: could not get session: %v\n", err)
 	}
+
+	err = SaveSession(storageState)
+	if err != nil {
+		return nil, fmt.Errorf("error: could not save session: %v\n", err)
+	}
+
+	fmt.Println("Session saved successfully")
 
 	return ctx, nil
 }

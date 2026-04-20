@@ -10,6 +10,7 @@ type LocatorWrapperInterface interface {
 	Fill(value string) error
 	Click() error
 	Locator(selector string) LocatorWrapperInterface
+	WaitFor(timeout float64) error
 	GetByRole(role playwright.AriaRole) LocatorWrapperInterface
 	Nth(index int) LocatorWrapperInterface
 	All() ([]LocatorWrapperInterface, error)
@@ -29,7 +30,7 @@ type PageWrapperInterface interface {
 }
 
 type BrowserWrapperInterface interface {
-	NewContext(storageState *playwright.StorageState) (ContextWrapperInterface, error)
+	NewContext(storageState *playwright.StorageState, isMobule bool) (ContextWrapperInterface, error)
 	Close() error
 }
 
@@ -52,7 +53,8 @@ type PageWrapper struct {
 }
 
 type BrowserWrapper struct {
-	Browser playwright.Browser
+	Browser    playwright.Browser
+	Playwright *playwright.Playwright
 }
 
 type PlaywrightWrapper struct {
@@ -64,6 +66,13 @@ func NewLocatorWrapper(locator playwright.Locator) LocatorWrapperInterface {
 		locator: locator,
 	}
 	return &locatorWrapper
+}
+
+func (lw *LocatorWrapper) WaitFor(timeout float64) error {
+	err := lw.locator.WaitFor(playwright.LocatorWaitForOptions{
+		Timeout: &timeout,
+	})
+	return err
 }
 
 func (lw *LocatorWrapper) GetByRole(role playwright.AriaRole) LocatorWrapperInterface {
@@ -80,7 +89,6 @@ func (lw *LocatorWrapper) Locator(selector string) LocatorWrapperInterface {
 
 func (lw *LocatorWrapper) Nth(index int) LocatorWrapperInterface {
 	locator := lw.locator.Nth(index)
-	lw.locator.All()
 	locatorWrapper := NewLocatorWrapper(locator)
 	return locatorWrapper
 }
@@ -140,9 +148,10 @@ func (pw *PageWrapper) Close() error {
 	return pw.Page.Close()
 }
 
-func NewBrowserWrapper(browser playwright.Browser) (BrowserWrapperInterface, error) {
+func NewBrowserWrapper(browser playwright.Browser, pw *playwright.Playwright) (BrowserWrapperInterface, error) {
 	browserWrapper := BrowserWrapper{
-		Browser: browser,
+		Browser:    browser,
+		Playwright: pw,
 	}
 	return &browserWrapper, nil
 }
@@ -152,10 +161,18 @@ func NewContextWrapper(context playwright.BrowserContext) ContextWrapperInterfac
 	return &contextWrapper
 }
 
-func (ww *BrowserWrapper) NewContext(storageState *playwright.StorageState) (ContextWrapperInterface, error) {
+func (ww *BrowserWrapper) NewContext(storageState *playwright.StorageState, isMobile bool) (ContextWrapperInterface, error) {
 	opts := playwright.BrowserNewContextOptions{}
 	if storageState != nil {
 		opts.StorageState = storageState.ToOptionalStorageState()
+	}
+	if isMobile == true && ww.Playwright != nil {
+		device := ww.Playwright.Devices["Pixel 5"]
+		opts.Viewport = device.Viewport
+		opts.UserAgent = playwright.String(device.UserAgent)
+		opts.DeviceScaleFactor = playwright.Float(device.DeviceScaleFactor)
+		opts.IsMobile = playwright.Bool(device.IsMobile)
+		opts.HasTouch = playwright.Bool(device.HasTouch)
 	}
 	context, err := ww.Browser.NewContext(opts)
 	if err != nil {
@@ -231,7 +248,7 @@ func (pw *PlaywrightWrapper) NewBrowser(headless bool) (BrowserWrapperInterface,
 	if err != nil {
 		return nil, fmt.Errorf("Could not launch chromium: %v", err)
 	}
-	browserWrapper, nil := NewBrowserWrapper(browser)
+	browserWrapper, err := NewBrowserWrapper(browser, pw.Playwright)
 	if err != nil {
 		return browserWrapper, fmt.Errorf("Could not create BrowserWrapper: %v", err)
 	}
