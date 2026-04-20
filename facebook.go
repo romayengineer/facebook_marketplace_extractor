@@ -27,14 +27,8 @@ func WaitingForInput() {
 	scanner.Scan()
 }
 
-func isInHomePage(page PageWrapperInterface) bool {
-	page.Locator("div[role=tablist]").WaitFor(10)
-	items, _ := page.Locator("div[role=tablist]").All()
-	return len(items) > 0
-
-}
-
 func (fs *FacebookScrapper) Login(userCredentials UserCredentials) (ContextWrapperInterface, error) {
+
 	savedSession := LoadSession()
 	if savedSession != nil {
 		fmt.Println("Loading existing session...")
@@ -45,7 +39,8 @@ func (fs *FacebookScrapper) Login(userCredentials UserCredentials) (ContextWrapp
 				// Verify session is still valid
 				err = page.Goto("https://www.facebook.com")
 				if err == nil {
-					if isInHomePage(page) {
+					pages, _ := NewPages(page)
+					if pages.IsInHomePage() {
 						fmt.Println("Session restored successfully")
 						page.Close()
 						return ctx, nil
@@ -101,7 +96,8 @@ func (fs *FacebookScrapper) Login(userCredentials UserCredentials) (ContextWrapp
 
 	WaitingForInput()
 
-	if isInHomePage(page) == false {
+	pages, _ := NewPages(page)
+	if pages.IsInHomePage() == false {
 		return nil, fmt.Errorf("not in home page")
 	}
 

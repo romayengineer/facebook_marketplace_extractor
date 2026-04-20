@@ -31,5 +31,10 @@ func main() {
 	}
 	defer ctx.Close()
 
-	// Context is now authenticated and ready to use
+	page, _ := ctx.NewPage()
+	pages, _ := NewPages(page)
+	pages.MarketpaceSearch("macbook")
+
+	WaitingForInput()
+
 }
