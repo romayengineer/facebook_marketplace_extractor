@@ -59,7 +59,7 @@ func GetKey(data any, path string) (any, error) {
 	return current, nil
 }
 
-func GetProductDetails(data any) (any, error) {
+func GetProductDetails(data any) (*MarketplaceItemDetails, error) {
 	detail, err := GetKey(data, "data.viewer.marketplace_product_details_page")
 	if err != nil {
 		return nil, err
@@ -106,6 +106,9 @@ func GetProductDetails(data any) (any, error) {
 		return nil, err
 	}
 
+	// optional
+	detailPhotos, err := GetKey(detail, "target.listing_photos")
+
 	marketplaceItemDetails := NewMarketplaceItemDetails(
 		detailId,
 		detailTitle,
@@ -117,6 +120,7 @@ func GetProductDetails(data any) (any, error) {
 		detailLocation,
 		detailSellerId,
 		detailSellerName,
+		detailPhotos,
 	)
 
 	filename := fmt.Sprintf("detail_%v.json", detailId)
@@ -127,7 +131,7 @@ func GetProductDetails(data any) (any, error) {
 		return nil, err
 	}
 
-	return marketplaceItemDetails, nil
+	return &marketplaceItemDetails, nil
 }
 
 func GetProductsFromSearch(data any) (any, error) {
@@ -233,6 +237,7 @@ type MarketplaceItemDetails struct {
 	Location      any
 	SellerID      any
 	SellerName    any
+	Photos        any
 }
 
 func NewMarketplaceItemDetails(
@@ -246,6 +251,7 @@ func NewMarketplaceItemDetails(
 	location any,
 	sellerId any,
 	sellerName any,
+	photos any,
 ) MarketplaceItemDetails {
 	return MarketplaceItemDetails{
 		ID:            id,
@@ -258,6 +264,7 @@ func NewMarketplaceItemDetails(
 		PriceCurrency: priceCurrency,
 		SellerID:      sellerId,
 		SellerName:    sellerName,
+		Photos:        photos,
 	}
 }
 
