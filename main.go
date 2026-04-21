@@ -34,6 +34,40 @@ func WriteRandomJsonFileIndented(jsonData any, body []byte) error {
 	return WriteRandomJsonFile(indented)
 }
 
+func GetKey(data any, path string) (any, error) {
+	keys := strings.Split(path, ".")
+
+	current := data
+	for _, key := range keys {
+		dataMap, ok := current.(map[string]interface{})
+		if !ok {
+			err := fmt.Errorf("cannot access key %q: not a map", key)
+			fmt.Println(err)
+			return nil, err
+		}
+
+		value, ok := dataMap[key]
+		if !ok {
+			err := fmt.Errorf("key %q not found", key)
+			fmt.Println(err)
+			return nil, err
+		}
+		current = value
+	}
+
+	return current, nil
+}
+
+func GetProductDetails(data any) (any, error) {
+	path := "data.viewer.marketplace_product_details_page.target"
+	return GetKey(data, path)
+}
+
+func GetProductsFromSearch(data any) (any, error) {
+	path := "data.marketplace_search.feed_units.edges"
+	return GetKey(data, path)
+}
+
 func WriteJsonResponse(body []byte) error {
 	// make sure the first byte is { (open curly brakets)
 	if body[0] != '{' {
@@ -49,6 +83,9 @@ func WriteJsonResponse(body []byte) error {
 	lines := strings.Split(string(body), "\n")
 	for _, line := range lines {
 		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		if line[0] != '{' {
 			continue
 		}
 		lineByte := []byte(line)
@@ -94,6 +131,8 @@ func main() {
 			body, err := response.Body()
 			if err == nil {
 				WriteJsonResponse(body)
+			} else {
+				fmt.Printf("Error OnResponse: %v", err)
 			}
 		}()
 	})
