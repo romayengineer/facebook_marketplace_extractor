@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
@@ -13,14 +14,26 @@ import (
 )
 
 func WriteResponse(body []byte) error {
+	timestamp := time.Now().UnixNano()
+	random := rand.Intn(1000000)
+
 	dataDir := "data"
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
 		return err
 	}
 
-	timestamp := time.Now().UnixNano()
-	random := rand.Intn(1000000)
-	filename := filepath.Join(dataDir, fmt.Sprintf("response_%d_%d.json", timestamp, random))
+	var extension string
+
+	// Validate JSON
+	var jsonData interface{}
+	if err := json.Unmarshal(body, &jsonData); err != nil {
+		extension = "txt"
+	} else {
+		extension = "json"
+	}
+
+	filename := filepath.Join(dataDir, fmt.Sprintf("response_%d_%d.%s", timestamp, random, extension))
+
 	if err := os.WriteFile(filename, body, 0644); err != nil {
 		return err
 	}
