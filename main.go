@@ -26,10 +26,18 @@ func WriteRandomJsonFile(body []byte) error {
 	return nil
 }
 
+func WriteRandomJsonFileIndented(jsonData any, body []byte) error {
+	indented, err := json.MarshalIndent(jsonData, "", "  ")
+	if err != nil {
+		return WriteRandomJsonFile(body)
+	}
+	return WriteRandomJsonFile(indented)
+}
+
 func WriteJsonResponse(body []byte) error {
 	var jsonData interface{}
 	if err := json.Unmarshal(body, &jsonData); err == nil {
-		return WriteRandomJsonFile(body)
+		WriteRandomJsonFileIndented(jsonData, body)
 	}
 
 	var lineData interface{}
@@ -40,7 +48,7 @@ func WriteJsonResponse(body []byte) error {
 		}
 		lineByte := []byte(line)
 		if err := json.Unmarshal(lineByte, &lineData); err == nil {
-			WriteRandomJsonFile(lineByte)
+			WriteRandomJsonFileIndented(lineData, lineByte)
 		}
 	}
 
