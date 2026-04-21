@@ -13,33 +13,38 @@ import (
 	"github.com/playwright-community/playwright-go"
 )
 
-func WriteResponse(body []byte) error {
+func WriteRandomFile(body []byte) error {
 	timestamp := time.Now().UnixNano()
 	random := rand.Intn(1000000)
 
-	dataDir := "data"
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
-		return err
-	}
-
-	var extension string
-
-	// Validate JSON
-	var jsonData interface{}
-	if err := json.Unmarshal(body, &jsonData); err != nil {
-		extension = "txt"
-	} else {
-		extension = "json"
-	}
-
-	filename := filepath.Join(dataDir, fmt.Sprintf("response_%d_%d.%s", timestamp, random, extension))
+	filename := filepath.Join("data", fmt.Sprintf("response_%d_%d.json", timestamp, random))
 
 	if err := os.WriteFile(filename, body, 0644); err != nil {
 		return err
 	}
 
-	fmt.Printf("Wrote response to: %s\n", filename)
 	return nil
+}
+
+func WriteResponse(body []byte) error {
+	var jsonData interface{}
+	if err := json.Unmarshal(body, &jsonData); err != nil {
+		// Try parsing as newline-delimited JSON
+		lines := strings.Split(string(body), "\n")
+		for _, line := range lines {
+			if strings.TrimSpace(line) == "" {
+				continue
+			}
+			lineByte := []byte(line)
+			var lineData interface{}
+			if err := json.Unmarshal(lineByte, &lineData); err == nil {
+				WriteRandomFile(lineByte)
+			}
+		}
+		return nil
+	}
+
+	return WriteRandomFile(body)
 }
 
 func main() {
