@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"math/rand"
@@ -98,7 +99,7 @@ func WriteJsonResponse(body []byte) error {
 
 }
 
-func main() {
+func SearchProducts() {
 	config, err := NewConfig()
 	if err != nil {
 		log.Fatalf("error NewConfig: %v", err)
@@ -142,5 +143,16 @@ func main() {
 	pages.MarketpaceSearch("macbook")
 
 	WaitingForInput()
+}
 
+func main() {
+	action := flag.String("action", "search", "Action to perform: search")
+	flag.Parse()
+
+	switch *action {
+	case "search":
+		SearchProducts()
+	default:
+		log.Fatalf("unknown action: %s", *action)
+	}
 }
