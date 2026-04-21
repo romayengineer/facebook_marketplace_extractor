@@ -32,7 +32,7 @@ func (fs *FacebookScrapper) Login(userCredentials UserCredentials) (ContextWrapp
 	savedSession := LoadSession()
 	if savedSession != nil {
 		fmt.Println("Loading existing session...")
-		ctx, err := fs.Browser.NewContext(savedSession, true)
+		ctx, err := fs.Browser.NewContext(savedSession, false)
 		if err == nil {
 			page, err := ctx.NewPage()
 			if err == nil {
@@ -50,14 +50,14 @@ func (fs *FacebookScrapper) Login(userCredentials UserCredentials) (ContextWrapp
 			}
 			ctx.Close()
 		}
-		fmt.Printf("session expired, deletting")
+		fmt.Println("session expired, deletting")
 		DeleteSession()
 	}
 
-	fmt.Printf("creating new session")
+	fmt.Println("creating new session")
 
 	// Create new context without saved session
-	ctx, err := fs.Browser.NewContext(nil, true)
+	ctx, err := fs.Browser.NewContext(nil, false)
 	if err != nil {
 		return nil, fmt.Errorf("error NewContext: %v", err)
 	}
@@ -85,10 +85,10 @@ func (fs *FacebookScrapper) Login(userCredentials UserCredentials) (ContextWrapp
 
 	// Find and click the Log In button using getByRole
 	loginButtons, _ := page.Locator("span:has-text('Log in')").All()
-	if len(loginButtons) != 1 {
-		return nil, fmt.Errorf("log in button must be 1")
+	if len(loginButtons) != 4 {
+		return nil, fmt.Errorf("log in button must be 4")
 	}
-	loginButton := page.Locator("span:has-text('Log in')").Nth(0)
+	loginButton := page.Locator("span:has-text('Log in')").Nth(1)
 	err = loginButton.Click()
 	if err != nil {
 		return nil, fmt.Errorf("error clicking Log In button: %v", err)

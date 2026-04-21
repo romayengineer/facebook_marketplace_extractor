@@ -1,7 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"strings"
+
+	"github.com/playwright-community/playwright-go"
 )
 
 func main() {
@@ -30,6 +34,17 @@ func main() {
 		log.Fatalf("error Login: %v", err)
 	}
 	defer ctx.Close()
+
+	ctx.Route("**/*", func(route playwright.Route) {
+		request := route.Request()
+		url := request.URL()
+		if strings.Contains(url, "/api/graphql") {
+			fmt.Printf("Intercepted: %s %s\n", request.Method(), url)
+		}
+
+		// Continue request as-is
+		route.Continue()
+	})
 
 	page, _ := ctx.NewPage()
 	pages, _ := NewPages(page)

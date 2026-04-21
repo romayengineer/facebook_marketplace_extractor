@@ -3,10 +3,11 @@ package main
 import "net/url"
 
 type Pages struct {
-	Page          PageWrapperInterface
-	InputUsername string
-	InputPassword string
-	ButtonLogIn   string
+	Page           PageWrapperInterface
+	InputUsername  string
+	InputPassword  string
+	ButtonLogIn    string
+	InputSearchBar string
 }
 
 type PagesInterface interface {
@@ -16,17 +17,18 @@ type PagesInterface interface {
 
 func NewPages(page PageWrapperInterface) (PagesInterface, error) {
 	pages := Pages{
-		Page:          page,
-		InputUsername: "input[name=email]",
-		InputPassword: "input[name=pass]",
-		ButtonLogIn:   "span:has-text('Log in')",
+		Page:           page,
+		InputUsername:  "input[name=email]",
+		InputPassword:  "input[name=pass]",
+		ButtonLogIn:    "span:has-text('Log in')",
+		InputSearchBar: "input[placeholder='Buscar en Facebook']",
 	}
 	return &pages, nil
 }
 
 func (pl *Pages) IsInHomePage() bool {
-	pl.Page.Locator("div[role=tablist]").WaitFor(10)
-	items, _ := pl.Page.Locator("div[role=tablist]").All()
+	pl.Page.Locator(pl.InputSearchBar).WaitFor(10)
+	items, _ := pl.Page.Locator(pl.InputSearchBar).All()
 	return len(items) > 0
 }
 
