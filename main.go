@@ -13,7 +13,7 @@ import (
 	"github.com/playwright-community/playwright-go"
 )
 
-func WriteRandomFile(body []byte) error {
+func WriteRandomJsonFile(body []byte) error {
 	timestamp := time.Now().UnixNano()
 	random := rand.Intn(1000000)
 
@@ -38,13 +38,13 @@ func WriteResponse(body []byte) error {
 			lineByte := []byte(line)
 			var lineData interface{}
 			if err := json.Unmarshal(lineByte, &lineData); err == nil {
-				WriteRandomFile(lineByte)
+				WriteRandomJsonFile(lineByte)
 			}
 		}
 		return nil
 	}
 
-	return WriteRandomFile(body)
+	return WriteRandomJsonFile(body)
 }
 
 func main() {
