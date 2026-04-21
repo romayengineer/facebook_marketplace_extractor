@@ -35,6 +35,11 @@ func WriteRandomJsonFileIndented(jsonData any, body []byte) error {
 }
 
 func WriteJsonResponse(body []byte) error {
+	// make sure the first byte is { (open curly brakets)
+	if body[0] != '{' {
+		return nil
+	}
+
 	var jsonData interface{}
 	if err := json.Unmarshal(body, &jsonData); err == nil {
 		WriteRandomJsonFileIndented(jsonData, body)
@@ -86,16 +91,9 @@ func main() {
 	ctx.OnResponse(func(response playwright.Response) {
 		go func() {
 			response.Finished()
-			if response.Ok() == false {
-				return
-			}
-			request := response.Request()
-			url := request.URL()
-			if strings.Contains(url, "/api/graphql") {
-				body, err := response.Body()
-				if err == nil {
-					WriteJsonResponse(body)
-				}
+			body, err := response.Body()
+			if err == nil {
+				WriteJsonResponse(body)
 			}
 		}()
 	})
