@@ -35,15 +35,21 @@ func main() {
 	}
 	defer ctx.Close()
 
-	ctx.Route("**/*", func(route playwright.Route) {
-		request := route.Request()
-		url := request.URL()
-		if strings.Contains(url, "/api/graphql") {
-			fmt.Printf("Intercepted: %s %s\n", request.Method(), url)
-		}
-
-		// Continue request as-is
-		route.Continue()
+	ctx.OnResponse(func(response playwright.Response) {
+		go func() {
+			response.Finished()
+			if response.Ok() == false {
+				return
+			}
+			request := response.Request()
+			url := request.URL()
+			if strings.Contains(url, "/api/graphql") {
+				body, err := response.Body()
+				if err == nil {
+					fmt.Printf("Response body: %s\n", string(body))
+				}
+			}
+		}()
 	})
 
 	page, _ := ctx.NewPage()

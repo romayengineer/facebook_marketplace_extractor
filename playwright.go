@@ -17,12 +17,14 @@ type LocatorWrapperInterface interface {
 }
 
 type RouteHandler func(playwright.Route)
+type ResponseHandler func(playwright.Response)
 
 type ContextWrapperInterface interface {
 	NewPage() (PageWrapperInterface, error)
 	Close() error
 	StorageState() (*playwright.StorageState, error)
 	Route(url any, handler RouteHandler) error
+	OnResponse(fn ResponseHandler)
 }
 
 type PageWrapperInterface interface {
@@ -186,6 +188,10 @@ func (ww *BrowserWrapper) Close() error {
 func NewContextWrapper(context playwright.BrowserContext) ContextWrapperInterface {
 	contextWrapper := ContextWrapper{Context: context}
 	return &contextWrapper
+}
+
+func (ww *ContextWrapper) OnResponse(handler ResponseHandler) {
+	ww.Context.OnResponse(handler)
 }
 
 func (ww *ContextWrapper) Route(url any, handler RouteHandler) error {
