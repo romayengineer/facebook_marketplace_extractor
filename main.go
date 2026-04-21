@@ -158,12 +158,13 @@ type ItemLocation struct {
 
 type MarketplaceItemDetails struct {
 	ID            string
-	Description   string
-	AttributeData any
 	Title         string
+	Description   string
+	Price         any
+	AttributeData any
 	CreationTime  int64
 	Location      any
-	Price         any
+	Seller        any
 }
 
 func NewMarketplaceItemDetails(
@@ -174,6 +175,7 @@ func NewMarketplaceItemDetails(
 	creationTime int64,
 	location any,
 	price any,
+	seller any,
 ) MarketplaceItemDetails {
 	return MarketplaceItemDetails{
 		ID:            id,
@@ -183,6 +185,7 @@ func NewMarketplaceItemDetails(
 		CreationTime:  creationTime,
 		Location:      location,
 		Price:         price,
+		Seller:        seller,
 	}
 }
 
@@ -253,6 +256,14 @@ func ProcessData() {
 			if err != nil {
 				continue
 			}
+			detailSellerId, err := GetKey(detail, "marketplace_listing_seller.id")
+			if err != nil {
+				continue
+			}
+			detailSellerName, err := GetKey(detail, "marketplace_listing_seller.name")
+			if err != nil {
+				continue
+			}
 
 			marketplaceItemDetails := NewMarketplaceItemDetails(
 				detailId.(string),
@@ -262,9 +273,15 @@ func ProcessData() {
 				int64(detailCreation.(float64)),
 				detailLocation,
 				detailPrice,
+				struct {
+					ID   interface{}
+					Name interface{}
+				}{
+					ID:   detailSellerId,
+					Name: detailSellerName,
+				},
 			)
 
-			fmt.Println(marketplaceItemDetails)
 			WriteRandomJsonFileIndented(fmt.Sprintf("detail_%v", detailId), body, marketplaceItemDetails)
 		}
 	}
