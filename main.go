@@ -13,11 +13,11 @@ import (
 	"github.com/playwright-community/playwright-go"
 )
 
-func WriteRandomJsonFile(body []byte) error {
+func WriteRandomJsonFile(prefix string, body []byte) error {
 	timestamp := time.Now().UnixNano()
 	random := rand.Intn(1000000)
 
-	filename := filepath.Join("data", fmt.Sprintf("response_%d_%06d.json", timestamp, random))
+	filename := filepath.Join("data", fmt.Sprintf("%s_%d_%06d.json", prefix, timestamp, random))
 
 	if err := os.WriteFile(filename, body, 0644); err != nil {
 		return err
@@ -26,12 +26,12 @@ func WriteRandomJsonFile(body []byte) error {
 	return nil
 }
 
-func WriteRandomJsonFileIndented(jsonData any, body []byte) error {
+func WriteRandomJsonFileIndented(prefix string, body []byte, jsonData any) error {
 	indented, err := json.MarshalIndent(jsonData, "", "  ")
 	if err != nil {
-		return WriteRandomJsonFile(body)
+		return WriteRandomJsonFile(prefix, body)
 	}
-	return WriteRandomJsonFile(indented)
+	return WriteRandomJsonFile(prefix, indented)
 }
 
 func GetKey(data any, path string) (any, error) {
@@ -76,7 +76,7 @@ func WriteJsonResponse(body []byte) error {
 
 	var jsonData interface{}
 	if err := json.Unmarshal(body, &jsonData); err == nil {
-		WriteRandomJsonFileIndented(jsonData, body)
+		return WriteRandomJsonFileIndented("response", body, jsonData)
 	}
 
 	var lineData interface{}
@@ -90,7 +90,7 @@ func WriteJsonResponse(body []byte) error {
 		}
 		lineByte := []byte(line)
 		if err := json.Unmarshal(lineByte, &lineData); err == nil {
-			WriteRandomJsonFileIndented(lineData, lineByte)
+			WriteRandomJsonFileIndented("response", lineByte, lineData)
 		}
 	}
 
