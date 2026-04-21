@@ -43,14 +43,14 @@ func GetKey(data any, path string) (any, error) {
 		dataMap, ok := current.(map[string]interface{})
 		if !ok {
 			err := fmt.Errorf("cannot access key %q: not a map", key)
-			fmt.Println(err)
+			// fmt.Println(err)
 			return nil, err
 		}
 
 		value, ok := dataMap[key]
 		if !ok {
 			err := fmt.Errorf("key %q not found", key)
-			fmt.Println(err)
+			// fmt.Println(err)
 			return nil, err
 		}
 		current = value
@@ -145,6 +145,131 @@ func SearchProducts() {
 	WaitingForInput()
 }
 
+type AttributeData struct {
+	AttributeName string
+	Label         string
+	Value         string
+}
+
+type ItemLocation struct {
+	Latitude  float64
+	Longitude float64
+}
+
+type MarketplaceItemDetails struct {
+	ID            string
+	Description   string
+	AttributeData any
+	Title         string
+	CreationTime  int64
+	Location      any
+	Price         any
+}
+
+func NewMarketplaceItemDetails(
+	id string,
+	description string,
+	attributeData any,
+	title string,
+	creationTime int64,
+	location any,
+	price any,
+) MarketplaceItemDetails {
+	return MarketplaceItemDetails{
+		ID:            id,
+		Description:   description,
+		AttributeData: attributeData,
+		Title:         title,
+		CreationTime:  creationTime,
+		Location:      location,
+		Price:         price,
+	}
+}
+
+func ProcessData() {
+	// open and read all files in data folder that start with response and end in .json
+	entries, err := os.ReadDir("data")
+	if err != nil {
+		log.Fatalf("error reading data directory: %v", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		filename := entry.Name()
+		if !strings.HasPrefix(filename, "response_") || !strings.HasSuffix(filename, ".json") {
+			continue
+		}
+
+		// Read and parse the JSON file
+		filePath := filepath.Join("data", filename)
+		body, err := os.ReadFile(filePath)
+		if err != nil {
+			log.Printf("error reading file %s: %v", filename, err)
+			continue
+		}
+
+		var jsonData interface{}
+		if err := json.Unmarshal(body, &jsonData); err != nil {
+			log.Printf("error parsing JSON from %s: %v", filename, err)
+			continue
+		}
+
+		// Try to get products from search
+		// if products, err := GetProductsFromSearch(jsonData); err == nil {
+		// 	fmt.Printf("Found products in %s\n", filename)
+		// 	fmt.Println(products)
+		// }
+
+		// Try to get product details
+		if detail, err := GetProductDetails(jsonData); err == nil {
+			detailId, err := GetKey(detail, "id")
+			if err != nil {
+				continue
+			}
+			detailDescription, err := GetKey(detail, "redacted_description.text")
+			if err != nil {
+				continue
+			}
+			detailAttributeData, err := GetKey(detail, "attribute_data")
+			if err != nil {
+				continue
+			}
+			detailTitle, err := GetKey(detail, "marketplace_listing_title")
+			if err != nil {
+				continue
+			}
+			detailCreation, err := GetKey(detail, "creation_time")
+			if err != nil {
+				continue
+			}
+			detailLocation, err := GetKey(detail, "item_location")
+			if err != nil {
+				continue
+			}
+			detailPrice, err := GetKey(detail, "listing_price")
+			if err != nil {
+				continue
+			}
+
+			marketplaceItemDetails := NewMarketplaceItemDetails(
+				detailId.(string),
+				detailDescription.(string),
+				detailAttributeData,
+				detailTitle.(string),
+				int64(detailCreation.(float64)),
+				detailLocation,
+				detailPrice,
+			)
+
+			fmt.Println(marketplaceItemDetails)
+			WriteRandomJsonFileIndented(fmt.Sprintf("detail_%v", detailId), body, marketplaceItemDetails)
+		}
+	}
+}
+
 func main() {
 	action := flag.String("action", "search", "Action to perform: search")
 	flag.Parse()
@@ -152,6 +277,8 @@ func main() {
 	switch *action {
 	case "search":
 		SearchProducts()
+	case "process_data":
+		ProcessData()
 	default:
 		log.Fatalf("unknown action: %s", *action)
 	}
