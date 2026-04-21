@@ -3,10 +3,31 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
+	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/playwright-community/playwright-go"
 )
+
+func WriteResponse(body []byte) error {
+	dataDir := "data"
+	if err := os.MkdirAll(dataDir, 0755); err != nil {
+		return err
+	}
+
+	timestamp := time.Now().UnixNano()
+	random := rand.Intn(1000000)
+	filename := filepath.Join(dataDir, fmt.Sprintf("response_%d_%d.json", timestamp, random))
+	if err := os.WriteFile(filename, body, 0644); err != nil {
+		return err
+	}
+
+	fmt.Printf("Wrote response to: %s\n", filename)
+	return nil
+}
 
 func main() {
 	config, err := NewConfig()
@@ -46,7 +67,7 @@ func main() {
 			if strings.Contains(url, "/api/graphql") {
 				body, err := response.Body()
 				if err == nil {
-					fmt.Printf("Response body: %s\n", string(body))
+					WriteResponse(body)
 				}
 			}
 		}()
