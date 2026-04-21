@@ -26,7 +26,7 @@ func WriteRandomJsonFile(body []byte) error {
 	return nil
 }
 
-func WriteResponse(body []byte) error {
+func WriteJsonResponse(body []byte) error {
 	var jsonData interface{}
 	if err := json.Unmarshal(body, &jsonData); err != nil {
 		// Try parsing as newline-delimited JSON
@@ -85,7 +85,7 @@ func main() {
 			if strings.Contains(url, "/api/graphql") {
 				body, err := response.Body()
 				if err == nil {
-					WriteResponse(body)
+					WriteJsonResponse(body)
 				}
 			}
 		}()
