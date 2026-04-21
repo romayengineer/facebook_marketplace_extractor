@@ -60,7 +60,7 @@ func GetKey(data any, path string) (any, error) {
 }
 
 func GetProductDetails(data any) (any, error) {
-	path := "data.viewer.marketplace_product_details_page.target"
+	path := "data.viewer.marketplace_product_details_page"
 	return GetKey(data, path)
 }
 
@@ -157,25 +157,29 @@ type ItemLocation struct {
 }
 
 type MarketplaceItemDetails struct {
-	ID            string
-	Title         string
-	Description   string
-	Price         any
+	ID            any
+	Title         any
+	Description   any
+	PriceAmount   any
+	PriceCurrency any
 	AttributeData any
-	CreationTime  int64
+	CreationTime  any
 	Location      any
-	Seller        any
+	SellerID      any
+	SellerName    any
 }
 
 func NewMarketplaceItemDetails(
-	id string,
-	description string,
+	id any,
+	title any,
+	description any,
+	priceAmount any,
+	priceCurrency any,
 	attributeData any,
-	title string,
-	creationTime int64,
+	creationTime any,
 	location any,
-	price any,
-	seller any,
+	sellerId any,
+	sellerName any,
 ) MarketplaceItemDetails {
 	return MarketplaceItemDetails{
 		ID:            id,
@@ -184,8 +188,10 @@ func NewMarketplaceItemDetails(
 		Title:         title,
 		CreationTime:  creationTime,
 		Location:      location,
-		Price:         price,
-		Seller:        seller,
+		PriceAmount:   priceAmount,
+		PriceCurrency: priceCurrency,
+		SellerID:      sellerId,
+		SellerName:    sellerName,
 	}
 }
 
@@ -228,58 +234,59 @@ func ProcessData() {
 
 		// Try to get product details
 		if detail, err := GetProductDetails(jsonData); err == nil {
-			detailId, err := GetKey(detail, "id")
+			detailId, err := GetKey(detail, "target.id")
 			if err != nil {
 				continue
 			}
-			detailDescription, err := GetKey(detail, "redacted_description.text")
+			detailDescription, err := GetKey(detail, "target.redacted_description.text")
 			if err != nil {
 				continue
 			}
-			detailAttributeData, err := GetKey(detail, "attribute_data")
+			detailAttributeData, err := GetKey(detail, "target.attribute_data")
 			if err != nil {
 				continue
 			}
-			detailTitle, err := GetKey(detail, "marketplace_listing_title")
+			detailTitle, err := GetKey(detail, "target.marketplace_listing_title")
 			if err != nil {
 				continue
 			}
-			detailCreation, err := GetKey(detail, "creation_time")
+			detailCreation, err := GetKey(detail, "target.creation_time")
 			if err != nil {
 				continue
 			}
-			detailLocation, err := GetKey(detail, "item_location")
+			// detailLocation, err := GetKey(detail, "target.item_location")
+			detailLocation, err := GetKey(detail, "marketplace_listing_renderable_target.location")
 			if err != nil {
 				continue
 			}
-			detailPrice, err := GetKey(detail, "listing_price")
+			detailPriceAmount, err := GetKey(detail, "target.listing_price.amount")
 			if err != nil {
 				continue
 			}
-			detailSellerId, err := GetKey(detail, "marketplace_listing_seller.id")
+			detailPriceCurrency, err := GetKey(detail, "target.listing_price.currency")
 			if err != nil {
 				continue
 			}
-			detailSellerName, err := GetKey(detail, "marketplace_listing_seller.name")
+			detailSellerId, err := GetKey(detail, "target.marketplace_listing_seller.id")
+			if err != nil {
+				continue
+			}
+			detailSellerName, err := GetKey(detail, "target.marketplace_listing_seller.name")
 			if err != nil {
 				continue
 			}
 
 			marketplaceItemDetails := NewMarketplaceItemDetails(
-				detailId.(string),
-				detailDescription.(string),
+				detailId,
+				detailTitle,
+				detailDescription,
+				detailPriceAmount,
+				detailPriceCurrency,
 				detailAttributeData,
-				detailTitle.(string),
-				int64(detailCreation.(float64)),
+				detailCreation,
 				detailLocation,
-				detailPrice,
-				struct {
-					ID   interface{}
-					Name interface{}
-				}{
-					ID:   detailSellerId,
-					Name: detailSellerName,
-				},
+				detailSellerId,
+				detailSellerName,
 			)
 
 			WriteRandomJsonFileIndented(fmt.Sprintf("detail_%v", detailId), body, marketplaceItemDetails)
