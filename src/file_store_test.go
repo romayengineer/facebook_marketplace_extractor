@@ -26,7 +26,7 @@ func TestFileStoreGet(t *testing.T) {
 		SellerName:    "Test Seller",
 	}
 
-	err := store.Save(testData)
+	_, err := store.Save(testData)
 	require.NoError(t, err)
 
 	store2 := NewProductFileStore(productID)

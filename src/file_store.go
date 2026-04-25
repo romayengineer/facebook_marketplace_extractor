@@ -18,7 +18,7 @@ type FileStoreImpl[T any] struct {
 type FileStore[T any] interface {
 	SetDir(dir string)
 	Get() (*T, error)
-	Save(data T) error
+	Save(data T) (*T, error)
 }
 
 func NewProductFileStore(productId string) FileStore[MarketplaceItemDetails] {
@@ -49,11 +49,11 @@ func (pfs *FileStoreImpl[T]) Get() (*T, error) {
 	return pfs.data, nil
 }
 
-func (pfs *FileStoreImpl[T]) Save(data T) error {
+func (pfs *FileStoreImpl[T]) Save(data T) (*T, error) {
 	if pfs.data == nil {
 		_, err := pfs.Get()
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -71,13 +71,13 @@ func (pfs *FileStoreImpl[T]) Save(data T) error {
 
 	indented, err := json.MarshalIndent(pfs.data, "", "  ")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	filePath := filepath.Join(pfs.fileDir, pfs.fileName)
 	if err := os.WriteFile(filePath, indented, 0644); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return pfs.data, nil
 }

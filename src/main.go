@@ -35,33 +35,33 @@ func WriteRandomJsonFileIndented(prefix string, body []byte, jsonData any) error
 	return WriteRandomJsonFile(prefix, indented)
 }
 
-func GetKey(data any, path string) (any, error) {
+func GetKey(data any, path string) any {
 	keys := strings.Split(path, ".")
 
 	current := data
 	for _, key := range keys {
 		dataMap, ok := current.(map[string]interface{})
 		if !ok {
-			err := fmt.Errorf("cannot access key %q: not a map", key)
+			// err := fmt.Errorf("cannot access key %q: not a map", key)
 			// fmt.Println(err)
-			return nil, err
+			return nil
 		}
 
 		value, ok := dataMap[key]
 		if !ok {
-			err := fmt.Errorf("key %q not found", key)
+			// err := fmt.Errorf("key %q not found", key)
 			// fmt.Println(err)
-			return nil, err
+			return nil
 		}
 		current = value
 	}
 
-	return current, nil
+	return current
 }
 
 func GetProductsFromSearch(data any) (any, error) {
 	path := "data.marketplace_search.feed_units.edges"
-	return GetKey(data, path)
+	return GetKey(data, path), nil
 }
 
 func WriteJsonResponse(body []byte) error {

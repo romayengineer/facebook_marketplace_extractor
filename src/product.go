@@ -1,10 +1,7 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 )
 
 type AttributeData struct {
@@ -61,54 +58,27 @@ func NewMarketplaceItemDetails(
 }
 
 func GetProductDetails(data any) (*MarketplaceItemDetails, error) {
-	detail, err := GetKey(data, "data.viewer.marketplace_product_details_page")
-	if err != nil {
-		return nil, err
-	}
-	detailId, err := GetKey(detail, "target.id")
-	if err != nil {
-		return nil, err
-	}
-	detailDescription, err := GetKey(detail, "target.redacted_description.text")
-	if err != nil {
-		return nil, err
-	}
-	detailAttributeData, err := GetKey(detail, "target.attribute_data")
-	if err != nil {
-		return nil, err
-	}
-	detailTitle, err := GetKey(detail, "target.marketplace_listing_title")
-	if err != nil {
-		return nil, err
-	}
-	detailCreation, err := GetKey(detail, "target.creation_time")
-	if err != nil {
-		return nil, err
-	}
-	// detailLocation, err := GetKey(detail, "target.item_location")
-	detailLocation, err := GetKey(detail, "marketplace_listing_renderable_target.location")
-	if err != nil {
-		return nil, err
-	}
-	detailPriceAmount, err := GetKey(detail, "target.listing_price.amount")
-	if err != nil {
-		return nil, err
-	}
-	detailPriceCurrency, err := GetKey(detail, "target.listing_price.currency")
-	if err != nil {
-		return nil, err
-	}
-	detailSellerId, err := GetKey(detail, "target.marketplace_listing_seller.id")
-	if err != nil {
-		return nil, err
-	}
-	detailSellerName, err := GetKey(detail, "target.marketplace_listing_seller.name")
-	if err != nil {
-		return nil, err
+	detail := GetKey(data, "data.viewer.marketplace_product_details_page")
+	if detail == nil {
+		return nil, fmt.Errorf("detail not found")
 	}
 
-	// optional
-	detailPhotos, err := GetKey(detail, "target.listing_photos")
+	detailId := GetKey(detail, "target.id")
+	if detailId == nil {
+		return nil, fmt.Errorf("detail does not have id")
+	}
+
+	detailDescription := GetKey(detail, "target.redacted_description.text")
+	detailAttributeData := GetKey(detail, "target.attribute_data")
+	detailTitle := GetKey(detail, "target.marketplace_listing_title")
+	detailCreation := GetKey(detail, "target.creation_time")
+	// detailLocation := GetKey(detail, "target.item_location")
+	detailLocation := GetKey(detail, "marketplace_listing_renderable_target.location")
+	detailPriceAmount := GetKey(detail, "target.listing_price.amount")
+	detailPriceCurrency := GetKey(detail, "target.listing_price.currency")
+	detailSellerId := GetKey(detail, "target.marketplace_listing_seller.id")
+	detailSellerName := GetKey(detail, "target.marketplace_listing_seller.name")
+	detailPhotos := GetKey(detail, "target.listing_photos")
 
 	marketplaceItemDetails := NewMarketplaceItemDetails(
 		detailId,
@@ -124,13 +94,8 @@ func GetProductDetails(data any) (*MarketplaceItemDetails, error) {
 		detailPhotos,
 	)
 
-	filename := fmt.Sprintf("detail_%v.json", detailId)
+	store := NewProductFileStore(detailId.(string))
+	newData, _ := store.Save(marketplaceItemDetails)
 
-	indented, err := json.MarshalIndent(marketplaceItemDetails, "", "  ")
-
-	if err := os.WriteFile(filepath.Join("data", filename), indented, 0644); err != nil {
-		return nil, err
-	}
-
-	return &marketplaceItemDetails, nil
+	return newData, nil
 }
