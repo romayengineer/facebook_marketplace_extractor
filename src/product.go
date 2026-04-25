@@ -17,6 +17,7 @@ type ItemLocation struct {
 
 type MarketplaceItemDetails struct {
 	ID            any
+	URL           any
 	Title         any
 	Description   any
 	PriceAmount   any
@@ -31,6 +32,7 @@ type MarketplaceItemDetails struct {
 
 func NewMarketplaceItemDetails(
 	id any,
+	url any,
 	title any,
 	description any,
 	priceAmount any,
@@ -44,6 +46,7 @@ func NewMarketplaceItemDetails(
 ) MarketplaceItemDetails {
 	return MarketplaceItemDetails{
 		ID:            id,
+		URL:           url,
 		Description:   description,
 		AttributeData: attributeData,
 		Title:         title,
@@ -79,9 +82,11 @@ func GetProductDetails(data any) (*MarketplaceItemDetails, error) {
 	detailSellerId := GetKey(detail, "target.marketplace_listing_seller.id")
 	detailSellerName := GetKey(detail, "target.marketplace_listing_seller.name")
 	detailPhotos := GetKey(detail, "target.listing_photos")
+	detailUrl := GetKey(detail, "story.shareable.url")
 
 	marketplaceItemDetails := NewMarketplaceItemDetails(
 		detailId,
+		detailUrl,
 		detailTitle,
 		detailDescription,
 		detailPriceAmount,
