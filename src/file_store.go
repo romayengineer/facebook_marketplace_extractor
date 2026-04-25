@@ -10,40 +10,48 @@ import (
 
 type FileStoreImpl[T any] struct {
 	id       string
-	filePath string
+	fileName string
+	fileDir  string
 	data     *T
 }
 
 type FileStore[T any] interface {
-	Get() error
+	SetDir(dir string)
+	Get() (*T, error)
 	Save(data T) error
 }
 
 func NewProductFileStore(productId string) FileStore[MarketplaceItemDetails] {
 	fileName := fmt.Sprintf("detail_%v.json", productId)
-	filePath := filepath.Join("data", fileName)
-	return &FileStoreImpl[MarketplaceItemDetails]{id: productId, filePath: filePath}
+	return &FileStoreImpl[MarketplaceItemDetails]{id: productId, fileName: fileName, fileDir: "data"}
 }
 
-func (pfs *FileStoreImpl[T]) Get() error {
-	content, err := os.ReadFile(pfs.filePath)
+func (pfs *FileStoreImpl[T]) SetDir(dir string) {
+	pfs.fileDir = dir
+}
+
+func (pfs *FileStoreImpl[T]) Get() (*T, error) {
+	var data T
+
+	filePath := filepath.Join(pfs.fileDir, pfs.fileName)
+	content, err := os.ReadFile(filePath)
 	if err != nil {
-		return err
+		pfs.data = &data
+		return pfs.data, nil
 	}
 
-	var data T
-	if err := json.Unmarshal(content, &data); err == nil {
-		return err
+	if err := json.Unmarshal(content, &data); err != nil {
+		return nil, err
 	}
 
 	pfs.data = &data
 
-	return nil
+	return pfs.data, nil
 }
 
 func (pfs *FileStoreImpl[T]) Save(data T) error {
 	if pfs.data == nil {
-		err := pfs.Get()
+		_, err := pfs.Get()
 		if err != nil {
 			return err
 		}
@@ -66,7 +74,8 @@ func (pfs *FileStoreImpl[T]) Save(data T) error {
 		return err
 	}
 
-	if err := os.WriteFile(pfs.filePath, indented, 0644); err != nil {
+	filePath := filepath.Join(pfs.fileDir, pfs.fileName)
+	if err := os.WriteFile(filePath, indented, 0644); err != nil {
 		return err
 	}
 
