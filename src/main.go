@@ -59,11 +59,6 @@ func GetKey(data any, path string) any {
 	return current
 }
 
-func GetProductsFromSearch(data any) (any, error) {
-	path := "data.marketplace_search.feed_units.edges"
-	return GetKey(data, path), nil
-}
-
 func WriteJsonResponse(body []byte) error {
 	// make sure the first byte is { (open curly brakets)
 	if body[0] != '{' {
@@ -171,13 +166,7 @@ func ProcessData() {
 			continue
 		}
 
-		// Try to get products from search
-		// if products, err := GetProductsFromSearch(jsonData); err == nil {
-		// 	fmt.Printf("Found products in %s\n", filename)
-		// 	fmt.Println(products)
-		// }
-
-		// Try to get product details
+		GetProductsFromSearch(jsonData)
 		GetProductDetails(jsonData)
 	}
 }
