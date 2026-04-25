@@ -3,6 +3,7 @@ package main
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -10,7 +11,7 @@ import (
 func TestFileStoreGet(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	productID := "test-product-123"
+	productID := uuid.New().String()
 	store := NewProductFileStore(productID)
 	store.SetDir(tmpDir)
 
@@ -48,7 +49,7 @@ func TestFileStoreGet(t *testing.T) {
 func TestFileStoreSave(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	productID := "test-product-456"
+	productID := uuid.New().String()
 
 	store := NewProductFileStore(productID)
 	store.SetDir(tmpDir)
@@ -83,10 +84,11 @@ func TestFileStoreSave(t *testing.T) {
 	assert.Equal(t, testData.Description, data2.Description)
 
 	// update
-	testData.ID = "321"
+	newProductID := uuid.New().String()
+	testData.ID = newProductID
 
 	store2.Save(testData)
 
 	data3, err := store2.Get()
-	assert.Equal(t, "321", data3.ID)
+	assert.Equal(t, newProductID, data3.ID)
 }
