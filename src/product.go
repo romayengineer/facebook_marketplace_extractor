@@ -60,6 +60,49 @@ func NewMarketplaceItemDetails(
 	}
 }
 
+type FileStoreImpl[T any] struct {
+	id       string
+	fileName string
+	data     *T
+}
+
+type FileStore[T any] interface {
+	Get() error
+	Save(data T) error
+}
+
+func NewProductFileStore[T MarketplaceItemDetails](product_id string) FileStore[T] {
+	fileName := fmt.Sprintf("detail_%v.json", product_id)
+	return &FileStoreImpl[T]{id: product_id, fileName: fileName}
+}
+
+func (pfs *FileStoreImpl[T]) Get() error {
+	content, err := os.ReadFile(pfs.fileName)
+	if err != nil {
+		return err
+	}
+
+	var data T
+	if err := json.Unmarshal(content, &data); err == nil {
+		return err
+	}
+
+	pfs.data = &data
+
+	return nil
+}
+
+func (pfs *FileStoreImpl[T]) Save(data T) error {
+	if pfs.data == nil {
+		err := pfs.Get()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func GetProductDetails(data any) (*MarketplaceItemDetails, error) {
 	detail, err := GetKey(data, "data.viewer.marketplace_product_details_page")
 	if err != nil {
