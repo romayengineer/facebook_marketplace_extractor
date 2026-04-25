@@ -71,18 +71,17 @@ func GetProductDetails(data any) (*MarketplaceItemDetails, error) {
 		return nil, fmt.Errorf("detail does not have id")
 	}
 
-	detailDescription := GetKey(detail, "target.redacted_description.text")
-	detailAttributeData := GetKey(detail, "target.attribute_data")
+	detailUrl := GetKey(detail, "story.shareable.url")
 	detailTitle := GetKey(detail, "target.marketplace_listing_title")
-	detailCreation := GetKey(detail, "target.creation_time")
-	// detailLocation := GetKey(detail, "target.item_location")
-	detailLocation := GetKey(detail, "marketplace_listing_renderable_target.location")
+	detailDescription := GetKey(detail, "target.redacted_description.text")
 	detailPriceAmount := GetKey(detail, "target.listing_price.amount")
 	detailPriceCurrency := GetKey(detail, "target.listing_price.currency")
+	detailAttributeData := GetKey(detail, "target.attribute_data")
+	detailCreation := GetKey(detail, "target.creation_time")
+	detailLocation := GetKey(detail, "marketplace_listing_renderable_target.location")
 	detailSellerId := GetKey(detail, "target.marketplace_listing_seller.id")
 	detailSellerName := GetKey(detail, "target.marketplace_listing_seller.name")
 	detailPhotos := GetKey(detail, "target.listing_photos")
-	detailUrl := GetKey(detail, "story.shareable.url")
 
 	marketplaceItemDetails := NewMarketplaceItemDetails(
 		detailId,
