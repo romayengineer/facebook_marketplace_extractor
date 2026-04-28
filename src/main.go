@@ -167,6 +167,7 @@ func ProcessData() {
 		}
 
 		GetProductsFromSearch(jsonData)
+		GetProducFromData(jsonData)
 		GetProductDetails(jsonData)
 	}
 }

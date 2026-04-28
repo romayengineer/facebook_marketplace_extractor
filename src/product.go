@@ -17,6 +17,8 @@ type ItemLocation struct {
 
 type MarketplaceItemDetails struct {
 	ID                       any
+	IDLong                   any
+	Category                 any
 	URL                      any
 	Title                    any
 	Description              any
@@ -47,18 +49,18 @@ func GetProductDetails(data any) (*MarketplaceItemDetails, error) {
 		return nil, fmt.Errorf("detail not found")
 	}
 
-	detailId := GetKey(detail, "target.id")
-	if detailId == nil {
+	productId := GetKey(detail, "target.id")
+	if productId == nil {
 		return nil, fmt.Errorf("detail does not have id")
 	}
 
-	detailUrl := GetKey(detail, "story.shareable.url")
-	detailTitle := GetKey(detail, "target.marketplace_listing_title")
-	detailDescription := GetKey(detail, "target.redacted_description.text")
-	detailPriceAmount := GetKey(detail, "target.listing_price.amount")
-	detailPriceCurrency := GetKey(detail, "target.listing_price.currency")
-	detailAttributeData := GetKey(detail, "target.attribute_data")
-	detailCreation := GetKey(detail, "target.creation_time")
+	productUrl := GetKey(detail, "story.shareable.url")
+	productTitle := GetKey(detail, "target.marketplace_listing_title")
+	productDescription := GetKey(detail, "target.redacted_description.text")
+	productPriceAmount := GetKey(detail, "target.listing_price.amount")
+	productPriceCurrency := GetKey(detail, "target.listing_price.currency")
+	productAttributeData := GetKey(detail, "target.attribute_data")
+	productCreation := GetKey(detail, "target.creation_time")
 
 	location := GetKey(detail, "marketplace_listing_renderable_target.location")
 	latitud := GetKey(location, "latitude")
@@ -73,14 +75,14 @@ func GetProductDetails(data any) (*MarketplaceItemDetails, error) {
 	detailPhotos := GetKey(detail, "target.listing_photos")
 
 	marketplaceItemDetails := MarketplaceItemDetails{
-		ID:                       detailId,
-		URL:                      detailUrl,
-		Title:                    detailTitle,
-		Description:              detailDescription,
-		PriceAmount:              detailPriceAmount,
-		PriceCurrency:            detailPriceCurrency,
-		AttributeData:            detailAttributeData,
-		CreationTime:             detailCreation,
+		ID:                       productId,
+		URL:                      productUrl,
+		Title:                    productTitle,
+		Description:              productDescription,
+		PriceAmount:              productPriceAmount,
+		PriceCurrency:            productPriceCurrency,
+		AttributeData:            productAttributeData,
+		CreationTime:             productCreation,
 		LocationLatitud:          latitud,
 		LocationLongitude:        longitude,
 		LocationGeocodeCityID:    cityID,
@@ -92,7 +94,7 @@ func GetProductDetails(data any) (*MarketplaceItemDetails, error) {
 		Photos:                   detailPhotos,
 	}
 
-	store := NewProductFileStore(detailId.(string))
+	store := NewProductFileStore(productId.(string))
 	newData, _ := store.Save(marketplaceItemDetails)
 
 	return newData, nil
@@ -173,4 +175,50 @@ func GetProductsFromSearch(data any) ([]*MarketplaceItemDetails, error) {
 	}
 
 	return products, nil
+}
+
+func GetProducFromData(data any) (*MarketplaceItemDetails, error) {
+	node := GetKey(data, "data.node")
+	if node == nil {
+		return nil, fmt.Errorf("data node not found")
+	}
+
+	productId := GetKey(node, "entity_id")
+	if productId == nil {
+		return nil, fmt.Errorf("product does not have id")
+	}
+
+	productIdLong := GetKey(node, "data.product_item_id")
+
+	productTitle := GetKey(node, "data.title")
+
+	productCategory := GetKey(node, "data.upsell_type")
+
+	productPriceCurrency := GetKey(node, "data.price.currency")
+
+	location := GetKey(node, "entity.location")
+	cityName1 := GetKey(location, "reverse_geocode.city")
+	cityName2 := GetKey(location, "reverse_geocode.city_page.display_name")
+	cityID := GetKey(location, "reverse_geocode.city_page.id")
+	stateCode := GetKey(location, "reverse_geocode.state")
+
+	productCreation := GetKey(node, "listing.creation_time")
+
+	marketplaceItemDetails := MarketplaceItemDetails{
+		ID:                       productId,
+		IDLong:                   productIdLong,
+		Category:                 productCategory,
+		Title:                    productTitle,
+		PriceCurrency:            productPriceCurrency,
+		LocationGeocodeCityID:    cityID,
+		LocationGeocodeCityName1: cityName1,
+		LocationGeocodeCityName2: cityName2,
+		LocationGeocodeStateCode: stateCode,
+		CreationTime:             productCreation,
+	}
+
+	store := NewProductFileStore(productId.(string))
+	newData, _ := store.Save(marketplaceItemDetails)
+
+	return newData, nil
 }
