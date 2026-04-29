@@ -1,6 +1,9 @@
 package main
 
-import "net/url"
+import (
+	"fmt"
+	"net/url"
+)
 
 type Pages struct {
 	Page           PageWrapperInterface
@@ -13,6 +16,7 @@ type Pages struct {
 type PagesInterface interface {
 	IsInHomePage() bool
 	MarketpaceSearch(query string) error
+	GoToProduct(id string) error
 }
 
 func NewPages(page PageWrapperInterface) (PagesInterface, error) {
@@ -36,5 +40,10 @@ func (pl *Pages) MarketpaceSearch(query string) error {
 	params := url.Values{}
 	params.Add("query", query)
 	baseUrl := "https://www.facebook.com/marketplace/category/search/?" + params.Encode()
+	return pl.Page.Goto(baseUrl)
+}
+
+func (pl *Pages) GoToProduct(id string) error {
+	baseUrl := fmt.Sprintf("https://www.facebook.com/marketplace/item/%s", id)
 	return pl.Page.Goto(baseUrl)
 }

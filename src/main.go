@@ -119,7 +119,7 @@ func Begin() (ContextWrapperInterface, error) {
 			if err == nil {
 				WriteJsonResponse(body)
 			} else {
-				fmt.Printf("Error OnResponse: %v", err)
+				fmt.Printf("Error OnResponse: %v\n", err)
 			}
 		}()
 	})
@@ -141,7 +141,36 @@ func SearchProducts() {
 	WaitingForInput()
 }
 
-func ForEachData(process func(jsonData any)) {
+func GetDetails() {
+	ctx, err := Begin()
+	if err != nil {
+		log.Fatalf("error Begin: %v", err)
+	}
+	defer ctx.Close()
+
+	page, _ := ctx.NewPage()
+	pages, _ := NewPages(page)
+
+	ForEachDetail(func(jsonData any) {
+		productId := GetKey(jsonData, "ID")
+		if productId == nil {
+			return
+		}
+		description := GetKey(jsonData, "Description")
+		if description != nil {
+			return
+		}
+		// fmt.Printf("product %s does not have description\n", productId.(string))
+		pages.GoToProduct(productId.(string))
+
+		// sleep for 5 seconds
+		time.Sleep(5 * time.Second)
+	})
+
+	WaitingForInput()
+}
+
+func ForEachJsonInData(prefix string, process func(jsonData any)) {
 	// open and read all files in data folder that start with response and end in .json
 	entries, err := os.ReadDir("data")
 	if err != nil {
@@ -154,7 +183,7 @@ func ForEachData(process func(jsonData any)) {
 		}
 
 		filename := entry.Name()
-		if !strings.HasPrefix(filename, "response_") || !strings.HasSuffix(filename, ".json") {
+		if !strings.HasPrefix(filename, prefix) || !strings.HasSuffix(filename, ".json") {
 			continue
 		}
 
@@ -176,8 +205,16 @@ func ForEachData(process func(jsonData any)) {
 	}
 }
 
+func ForEachResponse(process func(jsonData any)) {
+	ForEachJsonInData("response_", process)
+}
+
+func ForEachDetail(process func(jsonData any)) {
+	ForEachJsonInData("detail_", process)
+}
+
 func ProcessData() {
-	ForEachData(func(jsonData any) {
+	ForEachResponse(func(jsonData any) {
 		GetProductsFromSearch(jsonData)
 		GetProducFromData(jsonData)
 		GetProductDetails(jsonData)
@@ -193,6 +230,8 @@ func main() {
 		SearchProducts()
 	case "process_data":
 		ProcessData()
+	case "get_details":
+		GetDetails()
 	default:
 		log.Fatalf("unknown action: %s", *action)
 	}
