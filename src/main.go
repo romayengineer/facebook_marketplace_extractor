@@ -135,7 +135,7 @@ func SearchProducts() {
 	WaitingForInput()
 }
 
-func ProcessData() {
+func ForEachData(process func(jsonData any)) {
 	// open and read all files in data folder that start with response and end in .json
 	entries, err := os.ReadDir("data")
 	if err != nil {
@@ -166,10 +166,16 @@ func ProcessData() {
 			continue
 		}
 
+		process(jsonData)
+	}
+}
+
+func ProcessData() {
+	ForEachData(func(jsonData any) {
 		GetProductsFromSearch(jsonData)
 		GetProducFromData(jsonData)
 		GetProductDetails(jsonData)
-	}
+	})
 }
 
 func main() {
