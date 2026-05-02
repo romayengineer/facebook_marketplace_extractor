@@ -53,8 +53,9 @@ func GetProductDetails(data any) (*MarketplaceItemDetails, error) {
 	if productId == nil {
 		return nil, fmt.Errorf("detail does not have id")
 	}
+	productIdLong := GetKey(detail, "target.product_item.id")
 
-	productUrl := GetKey(detail, "story.shareable.url")
+	productUrl := GetKey(detail, "target.story.url")
 	productTitle := GetKey(detail, "target.marketplace_listing_title")
 	productDescription := GetKey(detail, "target.redacted_description.text")
 	productPriceAmount := GetKey(detail, "target.listing_price.amount")
@@ -76,6 +77,7 @@ func GetProductDetails(data any) (*MarketplaceItemDetails, error) {
 
 	marketplaceItemDetails := MarketplaceItemDetails{
 		ID:                       productId,
+		IDLong:                   productIdLong,
 		URL:                      productUrl,
 		Title:                    productTitle,
 		Description:              productDescription,
