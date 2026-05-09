@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -174,12 +175,12 @@ func GetDetails() {
 
 		// sleep for 5 seconds
 		time.Sleep(5 * time.Second)
-	})
+	}, false)
 
 	WaitingForInput()
 }
 
-func ForEachJsonInData(prefix string, process func(jsonData any)) {
+func ForEachJsonInData(prefix string, process func(jsonData any), sortit bool) {
 	// open and read all files in data folder that start with response and end in .json
 	entries, err := os.ReadDir("data")
 	if err != nil {
@@ -204,10 +205,17 @@ func ForEachJsonInData(prefix string, process func(jsonData any)) {
 		filePaths = append(filePaths, filePath)
 	}
 
-	// random shuffle filePaths
-	rand.Shuffle(len(filePaths), func(i, j int) { filePaths[i], filePaths[j] = filePaths[j], filePaths[i] })
+	if sortit {
+		// if sort is true sort filePaths in ascendant order
+		sort.Strings(filePaths)
+	} else {
+		// else sort filePaths in random order
+		rand.Shuffle(len(filePaths), func(i, j int) { filePaths[i], filePaths[j] = filePaths[j], filePaths[i] })
+	}
 
 	for _, filePath := range filePaths {
+
+		// fmt.Printf("%s\n", filePath)
 
 		body, err := os.ReadFile(filePath)
 		if err != nil {
@@ -226,12 +234,12 @@ func ForEachJsonInData(prefix string, process func(jsonData any)) {
 
 }
 
-func ForEachResponse(process func(jsonData any)) {
-	ForEachJsonInData("response_", process)
+func ForEachResponse(process func(jsonData any), sortit bool) {
+	ForEachJsonInData("response_", process, sortit)
 }
 
-func ForEachDetail(process func(jsonData any)) {
-	ForEachJsonInData("detail_", process)
+func ForEachDetail(process func(jsonData any), sortit bool) {
+	ForEachJsonInData("detail_", process, sortit)
 }
 
 func ProcessData() {
@@ -239,7 +247,7 @@ func ProcessData() {
 		GetProductsFromSearch(jsonData)
 		GetProducFromData(jsonData)
 		GetProductDetails(jsonData)
-	})
+	}, true)
 }
 
 func main() {
