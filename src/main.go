@@ -123,13 +123,13 @@ func Begin() (ContextWrapperInterface, error) {
 			if url != "https://www.facebook.com/api/graphql/" {
 				return
 			}
-			body, err := response.Text()
+			body, err := response.Body()
 			if err != nil {
-				fmt.Printf("Error response.Text(): %v\n", err)
+				fmt.Printf("Error response.Body(): %v\n", err)
 				return
 			}
-			bytes := []byte(body)
-			WriteJsonResponse(bytes)
+			WriteJsonResponse(body)
+
 		}(response)
 	})
 
