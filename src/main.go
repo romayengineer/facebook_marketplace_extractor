@@ -59,15 +59,18 @@ func GetKey(data any, path string) any {
 	return current
 }
 
-func WriteJsonResponse(body []byte) error {
+func WriteJsonResponse(body []byte) (int, error) {
+	jsonCounter := 0
+
 	// make sure the first byte is { (open curly brakets)
 	if body[0] != '{' {
-		return nil
+		return jsonCounter, nil
 	}
 
 	var jsonData interface{}
 	if err := json.Unmarshal(body, &jsonData); err == nil {
-		return WriteRandomJsonFileIndented("response", body, jsonData)
+		jsonCounter += 1
+		return jsonCounter, WriteRandomJsonFileIndented("response", body, jsonData)
 	}
 
 	var lineData interface{}
@@ -81,11 +84,12 @@ func WriteJsonResponse(body []byte) error {
 		}
 		lineByte := []byte(line)
 		if err := json.Unmarshal(lineByte, &lineData); err == nil {
+			jsonCounter += 1
 			WriteRandomJsonFileIndented("response", lineByte, lineData)
 		}
 	}
 
-	return nil
+	return jsonCounter, nil
 
 }
 
@@ -114,6 +118,11 @@ func Begin() (ContextWrapperInterface, error) {
 
 	ctx.OnResponse(func(response playwright.Response) {
 		go func(resp playwright.Response) {
+			request := response.Request()
+			url := request.URL()
+			if url != "https://www.facebook.com/api/graphql/" {
+				return
+			}
 			body, err := response.Text()
 			if err != nil {
 				fmt.Printf("Error response.Text(): %v\n", err)
