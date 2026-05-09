@@ -177,6 +177,8 @@ func ForEachJsonInData(prefix string, process func(jsonData any)) {
 		log.Fatalf("error reading data directory: %v", err)
 	}
 
+	filePaths := []string{}
+
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
@@ -189,20 +191,30 @@ func ForEachJsonInData(prefix string, process func(jsonData any)) {
 
 		// Read and parse the JSON file
 		filePath := filepath.Join("data", filename)
+
+		filePaths = append(filePaths, filePath)
+	}
+
+	// random shuffle filePaths
+	rand.Shuffle(len(filePaths), func(i, j int) { filePaths[i], filePaths[j] = filePaths[j], filePaths[i] })
+
+	for _, filePath := range filePaths {
+
 		body, err := os.ReadFile(filePath)
 		if err != nil {
-			log.Printf("error reading file %s: %v", filename, err)
+			log.Printf("error reading file %s: %v", filePath, err)
 			continue
 		}
 
 		var jsonData interface{}
 		if err := json.Unmarshal(body, &jsonData); err != nil {
-			log.Printf("error parsing JSON from %s: %v", filename, err)
+			log.Printf("error parsing JSON from %s: %v", filePath, err)
 			continue
 		}
 
 		process(jsonData)
 	}
+
 }
 
 func ForEachResponse(process func(jsonData any)) {
