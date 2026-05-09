@@ -113,15 +113,15 @@ func Begin() (ContextWrapperInterface, error) {
 	}
 
 	ctx.OnResponse(func(response playwright.Response) {
-		go func() {
-			response.Finished()
-			body, err := response.Body()
-			if err == nil {
-				WriteJsonResponse(body)
-			} else {
-				fmt.Printf("Error OnResponse: %v\n", err)
+		go func(resp playwright.Response) {
+			body, err := response.Text()
+			if err != nil {
+				fmt.Printf("Error response.Text(): %v\n", err)
+				return
 			}
-		}()
+			bytes := []byte(body)
+			WriteJsonResponse(bytes)
+		}(response)
 	})
 
 	return ctx, nil
