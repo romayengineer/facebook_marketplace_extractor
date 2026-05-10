@@ -242,11 +242,31 @@ func ForEachDetail(process func(jsonData any), sortit bool) {
 	ForEachJsonInData("detail_", process, sortit)
 }
 
+func SaveProductsIfAny(products []MarketplaceItemDetails) bool {
+	if len(products) > 0 {
+		for _, product := range products {
+			store := NewProductFileStore(product.ID.(string))
+			store.Save(product)
+		}
+		return true
+	}
+	return false
+}
+
 func ProcessData() {
 	ForEachResponse(func(jsonData any) {
-		GetProductsFromSearch(jsonData)
-		GetProducFromData(jsonData)
-		GetProductDetails(jsonData)
+		productsA, _ := GetProductsFromSearch(jsonData)
+		if hasAny := SaveProductsIfAny(productsA); hasAny == true {
+			return
+		}
+		productsB, _ := GetProducFromData(jsonData)
+		if hasAny := SaveProductsIfAny(productsB); hasAny == true {
+			return
+		}
+		productsC, _ := GetProductDetails(jsonData)
+		if hasAny := SaveProductsIfAny(productsC); hasAny == true {
+			return
+		}
 	}, true)
 }
 

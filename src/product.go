@@ -43,7 +43,7 @@ type MarketplaceItemDetails struct {
 	IsSold                   any
 }
 
-func GetProductDetails(data any) (*MarketplaceItemDetails, error) {
+func GetProductDetails(data any) ([]MarketplaceItemDetails, error) {
 	detail := GetKey(data, "data.viewer.marketplace_product_details_page")
 	if detail == nil {
 		return nil, fmt.Errorf("detail not found")
@@ -53,6 +53,9 @@ func GetProductDetails(data any) (*MarketplaceItemDetails, error) {
 	if productId == nil {
 		return nil, fmt.Errorf("detail does not have id")
 	}
+
+	var products []MarketplaceItemDetails
+
 	productIdLong := GetKey(detail, "target.product_item.id")
 
 	productUrl := GetKey(detail, "target.story.url")
@@ -96,13 +99,12 @@ func GetProductDetails(data any) (*MarketplaceItemDetails, error) {
 		Photos:                   detailPhotos,
 	}
 
-	store := NewProductFileStore(productId.(string))
-	newData, _ := store.Save(marketplaceItemDetails)
+	products = append(products, marketplaceItemDetails)
 
-	return newData, nil
+	return products, nil
 }
 
-func GetProductsFromSearch(data any) ([]*MarketplaceItemDetails, error) {
+func GetProductsFromSearch(data any) ([]MarketplaceItemDetails, error) {
 	edges := GetKey(data, "data.marketplace_search.feed_units.edges")
 	if edges == nil {
 		return nil, fmt.Errorf("no marketplace search found")
@@ -113,7 +115,8 @@ func GetProductsFromSearch(data any) ([]*MarketplaceItemDetails, error) {
 		return nil, fmt.Errorf("edges is not a list")
 	}
 
-	var products []*MarketplaceItemDetails
+	var products []MarketplaceItemDetails
+
 	for _, edge := range edgesList {
 		listing := GetKey(edge, "node.listing")
 		if listing == nil {
@@ -170,16 +173,13 @@ func GetProductsFromSearch(data any) ([]*MarketplaceItemDetails, error) {
 			IsSold:                   isSold,
 		}
 
-		store := NewProductFileStore(productId.(string))
-		product, _ := store.Save(marketplaceItemDetails)
-
-		products = append(products, product)
+		products = append(products, marketplaceItemDetails)
 	}
 
 	return products, nil
 }
 
-func GetProducFromData(data any) (*MarketplaceItemDetails, error) {
+func GetProducFromData(data any) ([]MarketplaceItemDetails, error) {
 	node := GetKey(data, "data.node")
 	if node == nil {
 		return nil, fmt.Errorf("data node not found")
@@ -189,6 +189,8 @@ func GetProducFromData(data any) (*MarketplaceItemDetails, error) {
 	if productId == nil {
 		return nil, fmt.Errorf("product does not have id")
 	}
+
+	var products []MarketplaceItemDetails
 
 	productIdLong := GetKey(node, "data.product_item_id")
 
@@ -219,8 +221,7 @@ func GetProducFromData(data any) (*MarketplaceItemDetails, error) {
 		CreationTime:             productCreation,
 	}
 
-	store := NewProductFileStore(productId.(string))
-	newData, _ := store.Save(marketplaceItemDetails)
+	products = append(products, marketplaceItemDetails)
 
-	return newData, nil
+	return products, nil
 }
