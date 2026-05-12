@@ -94,6 +94,15 @@ func WriteJsonResponse(body []byte) (int, error) {
 
 }
 
+func ProcessRequest(response playwright.Response) {
+	req := response.Request()
+	data, _ := req.PostData()
+	for _, p := range strings.Split(data, "&") {
+		fmt.Printf("%s\n", p)
+	}
+	fmt.Printf("\n\n\n")
+}
+
 func Begin() (ContextWrapperInterface, error) {
 	config, err := NewConfig()
 	if err != nil {
@@ -130,7 +139,7 @@ func Begin() (ContextWrapperInterface, error) {
 				return
 			}
 			WriteJsonResponse(body)
-
+			ProcessRequest(response)
 		}(response)
 	})
 
