@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sync"
 )
 
 type FileStoreImpl[T any] struct {
@@ -13,6 +14,7 @@ type FileStoreImpl[T any] struct {
 	fileName string
 	fileDir  string
 	data     *T
+	mu       sync.RWMutex
 }
 
 type FileStore[T any] interface {
@@ -33,8 +35,11 @@ func (pfs *FileStoreImpl[T]) SetDir(dir string) {
 func (pfs *FileStoreImpl[T]) Get() (*T, error) {
 	var data T
 
+	pfs.mu.Lock()
 	filePath := filepath.Join(pfs.fileDir, pfs.fileName)
 	content, err := os.ReadFile(filePath)
+	pfs.mu.Unlock()
+
 	if err != nil {
 		pfs.data = &data
 		return pfs.data, nil
@@ -74,10 +79,13 @@ func (pfs *FileStoreImpl[T]) Save(data T) (*T, error) {
 		return nil, err
 	}
 
+	pfs.mu.Lock()
 	filePath := filepath.Join(pfs.fileDir, pfs.fileName)
 	if err := os.WriteFile(filePath, indented, 0644); err != nil {
+		pfs.mu.Unlock()
 		return nil, err
 	}
+	pfs.mu.Unlock()
 
 	return pfs.data, nil
 }
