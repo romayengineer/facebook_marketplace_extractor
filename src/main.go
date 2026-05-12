@@ -48,7 +48,7 @@ func GetKey(data any, path string) any {
 
 	current := data
 	for _, key := range keys {
-		dataMap, ok := current.(map[string]interface{})
+		dataMap, ok := current.(map[string]any)
 		if !ok {
 			// err := fmt.Errorf("cannot access key %q: not a map", key)
 			// fmt.Println(err)
@@ -75,13 +75,13 @@ func WriteJsonResponse(body []byte) (int, error) {
 		return jsonCounter, nil
 	}
 
-	var jsonData interface{}
+	var jsonData any
 	if err := json.Unmarshal(body, &jsonData); err == nil {
 		jsonCounter += 1
 		return jsonCounter, WriteRandomJsonFileIndented("response", body, jsonData)
 	}
 
-	var lineData interface{}
+	var lineData any
 	lines := strings.Split(string(body), "\n")
 	for _, line := range lines {
 		if strings.TrimSpace(line) == "" {
@@ -362,7 +362,7 @@ func ForEachJsonInData(prefix string, process func(jsonData any), sortit bool) {
 			continue
 		}
 
-		var jsonData interface{}
+		var jsonData any
 		if err := json.Unmarshal(body, &jsonData); err != nil {
 			log.Printf("error parsing JSON from %s: %v", filePath, err)
 			continue
