@@ -213,7 +213,11 @@ func Begin() (ContextWrapperInterface, error) {
 				return
 			}
 			mu.Lock()
-			postDataMap.Compare(lastPostDataMap)
+			val, exists := postDataMap.Get("fb_api_req_friendly_name")
+			if exists {
+				fmt.Printf("fb_api_req_friendly_name %s\n", val)
+			}
+			// postDataMap.Compare(lastPostDataMap)
 			lastPostDataMap = postDataMap
 			mu.Unlock()
 		}(response)
