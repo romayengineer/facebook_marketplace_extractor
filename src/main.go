@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -94,13 +95,18 @@ func WriteJsonResponse(body []byte) (int, error) {
 
 }
 
-func ProcessRequest(response playwright.Response) {
+func ProcessRequest(response playwright.Response) error {
 	req := response.Request()
 	data, _ := req.PostData()
-	for _, p := range strings.Split(data, "&") {
+	decoded, err := url.QueryUnescape(data)
+	if err != nil {
+		return fmt.Errorf("error in url.QueryUnescape: %w\n", err)
+	}
+	for _, p := range strings.Split(decoded, "&") {
 		fmt.Printf("%s\n", p)
 	}
 	fmt.Printf("\n\n\n")
+	return nil
 }
 
 func Begin() (ContextWrapperInterface, error) {
