@@ -170,7 +170,12 @@ func Begin() (ContextWrapperInterface, error) {
 				return
 			}
 			WriteJsonResponse(body)
-			GetPostDataMap(response)
+			_, err = GetPostDataMap(response)
+			if err != nil {
+				fmt.Printf("Error GetPostDataMap(): %v\n", err)
+				return
+			}
+			// lastPostDataMap = postDataMap // #TODO save last postDataMap
 		}(response)
 	})
 
