@@ -23,6 +23,7 @@ type ContextWrapperInterface interface {
 	NewPage() (PageWrapperInterface, error)
 	Close() error
 	StorageState() (*playwright.StorageState, error)
+	Fetch(urlOrRequest any, options ...playwright.APIRequestContextFetchOptions) (playwright.APIResponse, error)
 	Route(url any, handler RouteHandler) error
 	OnResponse(fn ResponseHandler)
 }
@@ -208,6 +209,10 @@ func (cw *ContextWrapper) NewPage() (PageWrapperInterface, error) {
 
 func (cw *ContextWrapper) Close() error {
 	return cw.Context.Close()
+}
+
+func (cw *ContextWrapper) Fetch(urlOrRequest any, options ...playwright.APIRequestContextFetchOptions) (playwright.APIResponse, error) {
+	return cw.Context.Request().Fetch(urlOrRequest, options...)
 }
 
 func (cw *ContextWrapper) StorageState() (*playwright.StorageState, error) {

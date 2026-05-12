@@ -4,10 +4,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"math/rand"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -152,10 +150,9 @@ func NewOrderedMap() OrderedMap {
 	}
 }
 
-func GetPostDataMap(response playwright.Response) (OrderedMap, error) {
+func GetPostDataMap(request playwright.Request) (OrderedMap, error) {
 	om := NewOrderedMap()
-	req := response.Request()
-	data, err := req.PostData()
+	data, err := request.PostData()
 	if err != nil {
 		return om, fmt.Errorf("error in req.PostData: %w\n", err)
 	}
@@ -173,43 +170,52 @@ func GetPostDataMap(response playwright.Response) (OrderedMap, error) {
 	return om, nil
 }
 
-func GetHttpRequestFromPlaywrightRequest(request playwright.Request) (*http.Request, error) {
-	method := request.Method()
-	url := request.URL()
-	postData, _ := request.PostData()
+func RunRequest(pwRequest playwright.Request, ctx ContextWrapperInterface) (playwright.APIResponse, error) {
+	url := pwRequest.URL()
+	method := pwRequest.Method()
+	data, _ := pwRequest.PostData()
+	headers := pwRequest.Headers()
 
-	var body io.Reader
-	if postData != "" {
-		body = strings.NewReader(postData)
-	}
-
-	httpReq, err := http.NewRequest(method, url, body)
+	response, err := ctx.Fetch(url,
+		playwright.APIRequestContextFetchOptions{
+			Method:  &method,
+			Headers: headers,
+			Data:    data,
+		},
+	)
 	if err != nil {
-		return nil, fmt.Errorf("error creating http.Request: %w", err)
+		return nil, fmt.Errorf("Error executing apiRequest: %w\n", err)
 	}
 
-	allHeaders, _ := request.AllHeaders()
-	for key, value := range allHeaders {
-		httpReq.Header.Set(key, value)
-	}
-
-	return httpReq, nil
+	return response, nil
 }
 
-func RunRequest(request playwright.Request) (*http.Response, error) {
-	httpRequest, err := GetHttpRequestFromPlaywrightRequest(request)
+func CompareResponses(response playwright.Response, newResponse playwright.APIResponse) (bool, error) {
+	// if err != nil {
+	// 	fmt.Printf("Error in RunRequest: %v\n", err)
+	// 	return
+	// }
+	// defer newResponse.Dispose()
+
+	body, err := response.Body()
 	if err != nil {
-		return nil, fmt.Errorf("Error GetHttpRequestFromPlaywrightRequest(): %w\n", err)
+		return false, fmt.Errorf("Error response.Body(): %w\n", err)
 	}
 
-	client := &http.Client{}
-	httpResponse, err := client.Do(httpRequest)
+	newBody, err := newResponse.Body()
 	if err != nil {
-		return nil, fmt.Errorf("Error executing httpRequest: %w\n", err)
-	}
-	defer httpResponse.Body.Close()
+		return false, fmt.Errorf("Error newResponse.Body(): %w\n", err)
 
-	return httpResponse, nil
+	}
+
+	if string(body) != string(newBody) {
+		fmt.Printf("Response bodies differ!\n")
+		fmt.Printf("newBody: %s\n", string(newBody))
+		return false, nil
+	} else {
+		fmt.Printf("Response bodies same!\n")
+		return true, nil
+	}
 }
 
 func Begin() (ContextWrapperInterface, error) {
@@ -248,24 +254,22 @@ func Begin() (ContextWrapperInterface, error) {
 				return
 			}
 			WriteJsonResponse(body)
-			postDataMap, err := GetPostDataMap(response)
+			postDataMap, err := GetPostDataMap(request)
 			if err != nil {
 				fmt.Printf("Error GetPostDataMap(): %v\n", err)
 				return
 			}
 			mu.Lock()
-			// val, exists := postDataMap.Get("fb_api_req_friendly_name")
-			// if exists {
-			// 	fmt.Printf("fb_api_req_friendly_name %s\n", val)
-			// }
+			val, exists := postDataMap.Get("fb_api_req_friendly_name")
+			if exists {
+				fmt.Printf("fb_api_req_friendly_name %s\n", val)
+			}
 			// postDataMap.Compare(lastPostDataMap)
 			lastPostDataMap = postDataMap
-			_, err = RunRequest(request)
-			if err != nil {
-				fmt.Printf("Error in RunRequest: %v\n", err)
-				return
-			}
 			mu.Unlock()
+
+			// newResponse, _ := RunRequest(request, ctx)
+			// CompareResponses(response, newResponse)
 		}(response)
 	})
 
