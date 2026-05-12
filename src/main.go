@@ -95,18 +95,43 @@ func WriteJsonResponse(body []byte) (int, error) {
 
 }
 
-func ProcessRequest(response playwright.Response) error {
+type OrderedMap struct {
+	data  map[string]string
+	order []string
+}
+
+func (om *OrderedMap) Set(key string, value string) {
+	if _, exists := om.data[key]; !exists {
+		om.order = append(om.order, key)
+	}
+	om.data[key] = value
+}
+
+func (om *OrderedMap) Get(key string) (string, bool) {
+	data, exists := om.data[key]
+	return data, exists
+}
+
+func (om *OrderedMap) Keys() []string {
+	return om.order
+}
+
+func ProcessRequest(response playwright.Response) (OrderedMap, error) {
+	om := OrderedMap{}
 	req := response.Request()
 	data, _ := req.PostData()
 	decoded, err := url.QueryUnescape(data)
 	if err != nil {
-		return fmt.Errorf("error in url.QueryUnescape: %w\n", err)
+		return om, fmt.Errorf("error in url.QueryUnescape: %w\n", err)
 	}
-	for _, p := range strings.Split(decoded, "&") {
-		fmt.Printf("%s\n", p)
+	for p := range strings.SplitSeq(decoded, "&") {
+		key_value := strings.SplitN(p, "=", 2)
+		if len(key_value) < 2 {
+			return om, fmt.Errorf("key_value is not length 2: %s\n", p)
+		}
+		om.Set(key_value[0], key_value[1])
 	}
-	fmt.Printf("\n\n\n")
-	return nil
+	return om, nil
 }
 
 func Begin() (ContextWrapperInterface, error) {
