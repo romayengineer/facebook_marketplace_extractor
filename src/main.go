@@ -11,9 +11,15 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/playwright-community/playwright-go"
+)
+
+var (
+	lastPostDataMap OrderedMap
+	mu              sync.RWMutex
 )
 
 func WriteRandomJsonFile(prefix string, body []byte) error {
@@ -180,12 +186,14 @@ func Begin() (ContextWrapperInterface, error) {
 				return
 			}
 			WriteJsonResponse(body)
-			_, err = GetPostDataMap(response)
+			postDataMap, err := GetPostDataMap(response)
 			if err != nil {
 				fmt.Printf("Error GetPostDataMap(): %v\n", err)
 				return
 			}
-			// lastPostDataMap = postDataMap // #TODO save last postDataMap
+			mu.Lock()
+			lastPostDataMap = postDataMap
+			mu.Unlock()
 		}(response)
 	})
 
