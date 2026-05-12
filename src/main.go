@@ -116,7 +116,7 @@ func (om *OrderedMap) Keys() []string {
 	return om.order
 }
 
-func ProcessRequest(response playwright.Response) (OrderedMap, error) {
+func GetPostDataMap(response playwright.Response) (OrderedMap, error) {
 	om := OrderedMap{}
 	req := response.Request()
 	data, _ := req.PostData()
@@ -170,7 +170,7 @@ func Begin() (ContextWrapperInterface, error) {
 				return
 			}
 			WriteJsonResponse(body)
-			ProcessRequest(response)
+			GetPostDataMap(response)
 		}(response)
 	})
 
