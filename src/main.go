@@ -116,10 +116,20 @@ func (om *OrderedMap) Keys() []string {
 	return om.order
 }
 
+func NewOrderedMap() OrderedMap {
+	return OrderedMap{
+		data:  map[string]string{},
+		order: []string{},
+	}
+}
+
 func GetPostDataMap(response playwright.Response) (OrderedMap, error) {
-	om := OrderedMap{}
+	om := NewOrderedMap()
 	req := response.Request()
-	data, _ := req.PostData()
+	data, err := req.PostData()
+	if err != nil {
+		return om, fmt.Errorf("error in req.PostData: %w\n", err)
+	}
 	decoded, err := url.QueryUnescape(data)
 	if err != nil {
 		return om, fmt.Errorf("error in url.QueryUnescape: %w\n", err)
