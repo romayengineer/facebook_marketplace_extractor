@@ -300,7 +300,7 @@ func GetDetails() {
 	page, _ := ctx.NewPage()
 	pages, _ := NewPages(page)
 
-	ForEachDetail(func(jsonData any) {
+	ForEachDetail(func(filePath string, jsonData any) {
 		productId := GetKey(jsonData, "ID")
 		if productId == nil {
 			return
@@ -319,7 +319,7 @@ func GetDetails() {
 	WaitingForInput()
 }
 
-func ForEachJsonInData(prefix string, process func(jsonData any), sortit bool) {
+func ForEachJsonInData(prefix string, process func(filePath string, jsonData any), sortit bool) {
 	// open and read all files in data folder that start with response and end in .json
 	entries, err := os.ReadDir("data")
 	if err != nil {
@@ -368,16 +368,16 @@ func ForEachJsonInData(prefix string, process func(jsonData any), sortit bool) {
 			continue
 		}
 
-		process(jsonData)
+		process(filePath, jsonData)
 	}
 
 }
 
-func ForEachResponse(process func(jsonData any), sortit bool) {
+func ForEachResponse(process func(filePath string, jsonData any), sortit bool) {
 	ForEachJsonInData("response_", process, sortit)
 }
 
-func ForEachDetail(process func(jsonData any), sortit bool) {
+func ForEachDetail(process func(filePath string, jsonData any), sortit bool) {
 	ForEachJsonInData("detail_", process, sortit)
 }
 
@@ -393,7 +393,7 @@ func SaveProductsIfAny(products []MarketplaceItemDetails) bool {
 }
 
 func ProcessData() {
-	ForEachResponse(func(jsonData any) {
+	ForEachResponse(func(filePath string, jsonData any) {
 		productsA, _ := GetProductsFromSearch(jsonData)
 		if hasAny := SaveProductsIfAny(productsA); hasAny == true {
 			return
@@ -405,6 +405,10 @@ func ProcessData() {
 		productsC, _ := GetProductDetails(jsonData)
 		if hasAny := SaveProductsIfAny(productsC); hasAny == true {
 			return
+		}
+		// no product found in filePath deleting file
+		if err := os.Remove(filePath); err != nil {
+			fmt.Printf("Error deleting file %s: %v\n", filePath, err)
 		}
 	}, true)
 }
