@@ -122,6 +122,27 @@ func (om *OrderedMap) Keys() []string {
 	return om.order
 }
 
+func (om *OrderedMap) Compare(om2 OrderedMap) {
+	var v1 string
+	var v2 string
+	var exists bool
+	equal := 0
+	for _, k := range om.Keys() {
+		if v2, exists = om2.data[k]; !exists {
+			fmt.Printf("key changed %s\n", k)
+		}
+		if v1, exists = om.data[k]; !exists {
+			fmt.Printf("key changed %s\n", k)
+		}
+		if v1 != v2 {
+			fmt.Printf("key changed %s\n", k)
+		} else {
+			equal += 1
+		}
+	}
+	fmt.Printf("keys equal: %02d\n\n\n", equal)
+}
+
 func NewOrderedMap() OrderedMap {
 	return OrderedMap{
 		data:  map[string]string{},
@@ -192,6 +213,7 @@ func Begin() (ContextWrapperInterface, error) {
 				return
 			}
 			mu.Lock()
+			postDataMap.Compare(lastPostDataMap)
 			lastPostDataMap = postDataMap
 			mu.Unlock()
 		}(response)
