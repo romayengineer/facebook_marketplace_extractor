@@ -74,11 +74,11 @@ func ExtractJsonFromBody(body []byte) ([]any, error) {
 
 }
 
-func WriteJsonResponse(jsonDatas []any) (int, error) {
+func WriteJsonResponse(jsonDatas []any, friendly_name string) (int, error) {
 	jsonCounter := 0
 	var err error
 	for _, jsonData := range jsonDatas {
-		if err = WriteRandomJsonFileIndented("response", jsonData); err != nil {
+		if err = WriteRandomJsonFileIndented("response", friendly_name, jsonData); err != nil {
 			return jsonCounter, err
 		}
 		jsonCounter += 1
@@ -255,21 +255,26 @@ func Begin() (ContextWrapperInterface, error) {
 			// 		}
 			// 	}
 			// }
-			WriteJsonResponse(jsonDatas)
+			mu.Lock()
 			postDataMap, err := GetPostDataMap(request)
 			if err != nil {
 				fmt.Printf("Error GetPostDataMap(): %v\n", err)
-				return
+			} else {
+				// postDataMap.Compare(lastPostDataMap)
+				lastPostDataMap = postDataMap
 			}
-			mu.Lock()
+			var friendly_name string
 			val, exists := postDataMap.Get("fb_api_req_friendly_name")
 			if exists {
-				fmt.Printf("fb_api_req_friendly_name %s\n", val)
+				friendly_name = val
+			} else {
+				friendly_name = "unknown"
 			}
-			// postDataMap.Compare(lastPostDataMap)
-			lastPostDataMap = postDataMap
+			_, err = WriteJsonResponse(jsonDatas, friendly_name)
+			if err != nil {
+				fmt.Printf("Error WriteJsonResponse(): %v\n", err)
+			}
 			mu.Unlock()
-
 			// newResponse, _ := RunRequest(request, ctx)
 			// CompareResponses(response, newResponse)
 		}(response)
