@@ -35,11 +35,8 @@ func WriteRandomJsonFile(prefix string, body []byte) error {
 	return nil
 }
 
-func WriteRandomJsonFileIndented(prefix string, body []byte, jsonData any) error {
-	indented, err := json.MarshalIndent(jsonData, "", "  ")
-	if err != nil {
-		return WriteRandomJsonFile(prefix, body)
-	}
+func WriteRandomJsonFileIndented(prefix string, jsonData any) error {
+	indented, _ := json.MarshalIndent(jsonData, "", "  ")
 	return WriteRandomJsonFile(prefix, indented)
 }
 
@@ -67,38 +64,45 @@ func GetKey(data any, path string) any {
 	return current
 }
 
-func WriteJsonResponse(body []byte) (int, error) {
-	jsonCounter := 0
-
+func ExtractJsonFromBody(body []byte) ([]any, error) {
+	jsonDatas := []any{}
 	// make sure the first byte is { (open curly brakets)
 	if body[0] != '{' {
-		return jsonCounter, nil
+		return jsonDatas, nil
 	}
 
 	var jsonData any
 	if err := json.Unmarshal(body, &jsonData); err == nil {
-		jsonCounter += 1
-		return jsonCounter, WriteRandomJsonFileIndented("response", body, jsonData)
+		jsonDatas = append(jsonDatas, jsonData)
+		return jsonDatas, nil
 	}
 
 	var lineData any
-	lines := strings.Split(string(body), "\n")
-	for _, line := range lines {
-		if strings.TrimSpace(line) == "" {
-			continue
-		}
+	for line := range strings.SplitSeq(string(body), "\n") {
 		if line[0] != '{' {
 			continue
 		}
 		lineByte := []byte(line)
 		if err := json.Unmarshal(lineByte, &lineData); err == nil {
-			jsonCounter += 1
-			WriteRandomJsonFileIndented("response", lineByte, lineData)
+			jsonDatas = append(jsonDatas, lineData)
 		}
 	}
 
-	return jsonCounter, nil
+	return jsonDatas, nil
 
+}
+
+func WriteJsonResponse(jsonDatas []any) (int, error) {
+	jsonCounter := 0
+	var err error
+	for _, jsonData := range jsonDatas {
+		if err = WriteRandomJsonFileIndented("response", jsonData); err != nil {
+			return jsonCounter, err
+		}
+		jsonCounter += 1
+	}
+
+	return jsonCounter, nil
 }
 
 type OrderedMap struct {
@@ -241,6 +245,8 @@ func Begin() (ContextWrapperInterface, error) {
 		return nil, fmt.Errorf("error Login: %v", err)
 	}
 
+	// productExtractors := NewProductExtractors()
+
 	ctx.OnResponse(func(response playwright.Response) {
 		go func(resp playwright.Response) {
 			request := response.Request()
@@ -253,7 +259,12 @@ func Begin() (ContextWrapperInterface, error) {
 				fmt.Printf("Error response.Body(): %v\n", err)
 				return
 			}
-			WriteJsonResponse(body)
+			jsonDatas, err := ExtractJsonFromBody(body)
+			if err != nil {
+				fmt.Printf("Error ExtractJsonFromBody(): %v\n", err)
+				return
+			}
+			WriteJsonResponse(jsonDatas)
 			postDataMap, err := GetPostDataMap(request)
 			if err != nil {
 				fmt.Printf("Error GetPostDataMap(): %v\n", err)
