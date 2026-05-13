@@ -43,7 +43,40 @@ type MarketplaceItemDetails struct {
 	IsSold                   any
 }
 
-func GetProductDetails(data any) ([]MarketplaceItemDetails, error) {
+type ProductExtractor struct {
+	validator func(data any) bool
+	extractor func(data any) ([]MarketplaceItemDetails, error)
+}
+
+type ProductExtractors struct {
+	extractors []ProductExtractor
+}
+
+func NewProductExtractors() ProductExtractors {
+	return ProductExtractors{
+		extractors: []ProductExtractor{
+			ProductExtractor{
+				validator: ProductDetailsValid,
+				extractor: ProductDetailsGet,
+			},
+			ProductExtractor{
+				validator: ProductsFromSearchValid,
+				extractor: ProductsFromSearchGet,
+			},
+			ProductExtractor{
+				validator: ProducFromDataValid,
+				extractor: ProducFromDataGet,
+			},
+		},
+	}
+}
+
+func ProductDetailsValid(data any) bool {
+	id := GetKey(data, "data.viewer.marketplace_product_details_page.target.id")
+	return id != nil
+}
+
+func ProductDetailsGet(data any) ([]MarketplaceItemDetails, error) {
 	detail := GetKey(data, "data.viewer.marketplace_product_details_page")
 	if detail == nil {
 		return nil, fmt.Errorf("detail not found")
@@ -104,7 +137,33 @@ func GetProductDetails(data any) ([]MarketplaceItemDetails, error) {
 	return products, nil
 }
 
-func GetProductsFromSearch(data any) ([]MarketplaceItemDetails, error) {
+func ProductsFromSearchValid(data any) bool {
+	edges := GetKey(data, "data.marketplace_search.feed_units.edges")
+	if edges == nil {
+		return false
+	}
+
+	edgesList, ok := edges.([]any)
+	if !ok {
+		return false
+	}
+
+	for _, edge := range edgesList {
+		listing := GetKey(edge, "node.listing")
+		if listing == nil {
+			continue
+		}
+
+		productId := GetKey(listing, "id")
+		if productId != nil {
+			return true
+		}
+	}
+
+	return false
+}
+
+func ProductsFromSearchGet(data any) ([]MarketplaceItemDetails, error) {
 	edges := GetKey(data, "data.marketplace_search.feed_units.edges")
 	if edges == nil {
 		return nil, fmt.Errorf("no marketplace search found")
@@ -179,7 +238,12 @@ func GetProductsFromSearch(data any) ([]MarketplaceItemDetails, error) {
 	return products, nil
 }
 
-func GetProducFromData(data any) ([]MarketplaceItemDetails, error) {
+func ProducFromDataValid(data any) bool {
+	id := GetKey(data, "data.node.entity_id")
+	return id != nil
+}
+
+func ProducFromDataGet(data any) ([]MarketplaceItemDetails, error) {
 	node := GetKey(data, "data.node")
 	if node == nil {
 		return nil, fmt.Errorf("data node not found")

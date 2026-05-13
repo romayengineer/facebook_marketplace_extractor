@@ -393,20 +393,15 @@ func SaveProductsIfAny(products []MarketplaceItemDetails) bool {
 }
 
 func ProcessData() {
+	productExtractors := NewProductExtractors()
 	ForEachResponse(func(filePath string, jsonData any) {
-		productsA, _ := GetProductsFromSearch(jsonData)
-		if hasAny := SaveProductsIfAny(productsA); hasAny == true {
-			return
+		for _, extractor := range productExtractors.extractors {
+			product, _ := extractor.extractor(jsonData)
+			if hasAny := SaveProductsIfAny(product); hasAny == true {
+				return
+			}
 		}
-		productsB, _ := GetProducFromData(jsonData)
-		if hasAny := SaveProductsIfAny(productsB); hasAny == true {
-			return
-		}
-		productsC, _ := GetProductDetails(jsonData)
-		if hasAny := SaveProductsIfAny(productsC); hasAny == true {
-			return
-		}
-		// no product found in filePath deleting file
+		fmt.Printf("no product found deleting file: %s\n", filePath)
 		if err := os.Remove(filePath); err != nil {
 			fmt.Printf("Error deleting file %s: %v\n", filePath, err)
 		}
