@@ -176,6 +176,7 @@ func SetContextEventHandlers(ctx ContextWrapperInterface) {
 			".webp": {},
 			".mp3":  {},
 			".mp4":  {},
+			".svg":  {},
 		},
 	}
 
