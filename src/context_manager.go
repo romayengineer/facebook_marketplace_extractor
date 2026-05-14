@@ -3,13 +3,15 @@ package main
 import (
 	"log"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"github.com/playwright-community/playwright-go"
 )
 
 type ContextEventHandlers struct {
-	ctx ContextWrapperInterface
+	ctx              ContextWrapperInterface
+	extensionsToSkip map[string]struct{}
 }
 
 func (ceh *ContextEventHandlers) OnRequest(request playwright.Request) {
@@ -113,6 +115,12 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 	}(response)
 }
 
+func GetExtension(path string) string {
+	re := regexp.MustCompile(`\.[a-zA-Z0-9]+$`)
+	match := re.FindString(path)
+	return match
+}
+
 func ParseURL(urlString string) {
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
@@ -150,7 +158,9 @@ func (ceh *ContextEventHandlers) Route(r playwright.Route) {
 		r.Continue()
 		return
 	}
-	if strings.HasSuffix(parsedURL.Path, ".jpg") {
+
+	extension := GetExtension(parsedURL.Path)
+	if _, exists := ceh.extensionsToSkip[extension]; exists {
 		r.Abort()
 		return
 	}
@@ -161,6 +171,12 @@ func SetContextEventHandlers(ctx ContextWrapperInterface) {
 
 	contextEventHandlers := ContextEventHandlers{
 		ctx: ctx,
+		extensionsToSkip: map[string]struct{}{
+			".jpg":  {},
+			".webp": {},
+			".mp3":  {},
+			".mp4":  {},
+		},
 	}
 
 	ctx.Route("**", contextEventHandlers.Route)
