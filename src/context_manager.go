@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/playwright-community/playwright-go"
@@ -59,12 +58,12 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 		}
 		body, err := response.Body()
 		if err != nil {
-			fmt.Printf("Error response.Body(): %v\n", err)
+			log.Printf("Error response.Body(): %v\n", err)
 			return
 		}
 		jsonDatas, err := ExtractJsonFromBody(body)
 		if err != nil {
-			fmt.Printf("Error ExtractJsonFromBody(): %v\n", err)
+			log.Printf("Error ExtractJsonFromBody(): %v\n", err)
 			return
 		}
 		// #TODO
@@ -79,7 +78,7 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 		mu.Lock()
 		postDataMap, err := GetPostDataMap(request)
 		if err != nil {
-			fmt.Printf("Error GetPostDataMap(): %v\n", err)
+			log.Printf("Error GetPostDataMap(): %v\n", err)
 			mu.Unlock()
 			return
 		} else {
@@ -99,7 +98,7 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 		}
 		_, err = WriteJsonResponse(jsonDatas, friendlyName)
 		if err != nil {
-			fmt.Printf("Error WriteJsonResponse(): %v\n", err)
+			log.Printf("Error WriteJsonResponse(): %v\n", err)
 		}
 		// if friendlyName == "MarketplacePDPContainerQuery" {
 		// 	newResponse, err := RunRequest(request, ctx)
@@ -118,7 +117,7 @@ func SetContextEventHandlers(ctx ContextWrapperInterface) {
 		ctx: ctx,
 	}
 
-	ctx.OnRequest(ContextEventHandlers.OnRequest)
+	// ctx.OnRequest(ContextEventHandlers.OnRequest)
 
 	ctx.OnResponse(ContextEventHandlers.OnResponse)
 }
