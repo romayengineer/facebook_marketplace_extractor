@@ -6,8 +6,26 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
+
+func WriteFileAndDirs(name string, data []byte, perm os.FileMode) error {
+	if err := os.WriteFile(name, data, perm); err != nil {
+		if strings.Contains(err.Error(), "The system cannot find the path specified.") {
+			nameDir := filepath.Dir(name)
+			if err := os.MkdirAll(nameDir, 0755); err != nil {
+				return err
+			}
+			if err := os.WriteFile(name, data, perm); err != nil {
+				return err
+			}
+			return nil
+		}
+		return err
+	}
+	return nil
+}
 
 func WriteRandomJsonFile(prefix string, friendly_name string, body []byte) error {
 	timestamp := time.Now().UnixNano()
@@ -17,9 +35,7 @@ func WriteRandomJsonFile(prefix string, friendly_name string, body []byte) error
 
 	filename := filepath.Join(fileDir, fmt.Sprintf("%s_%d_%06d.json", prefix, timestamp, random))
 
-	if err := os.WriteFile(filename, body, 0644); err != nil {
-		return err
-	}
+	WriteFileAndDirs(filename, body, 0644)
 
 	return nil
 }
