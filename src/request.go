@@ -43,22 +43,30 @@ func DecodeWithEncoding(data []byte, charset string) (string, error) {
 }
 
 func GetHeaders(request playwright.Request) (map[string]string, error) {
-	// headers := request.Headers()
+	simple := true
 
-	headersDirty, err := request.AllHeaders()
-	if err != nil {
-		return nil, err
-	}
+	if simple {
 
-	headers := map[string]string{}
-	for h, v := range headersDirty {
-		if strings.HasPrefix(h, ":") {
-			continue
+		headers := request.Headers()
+		return headers, nil
+
+	} else {
+
+		headersDirty, err := request.AllHeaders()
+		if err != nil {
+			return nil, err
 		}
-		headers[h] = v
-	}
 
-	return headers, nil
+		headers := map[string]string{}
+		for h, v := range headersDirty {
+			if strings.HasPrefix(h, ":") {
+				continue
+			}
+			headers[h] = v
+		}
+
+		return headers, nil
+	}
 }
 
 func RunRequest(pwRequest playwright.Request, ctx ContextWrapperInterface) (playwright.APIResponse, error) {
