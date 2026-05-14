@@ -11,8 +11,8 @@ import (
 
 func GuessEncoding(data []byte) string {
 	detector := chardet.NewTextDetector()
-	results, _ := detector.DetectAll(data)
-	for _, result := range results {
+	result, err := detector.DetectBest(data)
+	if err == nil && result != nil {
 		return result.Charset
 	}
 	return "utf-8"
