@@ -18,8 +18,38 @@ import (
 )
 
 var (
-	lastPostDataMap OrderedMap
-	mu              sync.RWMutex
+	lastPostDataMap        OrderedMap
+	mu                     sync.RWMutex
+	friendlyNamesToSkipSet = map[string]struct{}{
+		"CometClassicHomeLeftRailContainerQuery":                    {},
+		"CometFeedInlineComposerQuery":                              {},
+		"CometHomeContactChannelsContainerQuery":                    {},
+		"CometHomeContactCommunityChatsContainerQuery":              {},
+		"CometHomeContactGroupsContainerQuery":                      {},
+		"CometHomeContactsContainerQuery":                           {},
+		"CometMarketplaceSetProductItemSeenStateMutation":           {},
+		"CometMegaphoneRootQuery":                                   {},
+		"CometModernHomeFeedQuery":                                  {},
+		"CometNotificationsDropdownQuery":                           {},
+		"CometRightSideHeaderCardsQuery":                            {},
+		"CometSearchBootstrapKeywordsDataSourceQuery":               {},
+		"FBScreenTimeLogger_syncMutation":                           {},
+		"FBYRPTimeLimitsEnforcementQuery":                           {},
+		"MAWVerifyThreadCutover_ContactCapabilities2Query":          {},
+		"MarketplacePDPRightColumnAdsQuery":                         {},
+		"OhaiWebClientMessengerConfigsQuery":                        {},
+		"RTWebCallBlockSettingHooksQuery":                           {},
+		"StoriesTrayRectangularRootQuery":                           {},
+		"fetchMWChatVideoAutoplaySettingQuery":                      {},
+		"useCIXLogMutation":                                         {},
+		"useMWEncryptedBackupsFetchBackupIdsV2Query":                {},
+		"usePseudoBlockedUserInterstitialF3Query":                   {},
+		"useRainbowNativeSurveyDialogPlatformIntegrationPointQuery": {},
+		// "CometMarketplaceSearchContentPaginationQuery":              {},
+		// "MarketplaceCometBrowseFeedLightPaginationQuery":            {},
+		// "MarketplacePDPC2CMediaViewerWithImagesQuery":               {},
+		// "MarketplacePDPContainerQuery":                              {},
+	}
 )
 
 func GetKey(data any, path string) any {
@@ -266,14 +296,17 @@ func Begin() (ContextWrapperInterface, error) {
 				lastPostDataMap = postDataMap
 			}
 			mu.Unlock()
-			var friendly_name string
+			var friendlyName string
 			val, exists := postDataMap.Get("fb_api_req_friendly_name")
 			if exists {
-				friendly_name = val
+				friendlyName = val
 			} else {
-				friendly_name = "unknown"
+				friendlyName = "unknown"
 			}
-			_, err = WriteJsonResponse(jsonDatas, friendly_name)
+			if _, exists := friendlyNamesToSkipSet[friendlyName]; exists {
+				return
+			}
+			_, err = WriteJsonResponse(jsonDatas, friendlyName)
 			if err != nil {
 				fmt.Printf("Error WriteJsonResponse(): %v\n", err)
 			}
