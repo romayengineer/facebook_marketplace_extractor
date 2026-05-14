@@ -2,15 +2,51 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"strings"
 
 	"github.com/playwright-community/playwright-go"
 )
 
+func GetHeaders(request playwright.Request) (map[string]string, error) {
+	// headers := request.Headers()
+
+	headersDirty, err := request.AllHeaders()
+	if err != nil {
+		return nil, err
+	}
+
+	headers := map[string]string{}
+	for h, v := range headersDirty {
+		if strings.HasPrefix(h, ":") {
+			continue
+		}
+		headers[h] = v
+	}
+
+	return headers, nil
+}
+
 func RunRequest(pwRequest playwright.Request, ctx ContextWrapperInterface) (playwright.APIResponse, error) {
 	url := pwRequest.URL()
 	method := pwRequest.Method()
-	data, _ := pwRequest.PostData()
-	headers := pwRequest.Headers()
+	data, err := pwRequest.PostData()
+	if err != nil {
+		return nil, err
+	}
+
+	headers, err := GetHeaders(pwRequest)
+	if err != nil {
+		return nil, fmt.Errorf("Error in GetHeaders: %w\n", err)
+	}
+
+	log.Printf("RunRequest url: %s\n", url)
+	log.Printf("RunRequest method: %s\n", method)
+	// log.Printf("RunRequest data: %s\n", data)
+	for h, v := range headers {
+		log.Printf("RunRequest header: %s : %s\n", h, v)
+	}
+	log.Printf("RunRequest log:\n")
 
 	response, err := ctx.Fetch(url,
 		playwright.APIRequestContextFetchOptions{
@@ -22,16 +58,16 @@ func RunRequest(pwRequest playwright.Request, ctx ContextWrapperInterface) (play
 	if err != nil {
 		return nil, fmt.Errorf("Error executing apiRequest: %w\n", err)
 	}
+	log.Printf("RunRequest end:\n")
 
 	return response, nil
 }
 
 func CompareResponses(response playwright.Response, newResponse playwright.APIResponse) (bool, error) {
-	// if err != nil {
-	// 	fmt.Printf("Error in RunRequest: %v\n", err)
-	// 	return
-	// }
-	// defer newResponse.Dispose()
+
+	if newResponse == nil {
+		return false, fmt.Errorf("Error in CompareResponses, newResponse is null")
+	}
 
 	body, err := response.Body()
 	if err != nil {
@@ -45,11 +81,12 @@ func CompareResponses(response playwright.Response, newResponse playwright.APIRe
 	}
 
 	if string(body) != string(newBody) {
-		fmt.Printf("Response bodies differ!\n")
-		fmt.Printf("newBody: %s\n", string(newBody))
+		log.Printf("Response bodies differ!\n")
+		// fmt.Printf("body: %s\n", string(body))
+		// fmt.Printf("newBody: %s\n", string(newBody))
 		return false, nil
 	} else {
-		fmt.Printf("Response bodies same!\n")
+		log.Printf("Response bodies same!\n")
 		return true, nil
 	}
 }

@@ -259,10 +259,14 @@ func Begin() (ContextWrapperInterface, error) {
 			if err != nil {
 				fmt.Printf("Error WriteJsonResponse(): %v\n", err)
 			}
-			// if friendlyName == "MarketplacePDPContainerQuery" {
-			// 	newResponse, _ := RunRequest(request, ctx)
-			// 	CompareResponses(response, newResponse)
-			// }
+			if friendlyName == "MarketplacePDPContainerQuery" {
+				newResponse, err := RunRequest(request, ctx)
+				if err != nil {
+					log.Printf("Error in RunRequest: %v", err)
+					return
+				}
+				CompareResponses(response, newResponse)
+			}
 		}(response)
 	})
 
