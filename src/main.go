@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"math/rand"
 	"net/url"
@@ -365,27 +366,31 @@ func GetDetails() {
 
 func ForEachJsonInData(prefix string, process func(filePath string, jsonData any), sortit bool) {
 	// open and read all files in data folder that start with response and end in .json
-	entries, err := os.ReadDir("data")
-	if err != nil {
-		log.Fatalf("error reading data directory: %v", err)
-	}
 
 	filePaths := []string{}
 
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
+	err := filepath.WalkDir("data", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
 
-		filename := entry.Name()
-		if !strings.HasPrefix(filename, prefix) || !strings.HasSuffix(filename, ".json") {
-			continue
+		if d.IsDir() {
+			return nil
 		}
 
-		// Read and parse the JSON file
-		filePath := filepath.Join("data", filename)
+		fileName := d.Name()
 
-		filePaths = append(filePaths, filePath)
+		if !strings.HasPrefix(fileName, prefix) || !strings.HasSuffix(fileName, ".json") {
+			return nil
+		}
+
+		filePaths = append(filePaths, path)
+
+		return nil
+	})
+
+	if err != nil {
+		log.Fatalf("error reading data directory: %v", err)
 	}
 
 	if sortit {
