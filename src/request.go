@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"strings"
 
+	"github.com/andybalholm/brotli"
 	"github.com/playwright-community/playwright-go"
 	"github.com/saintfish/chardet"
 	"golang.org/x/text/encoding"
@@ -40,6 +43,15 @@ func DecodeWithEncoding(data []byte, charset string) (string, error) {
 		return "", err
 	}
 	return string(result), nil
+}
+
+func DecompressBrotli(data []byte) ([]byte, error) {
+	reader := brotli.NewReader(bytes.NewReader(data))
+	result, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("error decompressing brotli: %w", err)
+	}
+	return result, nil
 }
 
 func GetHeaders(request playwright.Request) (map[string]string, error) {
@@ -102,6 +114,11 @@ func RunRequest(pwRequest playwright.Request, ctx ContextWrapperInterface) (play
 	}
 	log.Printf("RunRequest end:\n")
 
+	responseHeaders := response.Headers()
+	for h, v := range responseHeaders {
+		log.Printf("Response Header: %s %s\n", h, v)
+	}
+
 	return response, nil
 }
 
@@ -119,7 +136,10 @@ func CompareResponses(response playwright.Response, newResponse playwright.APIRe
 	newBody, err := newResponse.Body()
 	if err != nil {
 		return false, fmt.Errorf("Error newResponse.Body(): %w\n", err)
-
+	}
+	newBody, err = DecompressBrotli(newBody)
+	if err != nil {
+		return false, fmt.Errorf("Error DecompressBrotli(): %w\n", err)
 	}
 
 	bodyEncoding := GuessEncoding(body)

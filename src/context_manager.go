@@ -42,13 +42,19 @@ func (ceh *ContextEventHandlers) OnRequest(request playwright.Request) {
 			if err != nil {
 				log.Printf("Error response.Body(): %v\n", err)
 			}
-			bodyEncoding := GuessEncoding(body)
-			bodyDecoded, err := DecodeWithEncoding(body, bodyEncoding)
+			// bodyEncoding := GuessEncoding(body)
+			// bodyDecoded, err := DecodeWithEncoding(body, bodyEncoding)
+			// if err != nil {
+			// 	log.Printf("Error DecodeWithEncoding(): %v\n", err)
+			// 	return
+			// }
+			log.Printf("OnRequest body original: %s\n", body[:100])
+			body, err = DecompressBrotli(body)
 			if err != nil {
-				log.Printf("Error DecodeWithEncoding(): %v\n", err)
+				log.Printf("Error DecompressBrotli(): %v\n", err)
 				return
 			}
-			log.Printf("OnRequest body: %s\n", bodyDecoded[:100])
+			log.Printf("OnRequest body decompressed: %s\n", body[:100])
 		}
 	}(request)
 }
@@ -182,7 +188,7 @@ func SetContextEventHandlers(ctx ContextWrapperInterface) {
 
 	ctx.Route("**", contextEventHandlers.Route)
 
-	// ctx.OnRequest(contextEventHandlers.OnRequest)
+	ctx.OnRequest(contextEventHandlers.OnRequest)
 
 	ctx.OnResponse(contextEventHandlers.OnResponse)
 }
