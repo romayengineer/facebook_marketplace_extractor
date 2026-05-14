@@ -18,6 +18,11 @@ var (
 	lastPostDataMap        OrderedMap
 	mu                     sync.RWMutex
 	friendlyNamesToSkipSet = map[string]struct{}{
+		"CometHomeCreateMenuContentQuery":                           {},
+		"CometHomeMegaMenuAllProductsQuery":                         {},
+		"CometMessagingJewelDropdownEBUpsellContainerQuery":         {},
+		"CometMessagingJewelDropdownOnboardingUpsellQuery":          {},
+		"useMWEBOnboardingLogHardblockImpressionMutation":           {},
 		"CometHovercardQueryRendererQuery":                          {},
 		"CometActorGatewayHandlerQuery":                             {},
 		"CometClassicHomeLeftRailContainerQuery":                    {},
