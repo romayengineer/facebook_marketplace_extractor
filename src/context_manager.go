@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"net/url"
+	"strings"
 
 	"github.com/playwright-community/playwright-go"
 )
@@ -111,13 +113,59 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 	}(response)
 }
 
+func ParseURL(urlString string) {
+	parsedURL, err := url.Parse(urlString)
+	if err != nil {
+		log.Printf("Error parsing URL: %v\n", err)
+		return
+	}
+
+	log.Printf("Protocol: %s\n", parsedURL.Scheme)
+	log.Printf("Host: %s\n", parsedURL.Host)
+	log.Printf("Hostname: %s\n", parsedURL.Hostname())
+	log.Printf("Port: %s\n", parsedURL.Port())
+	log.Printf("Path: %s\n", parsedURL.Path)
+	log.Printf("Query: %s\n", parsedURL.RawQuery)
+	log.Printf("Fragment: %s\n", parsedURL.Fragment)
+
+	if parsedURL.RawQuery != "" {
+		query := parsedURL.Query()
+		for key, values := range query {
+			log.Printf("Query param %s: %v\n", key, values)
+		}
+	}
+}
+
+func (ceh *ContextEventHandlers) Route(r playwright.Route) {
+	request := r.Request()
+	method := request.Method()
+	if strings.ToLower(method) != "get" {
+		r.Continue()
+		return
+	}
+	urlString := request.URL()
+	parsedURL, err := url.Parse(urlString)
+	if err != nil {
+		log.Printf("Error parsing URL: %v\n", err)
+		r.Continue()
+		return
+	}
+	if strings.HasSuffix(parsedURL.Path, ".jpg") {
+		r.Abort()
+		return
+	}
+	r.Continue()
+}
+
 func SetContextEventHandlers(ctx ContextWrapperInterface) {
 
-	ContextEventHandlers := ContextEventHandlers{
+	contextEventHandlers := ContextEventHandlers{
 		ctx: ctx,
 	}
 
-	// ctx.OnRequest(ContextEventHandlers.OnRequest)
+	ctx.Route("**", contextEventHandlers.Route)
 
-	ctx.OnResponse(ContextEventHandlers.OnResponse)
+	// ctx.OnRequest(contextEventHandlers.OnRequest)
+
+	ctx.OnResponse(contextEventHandlers.OnResponse)
 }
