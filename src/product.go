@@ -262,6 +262,11 @@ func ProducFromDataGet(data any) ([]MarketplaceItemDetails, error) {
 
 	productCategory := GetKey(node, "data.upsell_type")
 
+	// do not save this caterogy
+	if productCategory != nil && productCategory == "CATEGORY_MISCELLANEOUS_UPSELL" {
+		productCategory = nil
+	}
+
 	productPriceCurrency := GetKey(node, "data.price.currency")
 
 	location := GetKey(node, "entity.location")
