@@ -27,7 +27,8 @@ type FileStore[T any] interface {
 
 func NewProductFileStore(productId string) FileStore[MarketplaceItemDetails] {
 	fileName := fmt.Sprintf("detail_%v.json", productId)
-	return &FileStoreImpl[MarketplaceItemDetails]{id: productId, fileName: fileName, fileDir: DataDir}
+	fileDir := fmt.Sprintf("%v/__Details", DataDir)
+	return &FileStoreImpl[MarketplaceItemDetails]{id: productId, fileName: fileName, fileDir: fileDir}
 }
 
 func (pfs *FileStoreImpl[T]) SetDir(dir string) {
@@ -83,7 +84,7 @@ func (pfs *FileStoreImpl[T]) Save(data T) (*T, error) {
 
 	pfs.mu.Lock()
 	filePath := filepath.Join(pfs.fileDir, pfs.fileName)
-	if err := os.WriteFile(filePath, indented, 0644); err != nil {
+	if err := WriteFileAndDirs(filePath, indented, 0644); err != nil {
 		pfs.mu.Unlock()
 		return nil, err
 	}
