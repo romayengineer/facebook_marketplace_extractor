@@ -34,7 +34,7 @@ func WriteRandomJsonFile(prefix string, friendly_name string, body []byte) error
 	timestamp := time.Now().UnixNano()
 	random := rand.Intn(1000000)
 
-	fileDir := filepath.Join("data", friendly_name)
+	fileDir := filepath.Join(DataDir, friendly_name)
 
 	filename := filepath.Join(fileDir, fmt.Sprintf("%s_%d_%06d.json", prefix, timestamp, random))
 
@@ -53,7 +53,7 @@ func ForEachJsonInData(prefix string, process func(filePath string, jsonData any
 
 	filePaths := []string{}
 
-	err := filepath.WalkDir("data", func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(DataDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}

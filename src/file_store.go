@@ -9,6 +9,8 @@ import (
 	"sync"
 )
 
+const DataDir = "data"
+
 type FileStoreImpl[T any] struct {
 	id       string
 	fileName string
@@ -25,7 +27,7 @@ type FileStore[T any] interface {
 
 func NewProductFileStore(productId string) FileStore[MarketplaceItemDetails] {
 	fileName := fmt.Sprintf("detail_%v.json", productId)
-	return &FileStoreImpl[MarketplaceItemDetails]{id: productId, fileName: fileName, fileDir: "data"}
+	return &FileStoreImpl[MarketplaceItemDetails]{id: productId, fileName: fileName, fileDir: DataDir}
 }
 
 func (pfs *FileStoreImpl[T]) SetDir(dir string) {
