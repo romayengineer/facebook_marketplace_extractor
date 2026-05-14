@@ -259,10 +259,13 @@ func Begin() (ContextWrapperInterface, error) {
 			postDataMap, err := GetPostDataMap(request)
 			if err != nil {
 				fmt.Printf("Error GetPostDataMap(): %v\n", err)
+				mu.Unlock()
+				return
 			} else {
 				// postDataMap.Compare(lastPostDataMap)
 				lastPostDataMap = postDataMap
 			}
+			mu.Unlock()
 			var friendly_name string
 			val, exists := postDataMap.Get("fb_api_req_friendly_name")
 			if exists {
@@ -274,7 +277,6 @@ func Begin() (ContextWrapperInterface, error) {
 			if err != nil {
 				fmt.Printf("Error WriteJsonResponse(): %v\n", err)
 			}
-			mu.Unlock()
 			// newResponse, _ := RunRequest(request, ctx)
 			// CompareResponses(response, newResponse)
 		}(response)
