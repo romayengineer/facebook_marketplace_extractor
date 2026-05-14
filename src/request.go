@@ -6,7 +6,17 @@ import (
 	"strings"
 
 	"github.com/playwright-community/playwright-go"
+	"github.com/saintfish/chardet"
 )
+
+func GuessEncoding(data []byte) string {
+	detector := chardet.NewTextDetector()
+	results, _ := detector.DetectAll(data)
+	for _, result := range results {
+		return result.Charset
+	}
+	return "utf-8"
+}
 
 func GetHeaders(request playwright.Request) (map[string]string, error) {
 	// headers := request.Headers()
@@ -79,6 +89,11 @@ func CompareResponses(response playwright.Response, newResponse playwright.APIRe
 		return false, fmt.Errorf("Error newResponse.Body(): %w\n", err)
 
 	}
+
+	bodyEncoding := GuessEncoding(body)
+	newBodyEncoding := GuessEncoding(newBody)
+
+	log.Printf("Body encoding: %s, NewBody encoding: %s\n", bodyEncoding, newBodyEncoding)
 
 	if string(body) != string(newBody) {
 		log.Printf("Response bodies differ!\n")
