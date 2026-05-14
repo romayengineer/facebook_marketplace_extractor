@@ -79,7 +79,9 @@ func ForEachJsonInData(prefix string, process func(filePath string, jsonData any
 
 	if sortit {
 		// if sort is true sort filePaths in ascendant order
-		sort.Strings(filePaths)
+		sort.Slice(filePaths, func(i, j int) bool {
+			return filepath.Base(filePaths[i]) < filepath.Base(filePaths[j])
+		})
 	} else {
 		// else sort filePaths in random order
 		rand.Shuffle(len(filePaths), func(i, j int) { filePaths[i], filePaths[j] = filePaths[j], filePaths[i] })
