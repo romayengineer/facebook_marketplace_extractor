@@ -43,7 +43,7 @@ func DecodeWithEncoding(data []byte, charset string) (string, error) {
 }
 
 func GetHeaders(request playwright.Request) (map[string]string, error) {
-	simple := true
+	simple := false
 
 	if simple {
 
