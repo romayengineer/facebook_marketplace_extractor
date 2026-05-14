@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/url"
 )
 
@@ -45,5 +46,6 @@ func (pl *Pages) MarketpaceSearch(query string) error {
 
 func (pl *Pages) GoToProduct(id string) error {
 	baseUrl := fmt.Sprintf("https://www.facebook.com/marketplace/item/%s", id)
+	log.Printf("GoToProduct %s\n", baseUrl)
 	return pl.Page.Goto(baseUrl)
 }
