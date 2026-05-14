@@ -18,6 +18,7 @@ var (
 	lastPostDataMap        OrderedMap
 	mu                     sync.RWMutex
 	friendlyNamesToSkipSet = map[string]struct{}{
+		"CometHovercardQueryRendererQuery":                          {},
 		"CometActorGatewayHandlerQuery":                             {},
 		"CometClassicHomeLeftRailContainerQuery":                    {},
 		"CometFeedInlineComposerQuery":                              {},
