@@ -310,8 +310,10 @@ func Begin() (ContextWrapperInterface, error) {
 			if err != nil {
 				fmt.Printf("Error WriteJsonResponse(): %v\n", err)
 			}
-			// newResponse, _ := RunRequest(request, ctx)
-			// CompareResponses(response, newResponse)
+			// if friendlyName == "MarketplacePDPContainerQuery" {
+			// 	newResponse, _ := RunRequest(request, ctx)
+			// 	CompareResponses(response, newResponse)
+			// }
 		}(response)
 	})
 
