@@ -256,8 +256,8 @@ func GetDetails() {
 		if productId == nil {
 			return
 		}
-		description := GetKey(jsonData, "Description")
-		if description != nil {
+		PriceAmount := GetKey(jsonData, "PriceAmount")
+		if PriceAmount != nil {
 			return
 		}
 		// fmt.Printf("product %s does not have description\n", productId.(string))
