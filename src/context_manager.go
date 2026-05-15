@@ -223,7 +223,8 @@ func SetContextEventHandlers(ctx ContextWrapperInterface) {
 		},
 	}
 
-	// if contextEventHandlers.Route is enabled then the response is invalid
+	// if contextEventHandlers.Route is enabled then the response
+	// from graphqh is invalid because there are missing headers
 	// ctx.Route("**", contextEventHandlers.Route)
 
 	// ctx.OnRequest(contextEventHandlers.OnRequest)

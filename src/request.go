@@ -95,8 +95,13 @@ func CompareResponses(response playwright.Response, newResponse playwright.APIRe
 
 	bodyDecoded := string(body)
 
-	decompressed, _ := DecompressZstd(newBody)
-	newBodyDecoded := string(decompressed)
+	var newBodyDecoded string
+	decompressed, err := DecompressZstd(newBody)
+	if err != nil {
+		newBodyDecoded = string(newBody)
+	} else {
+		newBodyDecoded = string(decompressed)
+	}
 
 	if AreStringsEqual(bodyDecoded, newBodyDecoded) {
 		log.Printf("Response bodies same!\n\n\n\n")
