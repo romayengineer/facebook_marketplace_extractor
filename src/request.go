@@ -31,10 +31,6 @@ func GetHeaders(request playwright.Request, simple bool) (map[string]string, err
 		}
 	}
 
-	keys := len(headers)
-
-	log.Printf("GetHeaders headers count: %02d\n", keys)
-
 	return headers, nil
 }
 
@@ -56,6 +52,7 @@ func RunRequest(ctx ContextWrapperInterface, pwRequest playwright.Request, heade
 
 	// log.Printf("RunRequest data: %s\n", data)
 
+	log.Printf("RunRequest request headers count: %02d\n", len(headers))
 	for h, v := range headers {
 		log.Printf("RunRequest request header: %s : %s\n", h, v)
 	}
@@ -72,6 +69,7 @@ func RunRequest(ctx ContextWrapperInterface, pwRequest playwright.Request, heade
 	}
 
 	responseHeaders := response.Headers()
+	log.Printf("RunRequest response headers count: %02d\n", len(responseHeaders))
 	for h, v := range responseHeaders {
 		log.Printf("RunRequest response header: %s %s\n", h, v)
 	}
