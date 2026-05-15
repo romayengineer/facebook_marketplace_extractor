@@ -63,22 +63,35 @@ type ContextEventHandlers struct {
 	extensionsToSkip map[string]struct{}
 }
 
+type ShouldProcess struct {
+	skip         bool
+	postDataMap  OrderedMap
+	friendlyName string
+}
+
+func ShouldSkipRequest(request playwright.Request) ShouldProcess {
+	url := request.URL()
+	if url != "https://www.facebook.com/api/graphql/" {
+		return ShouldProcess{skip: true}
+	}
+	postDataMap, err := GetPostDataMap(request)
+	if err != nil {
+		return ShouldProcess{skip: true, postDataMap: postDataMap}
+	}
+	mu.Lock()
+	lastPostDataMap = postDataMap
+	mu.Unlock()
+	friendlyName := postDataMap.GetDefault("fb_api_req_friendly_name", "unknown")
+	if _, exists := friendlyNamesToSkipSet[friendlyName]; exists {
+		return ShouldProcess{skip: true, postDataMap: postDataMap, friendlyName: friendlyName}
+	}
+	return ShouldProcess{skip: false, postDataMap: postDataMap, friendlyName: friendlyName}
+}
+
 func (ceh *ContextEventHandlers) OnRequest(request playwright.Request) {
 	go func(request playwright.Request) {
-		url := request.URL()
-		if url != "https://www.facebook.com/api/graphql/" {
-			return
-		}
-		// log.Printf("OnRequest request.URL(): %s\n", url)
-		postDataMap, err := GetPostDataMap(request)
-		if err != nil {
-			return
-		}
-		friendlyName := postDataMap.GetDefault("fb_api_req_friendly_name", "unknown")
-		if _, exists := friendlyNamesToSkipSet[friendlyName]; exists {
-			return
-		}
-		if friendlyName != "MarketplacePDPContainerQuery" {
+		shouldSkipRequest := ShouldSkipRequest(request)
+		if shouldSkipRequest.skip {
 			return
 		}
 		newResponse, err := RunRequest(ceh.ctx, request, false)
@@ -109,23 +122,8 @@ func (ceh *ContextEventHandlers) OnRequest(request playwright.Request) {
 func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 	go func(resp playwright.Response) {
 		request := response.Request()
-		url := request.URL()
-		if url != "https://www.facebook.com/api/graphql/" {
-			return
-		}
-		mu.Lock()
-		postDataMap, err := GetPostDataMap(request)
-		if err != nil {
-			log.Printf("Error GetPostDataMap(): %v\n", err)
-			mu.Unlock()
-			return
-		} else {
-			// postDataMap.Compare(lastPostDataMap)
-			lastPostDataMap = postDataMap
-		}
-		mu.Unlock()
-		friendlyName := postDataMap.GetDefault("fb_api_req_friendly_name", "unknown")
-		if _, exists := friendlyNamesToSkipSet[friendlyName]; exists {
+		shouldSkipRequest := ShouldSkipRequest(request)
+		if shouldSkipRequest.skip {
 			return
 		}
 		body, err := response.Body()
@@ -138,20 +136,11 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 			log.Printf("Error ExtractJsonFromBody(): %v\n", err)
 			return
 		}
-		// #TODO
-		// for _, jsonData := range jsonDatas {
-		// 	for _, extractor := range productExtractors.extractors {
-		// 		valid := extractor.validator(jsonData)
-		// 		if valid {
-
-		// 		}
-		// 	}
-		// }
-		_, err = WriteJsonResponse(jsonDatas, friendlyName)
+		_, err = WriteJsonResponse(jsonDatas, shouldSkipRequest.friendlyName)
 		if err != nil {
 			log.Printf("Error WriteJsonResponse(): %v\n", err)
 		}
-		if friendlyName != "MarketplacePDPContainerQuery" {
+		if shouldSkipRequest.friendlyName != "MarketplacePDPContainerQuery" {
 			return
 		}
 		newResponse, err := RunRequest(ceh.ctx, request, false)
