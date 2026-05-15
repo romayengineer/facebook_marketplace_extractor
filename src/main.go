@@ -173,13 +173,15 @@ func ProcessData() {
 			}
 		}
 
-		fmt.Printf("no product found deleting file: %s\n", filePath)
+		log.Printf("ProcessData no product found deleting file: %s\n", filePath)
 		if err := os.Remove(filePath); err != nil {
-			fmt.Printf("Error deleting file %s: %v\n", filePath, err)
+			log.Printf("ProcessData Error deleting file %s: %v\n", filePath, err)
 		}
 
 		return true
 	}, true)
+
+	log.Printf("ProcessData all files processed\n")
 }
 
 func main() {

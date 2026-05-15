@@ -118,6 +118,8 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 
 	}, false)
 
+	ProcessData()
+
 	return newResponse, err
 }
 
