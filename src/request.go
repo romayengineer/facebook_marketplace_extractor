@@ -97,9 +97,11 @@ func CompareResponses(response playwright.Response, newResponse playwright.APIRe
 
 	decompressed, _ := DecompressZstd(newBody)
 	newBodyDecoded := string(decompressed)
-	// newBodyDecoded := string(newBody)
 
-	if bodyDecoded != newBodyDecoded {
+	if AreStringsEqual(bodyDecoded, newBodyDecoded) {
+		log.Printf("Response bodies same!\n\n\n\n")
+		return true, nil
+	} else {
 		bodyDecodedLen := len(bodyDecoded)
 		newBodyDecodedLen := len(newBodyDecoded)
 		log.Printf("body: %s\n", bodyDecoded[:min(bodyDecodedLen, 300)])
@@ -108,8 +110,5 @@ func CompareResponses(response playwright.Response, newResponse playwright.APIRe
 		log.Printf("newBody length: %02d\n", newBodyDecodedLen)
 		log.Printf("Response bodies differ!\n\n\n\n")
 		return false, nil
-	} else {
-		log.Printf("Response bodies same!\n\n\n\n")
-		return true, nil
 	}
 }
