@@ -48,8 +48,7 @@ func WriteRandomJsonFileIndented(prefix string, friendly_name string, jsonData a
 	return WriteRandomJsonFile(prefix, friendly_name, indented)
 }
 
-func ForEachJsonInData(prefix string, process func(filePath string, jsonData any), sortit bool) {
-	// open and read all files in data folder that start with response and end in .json
+func GetFilePaths(prefix string, sortit bool) []string {
 
 	filePaths := []string{}
 
@@ -86,6 +85,14 @@ func ForEachJsonInData(prefix string, process func(filePath string, jsonData any
 		// else sort filePaths in random order
 		rand.Shuffle(len(filePaths), func(i, j int) { filePaths[i], filePaths[j] = filePaths[j], filePaths[i] })
 	}
+
+	return filePaths
+}
+
+func ForEachJsonInData(prefix string, process func(filePath string, jsonData any), sortit bool) {
+	// open and read all files in data folder that start with response and end in .json
+
+	filePaths := GetFilePaths(prefix, sortit)
 
 	for _, filePath := range filePaths {
 
