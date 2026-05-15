@@ -8,15 +8,9 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/playwright-community/playwright-go"
-)
-
-var (
-	lastPostDataMap OrderedMap
-	mu              sync.RWMutex
 )
 
 func GetKey(data any, path string) any {

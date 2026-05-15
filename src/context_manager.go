@@ -5,10 +5,13 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/playwright-community/playwright-go"
 )
 
+var mu sync.RWMutex
+var lastPostDataMap OrderedMap
 var friendlyNamesToSkipSet = map[string]struct{}{
 	"CometActorGatewayHandlerQuery":                                              {},
 	"CometClassicHomeLeftRailContainerQuery":                                     {},
