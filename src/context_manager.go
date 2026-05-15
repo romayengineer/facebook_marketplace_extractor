@@ -115,6 +115,21 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 		if url != "https://www.facebook.com/api/graphql/" {
 			return
 		}
+		mu.Lock()
+		postDataMap, err := GetPostDataMap(request)
+		if err != nil {
+			log.Printf("Error GetPostDataMap(): %v\n", err)
+			mu.Unlock()
+			return
+		} else {
+			// postDataMap.Compare(lastPostDataMap)
+			lastPostDataMap = postDataMap
+		}
+		mu.Unlock()
+		friendlyName := postDataMap.GetDefault("fb_api_req_friendly_name", "unknown")
+		if _, exists := friendlyNamesToSkipSet[friendlyName]; exists {
+			return
+		}
 		body, err := response.Body()
 		if err != nil {
 			log.Printf("Error response.Body(): %v\n", err)
@@ -134,27 +149,6 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 		// 		}
 		// 	}
 		// }
-		mu.Lock()
-		postDataMap, err := GetPostDataMap(request)
-		if err != nil {
-			log.Printf("Error GetPostDataMap(): %v\n", err)
-			mu.Unlock()
-			return
-		} else {
-			// postDataMap.Compare(lastPostDataMap)
-			lastPostDataMap = postDataMap
-		}
-		mu.Unlock()
-		var friendlyName string
-		val, exists := postDataMap.Get("fb_api_req_friendly_name")
-		if exists {
-			friendlyName = val
-		} else {
-			friendlyName = "unknown"
-		}
-		if _, exists := friendlyNamesToSkipSet[friendlyName]; exists {
-			return
-		}
 		_, err = WriteJsonResponse(jsonDatas, friendlyName)
 		if err != nil {
 			log.Printf("Error WriteJsonResponse(): %v\n", err)

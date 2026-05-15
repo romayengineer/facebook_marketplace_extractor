@@ -95,6 +95,14 @@ func (om *OrderedMap) Get(key string) (string, bool) {
 	return data, exists
 }
 
+func (om *OrderedMap) GetDefault(key string, def string) string {
+	val, exists := om.Get(key)
+	if exists {
+		return val
+	}
+	return def
+}
+
 func (om *OrderedMap) Keys() []string {
 	return om.order
 }
