@@ -34,13 +34,9 @@ func GetHeaders(request playwright.Request, simple bool) (map[string]string, err
 	return headers, nil
 }
 
-func RunRequest(ctx ContextWrapperInterface, pwRequest playwright.Request, headersSimple bool) (playwright.APIResponse, error) {
+func RunRequestWithData(ctx ContextWrapperInterface, pwRequest playwright.Request, data string, headersSimple bool) (playwright.APIResponse, error) {
 	url := pwRequest.URL()
 	method := pwRequest.Method()
-	data, err := pwRequest.PostData()
-	if err != nil {
-		return nil, fmt.Errorf("Error in PostData: %w\n", err)
-	}
 
 	headers, err := GetHeaders(pwRequest, headersSimple)
 	if err != nil {
@@ -77,6 +73,14 @@ func RunRequest(ctx ContextWrapperInterface, pwRequest playwright.Request, heade
 	return response, nil
 }
 
+func RunRequest(ctx ContextWrapperInterface, pwRequest playwright.Request, headersSimple bool) (playwright.APIResponse, error) {
+	data, err := pwRequest.PostData()
+	if err != nil {
+		return nil, fmt.Errorf("Error in PostData: %w\n", err)
+	}
+	return RunRequestWithData(ctx, pwRequest, data, headersSimple)
+}
+
 func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Request, shouldSkipRequest ShouldProcess) (playwright.APIResponse, error) {
 	friendlyNameToProcess := "MarketplacePDPContainerQuery"
 
@@ -85,8 +89,9 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 	}
 
 	shouldSkipRequest.postDataMap.Print()
+	postData, _ := GetPostData(shouldSkipRequest.postDataMap)
 
-	response, err := RunRequest(ctx, pwRequest, false)
+	response, err := RunRequestWithData(ctx, pwRequest, postData, false)
 	if err != nil {
 		return response, err
 	}
