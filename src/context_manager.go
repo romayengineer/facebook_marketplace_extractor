@@ -149,12 +149,12 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 			return
 		}
 		CompareResponses(resp, newResponse)
-		newResponse, err = RunRequest(ceh.ctx, request, true)
-		if err != nil {
-			log.Printf("Error in RunRequest: %v", err)
-			return
-		}
-		CompareResponses(resp, newResponse)
+		// newResponse, err = RunRequest(ceh.ctx, request, true)
+		// if err != nil {
+		// 	log.Printf("Error in RunRequest: %v", err)
+		// 	return
+		// }
+		// CompareResponses(resp, newResponse)
 	}(response)
 }
 
@@ -223,7 +223,8 @@ func SetContextEventHandlers(ctx ContextWrapperInterface) {
 		},
 	}
 
-	ctx.Route("**", contextEventHandlers.Route)
+	// if contextEventHandlers.Route is enabled then the response is invalid
+	// ctx.Route("**", contextEventHandlers.Route)
 
 	// ctx.OnRequest(contextEventHandlers.OnRequest)
 
