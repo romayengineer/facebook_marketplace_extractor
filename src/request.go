@@ -10,10 +10,11 @@ import (
 
 func GetHeaders(request playwright.Request, simple bool) (map[string]string, error) {
 
+	headers := map[string]string{}
+
 	if simple {
 
-		headers := request.Headers()
-		return headers, nil
+		headers = request.Headers()
 
 	} else {
 
@@ -22,16 +23,19 @@ func GetHeaders(request playwright.Request, simple bool) (map[string]string, err
 			return nil, err
 		}
 
-		headers := map[string]string{}
 		for h, v := range headersDirty {
 			if strings.HasPrefix(h, ":") {
 				continue
 			}
 			headers[h] = v
 		}
-
-		return headers, nil
 	}
+
+	keys := len(headers)
+
+	log.Printf("GetHeaders headers count: %02d\n", keys)
+
+	return headers, nil
 }
 
 func RunRequest(ctx ContextWrapperInterface, pwRequest playwright.Request, headersSimple bool) (playwright.APIResponse, error) {
@@ -52,9 +56,9 @@ func RunRequest(ctx ContextWrapperInterface, pwRequest playwright.Request, heade
 
 	// log.Printf("RunRequest data: %s\n", data)
 
-	// for h, v := range headers {
-	// 	log.Printf("RunRequest request header: %s : %s\n", h, v)
-	// }
+	for h, v := range headers {
+		log.Printf("RunRequest request header: %s : %s\n", h, v)
+	}
 
 	response, err := ctx.Fetch(url,
 		playwright.APIRequestContextFetchOptions{
@@ -67,10 +71,10 @@ func RunRequest(ctx ContextWrapperInterface, pwRequest playwright.Request, heade
 		return nil, fmt.Errorf("Error executing apiRequest: %w\n", err)
 	}
 
-	// responseHeaders := response.Headers()
-	// for h, v := range responseHeaders {
-	// 	log.Printf("RunRequest response header: %s %s\n", h, v)
-	// }
+	responseHeaders := response.Headers()
+	for h, v := range responseHeaders {
+		log.Printf("RunRequest response header: %s %s\n", h, v)
+	}
 
 	return response, nil
 }
@@ -113,12 +117,12 @@ func CompareResponses(response playwright.Response, newResponse playwright.APIRe
 	// log.Printf("Body encoding: %s, NewBody encoding: %s\n", bodyEncoding, newBodyEncoding)
 
 	if bodyDecoded != newBodyDecoded {
-		log.Printf("Response bodies differ!\n")
 		log.Printf("body: %s\n", bodyDecoded[:min(len(bodyDecoded), 300)])
 		log.Printf("newBody: %s\n", newBodyDecoded[:min(len(newBodyDecoded), 300)])
+		log.Printf("Response bodies differ!\n\n\n\n")
 		return false, nil
 	} else {
-		log.Printf("Response bodies same!\n")
+		log.Printf("Response bodies same!\n\n\n\n")
 		return true, nil
 	}
 }
