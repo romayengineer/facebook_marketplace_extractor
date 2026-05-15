@@ -89,12 +89,12 @@ func ShouldSkipRequest(request playwright.Request) ShouldProcess {
 }
 
 func (ceh *ContextEventHandlers) OnRequest(request playwright.Request) {
-	go func(request playwright.Request) {
-		shouldSkipRequest := ShouldSkipRequest(request)
+	go func(req playwright.Request) {
+		shouldSkipRequest := ShouldSkipRequest(req)
 		if shouldSkipRequest.skip {
 			return
 		}
-		newResponse, err := RunRequest(ceh.ctx, request, false)
+		newResponse, err := RunRequest(ceh.ctx, req, false)
 		if err != nil {
 			log.Printf("Error in RunRequest: %v", err)
 			return
@@ -121,14 +121,14 @@ func (ceh *ContextEventHandlers) OnRequest(request playwright.Request) {
 
 func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 	go func(resp playwright.Response) {
-		request := response.Request()
+		request := resp.Request()
 		shouldSkipRequest := ShouldSkipRequest(request)
 		if shouldSkipRequest.skip {
 			return
 		}
-		body, err := response.Body()
+		body, err := resp.Body()
 		if err != nil {
-			log.Printf("Error response.Body(): %v\n", err)
+			log.Printf("Error resp.Body(): %v\n", err)
 			return
 		}
 		jsonDatas, err := ExtractJsonFromBody(body)
@@ -148,13 +148,13 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 			log.Printf("Error in RunRequest: %v", err)
 			return
 		}
-		CompareResponses(response, newResponse)
+		CompareResponses(resp, newResponse)
 		newResponse, err = RunRequest(ceh.ctx, request, true)
 		if err != nil {
 			log.Printf("Error in RunRequest: %v", err)
 			return
 		}
-		CompareResponses(response, newResponse)
+		CompareResponses(resp, newResponse)
 	}(response)
 }
 
