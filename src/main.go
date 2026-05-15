@@ -15,53 +15,8 @@ import (
 )
 
 var (
-	lastPostDataMap        OrderedMap
-	mu                     sync.RWMutex
-	friendlyNamesToSkipSet = map[string]struct{}{
-		"CometActorGatewayHandlerQuery":                                              {},
-		"CometClassicHomeLeftRailContainerQuery":                                     {},
-		"CometFeedInlineComposerQuery":                                               {},
-		"CometHomeContactChannelsContainerQuery":                                     {},
-		"CometHomeContactCommunityChatsContainerQuery":                               {},
-		"CometHomeContactGroupsContainerQuery":                                       {},
-		"CometHomeContactsContainerQuery":                                            {},
-		"CometHomeCreateMenuContentQuery":                                            {},
-		"CometHomeMegaMenuAllProductsQuery":                                          {},
-		"CometHovercardQueryRendererQuery":                                           {},
-		"CometLinkSharingInlineDisclosureCountQuery":                                 {},
-		"CometMarketplaceSetProductItemSeenStateMutation":                            {},
-		"CometMegaphoneRootQuery":                                                    {},
-		"CometMessagingJewelDropdownEBUpsellContainerQuery":                          {},
-		"CometMessagingJewelDropdownOnboardingUpsellQuery":                           {},
-		"CometModernHomeFeedQuery":                                                   {},
-		"CometNotificationsDropdownQuery":                                            {},
-		"CometRightSideHeaderCardsQuery":                                             {},
-		"CometSearchBootstrapKeywordsDataSourceQuery":                                {},
-		"CometUnifiedShareSheetDialogQuery":                                          {},
-		"FBScreenTimeLogger_syncMutation":                                            {},
-		"FBYRPTimeLimitsEnforcementQuery":                                            {},
-		"fetchMWChatVideoAutoplaySettingQuery":                                       {},
-		"MarketplaceNotificationsUpdateSeenStateMutation":                            {},
-		"MarketplacePDPRightColumnAdsQuery":                                          {},
-		"MAWFetchXMAData_fetchXmaPreviewDataQuery":                                   {},
-		"MAWVerifyThreadCutover_ContactCapabilities2Query":                           {},
-		"OhaiWebClientMessengerConfigsQuery":                                         {},
-		"RTWebCallBlockSettingHooksQuery":                                            {},
-		"StoriesTrayRectangularRootQuery":                                            {},
-		"UnifiedShareSheetMessengerSectionQuery":                                     {},
-		"useCIXLogMutation":                                                          {},
-		"useFeedComposerCometMentionsBootloadDataSourceQuery":                        {},
-		"useFeedComposerCometMentionsBootloadDataSourceWithTaggingTransparencyQuery": {},
-		"useMWEBDismissUpsellsOptOutEBHardblockReleaseMutation":                      {},
-		"useMWEBOnboardingLogHardblockImpressionMutation":                            {},
-		"useMWEncryptedBackupsFetchBackupIdsV2Query":                                 {},
-		"usePseudoBlockedUserInterstitialF3Query":                                    {},
-		"useRainbowNativeSurveyDialogPlatformIntegrationPointQuery":                  {},
-		// "CometMarketplaceSearchContentPaginationQuery":              {},
-		// "MarketplaceCometBrowseFeedLightPaginationQuery":            {},
-		// "MarketplacePDPC2CMediaViewerWithImagesQuery":               {},
-		// "MarketplacePDPContainerQuery":                              {},
-	}
+	lastPostDataMap OrderedMap
+	mu              sync.RWMutex
 )
 
 func GetKey(data any, path string) any {
