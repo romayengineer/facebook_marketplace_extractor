@@ -1,13 +1,10 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"strings"
 
-	"github.com/andybalholm/brotli"
 	"github.com/playwright-community/playwright-go"
 	"github.com/saintfish/chardet"
 	"golang.org/x/text/encoding"
@@ -43,15 +40,6 @@ func DecodeWithEncoding(data []byte, charset string) (string, error) {
 		return "", err
 	}
 	return string(result), nil
-}
-
-func DecompressBrotli(data []byte) ([]byte, error) {
-	reader := brotli.NewReader(bytes.NewReader(data))
-	result, err := io.ReadAll(reader)
-	if err != nil {
-		return nil, fmt.Errorf("error decompressing brotli: %w", err)
-	}
-	return result, nil
 }
 
 func GetHeaders(request playwright.Request, simple bool) (map[string]string, error) {

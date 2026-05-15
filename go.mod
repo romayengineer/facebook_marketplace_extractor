@@ -6,6 +6,7 @@ require (
 	github.com/andybalholm/brotli v1.2.1
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
+	github.com/klauspost/compress v1.16.7
 	github.com/playwright-community/playwright-go v0.5700.1
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
 	github.com/stretchr/testify v1.11.1
