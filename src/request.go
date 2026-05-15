@@ -98,9 +98,8 @@ func RunRequest(pwRequest playwright.Request, ctx ContextWrapperInterface) (play
 	log.Printf("RunRequest method: %s\n", method)
 	// log.Printf("RunRequest data: %s\n", data)
 	for h, v := range headers {
-		log.Printf("RunRequest header: %s : %s\n", h, v)
+		log.Printf("RunRequest request header: %s : %s\n", h, v)
 	}
-	log.Printf("RunRequest log:\n")
 
 	response, err := ctx.Fetch(url,
 		playwright.APIRequestContextFetchOptions{
@@ -112,11 +111,10 @@ func RunRequest(pwRequest playwright.Request, ctx ContextWrapperInterface) (play
 	if err != nil {
 		return nil, fmt.Errorf("Error executing apiRequest: %w\n", err)
 	}
-	log.Printf("RunRequest end:\n")
 
 	responseHeaders := response.Headers()
 	for h, v := range responseHeaders {
-		log.Printf("Response Header: %s %s\n", h, v)
+		log.Printf("RunRequest response header: %s %s\n", h, v)
 	}
 
 	return response, nil
@@ -137,28 +135,32 @@ func CompareResponses(response playwright.Response, newResponse playwright.APIRe
 	if err != nil {
 		return false, fmt.Errorf("Error newResponse.Body(): %w\n", err)
 	}
-	newBody, err = DecompressBrotli(newBody)
-	if err != nil {
-		return false, fmt.Errorf("Error DecompressBrotli(): %w\n", err)
-	}
 
-	bodyEncoding := GuessEncoding(body)
-	bodyDecoded, err := DecodeWithEncoding(body, bodyEncoding)
-	if err != nil {
-		return false, err
-	}
-	newBodyEncoding := GuessEncoding(newBody)
-	newBodyDecoded, err := DecodeWithEncoding(newBody, newBodyEncoding)
-	if err != nil {
-		return false, err
-	}
+	bodyDecoded := string(body)
+	newBodyDecoded := string(newBody)
 
-	log.Printf("Body encoding: %s, NewBody encoding: %s\n", bodyEncoding, newBodyEncoding)
+	// newBody, err = DecompressBrotli(newBody)
+	// if err != nil {
+	// 	return false, fmt.Errorf("Error DecompressBrotli(): %w\n", err)
+	// }
+
+	// bodyEncoding := GuessEncoding(body)
+	// bodyDecoded, err := DecodeWithEncoding(body, bodyEncoding)
+	// if err != nil {
+	// 	return false, err
+	// }
+	// newBodyEncoding := GuessEncoding(newBody)
+	// newBodyDecoded, err := DecodeWithEncoding(newBody, newBodyEncoding)
+	// if err != nil {
+	// 	return false, err
+	// }
+
+	// log.Printf("Body encoding: %s, NewBody encoding: %s\n", bodyEncoding, newBodyEncoding)
 
 	if bodyDecoded != newBodyDecoded {
 		log.Printf("Response bodies differ!\n")
 		// fmt.Printf("body: %s\n", bodyDecoded)
-		// fmt.Printf("newBody: %s\n", newBodyDecoded)
+		fmt.Printf("newBody: %s\n", newBodyDecoded[:100])
 		return false, nil
 	} else {
 		log.Printf("Response bodies same!\n")

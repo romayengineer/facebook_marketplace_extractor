@@ -156,14 +156,14 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 		if err != nil {
 			log.Printf("Error WriteJsonResponse(): %v\n", err)
 		}
-		// if friendlyName == "MarketplacePDPContainerQuery" {
-		// 	newResponse, err := RunRequest(request, ctx)
-		// 	if err != nil {
-		// 		log.Printf("Error in RunRequest: %v", err)
-		// 		return
-		// 	}
-		// 	CompareResponses(response, newResponse)
-		// }
+		if friendlyName == "MarketplacePDPContainerQuery" {
+			newResponse, err := RunRequest(request, ceh.ctx)
+			if err != nil {
+				log.Printf("Error in RunRequest: %v", err)
+				return
+			}
+			CompareResponses(response, newResponse)
+		}
 	}(response)
 }
 
@@ -234,7 +234,7 @@ func SetContextEventHandlers(ctx ContextWrapperInterface) {
 
 	ctx.Route("**", contextEventHandlers.Route)
 
-	ctx.OnRequest(contextEventHandlers.OnRequest)
+	// ctx.OnRequest(contextEventHandlers.OnRequest)
 
 	ctx.OnResponse(contextEventHandlers.OnResponse)
 }
