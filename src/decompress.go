@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"log"
 
 	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/zstd"
@@ -17,6 +18,31 @@ var Decompressors = []DecompressorFunc{
 	DecompressZstd,
 	DecompressGzip,
 	DecompressBrotli,
+}
+
+func Decompress(data []byte) ([]byte, error) {
+
+	encoding, err := DetectBestWithConfidence(data)
+	if err == nil {
+		log.Printf("Decompress encoding match: %s\n", encoding)
+		return DecodeWithEncoding(data, encoding)
+	}
+
+	for _, decompressor := range Decompressors {
+		newData, err := decompressor(data)
+
+		if err != nil {
+			continue
+		}
+
+		encoding, err := DetectBestWithConfidence(newData)
+		if err == nil {
+			log.Printf("Decompress encoding match: %s\n", encoding)
+			return DecodeWithEncoding(newData, encoding)
+		}
+	}
+
+	return nil, fmt.Errorf("data is not compressed")
 }
 
 func DecompressBrotli(data []byte) ([]byte, error) {

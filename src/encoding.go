@@ -10,6 +10,17 @@ import (
 	"golang.org/x/text/encoding/charmap"
 )
 
+func DetectBestWithConfidence(data []byte) (string, error) {
+	detector := chardet.NewTextDetector()
+	result, err := detector.DetectBest(data)
+	if err == nil && result != nil {
+		if result.Confidence > 25 {
+			return result.Charset, nil
+		}
+	}
+	return "", fmt.Errorf("no encoding matches with condifence")
+}
+
 func GuessEncoding(data []byte) string {
 	detector := chardet.NewTextDetector()
 	result, err := detector.DetectBest(data)
@@ -20,7 +31,7 @@ func GuessEncoding(data []byte) string {
 	return "utf-8"
 }
 
-func DecodeWithEncoding(data []byte, charset string) (string, error) {
+func DecodeWithEncoding(data []byte, charset string) ([]byte, error) {
 	var enc encoding.Encoding
 	switch strings.ToLower(charset) {
 	case "windows-1252", "cp1252":
@@ -28,15 +39,15 @@ func DecodeWithEncoding(data []byte, charset string) (string, error) {
 	case "iso-8859-1", "latin-1":
 		enc = charmap.ISO8859_1
 	case "utf-8", "utf8", "unknown":
-		return string(data), nil
+		return data, nil
 	default:
-		return "", fmt.Errorf("unsupported encoding: %s", charset)
+		return data, fmt.Errorf("unsupported encoding: %s", charset)
 	}
 
 	decoder := enc.NewDecoder()
 	result, err := decoder.Bytes(data)
 	if err != nil {
-		return "", err
+		return result, err
 	}
-	return string(result), nil
+	return result, nil
 }
