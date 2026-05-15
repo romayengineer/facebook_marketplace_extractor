@@ -74,37 +74,35 @@ func (ceh *ContextEventHandlers) OnRequest(request playwright.Request) {
 		if err != nil {
 			return
 		}
-		var friendlyName string
-		val, exists := postDataMap.Get("fb_api_req_friendly_name")
-		if exists {
-			friendlyName = val
-		} else {
-			friendlyName = "unknown"
+		friendlyName := postDataMap.GetDefault("fb_api_req_friendly_name", "unknown")
+		if _, exists := friendlyNamesToSkipSet[friendlyName]; exists {
+			return
 		}
-		if friendlyName == "MarketplacePDPContainerQuery" {
-			newResponse, err := RunRequest(ceh.ctx, request, false)
-			if err != nil {
-				log.Printf("Error in RunRequest: %v", err)
-				return
-			}
-			body, err := newResponse.Body()
-			if err != nil {
-				log.Printf("Error response.Body(): %v\n", err)
-			}
-			// bodyEncoding := GuessEncoding(body)
-			// bodyDecoded, err := DecodeWithEncoding(body, bodyEncoding)
-			// if err != nil {
-			// 	log.Printf("Error DecodeWithEncoding(): %v\n", err)
-			// 	return
-			// }
-			log.Printf("OnRequest body original: %s\n", body[:100])
-			body, err = DecompressBrotli(body)
-			if err != nil {
-				log.Printf("Error DecompressBrotli(): %v\n", err)
-				return
-			}
-			log.Printf("OnRequest body decompressed: %s\n", body[:100])
+		if friendlyName != "MarketplacePDPContainerQuery" {
+			return
 		}
+		newResponse, err := RunRequest(ceh.ctx, request, false)
+		if err != nil {
+			log.Printf("Error in RunRequest: %v", err)
+			return
+		}
+		body, err := newResponse.Body()
+		if err != nil {
+			log.Printf("Error response.Body(): %v\n", err)
+		}
+		// bodyEncoding := GuessEncoding(body)
+		// bodyDecoded, err := DecodeWithEncoding(body, bodyEncoding)
+		// if err != nil {
+		// 	log.Printf("Error DecodeWithEncoding(): %v\n", err)
+		// 	return
+		// }
+		log.Printf("OnRequest body original: %s\n", body[:100])
+		body, err = DecompressBrotli(body)
+		if err != nil {
+			log.Printf("Error DecompressBrotli(): %v\n", err)
+			return
+		}
+		log.Printf("OnRequest body decompressed: %s\n", body[:100])
 	}(request)
 }
 
@@ -153,20 +151,21 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 		if err != nil {
 			log.Printf("Error WriteJsonResponse(): %v\n", err)
 		}
-		if friendlyName == "MarketplacePDPContainerQuery" {
-			newResponse, err := RunRequest(ceh.ctx, request, false)
-			if err != nil {
-				log.Printf("Error in RunRequest: %v", err)
-				return
-			}
-			CompareResponses(response, newResponse)
-			newResponse, err = RunRequest(ceh.ctx, request, true)
-			if err != nil {
-				log.Printf("Error in RunRequest: %v", err)
-				return
-			}
-			CompareResponses(response, newResponse)
+		if friendlyName != "MarketplacePDPContainerQuery" {
+			return
 		}
+		newResponse, err := RunRequest(ceh.ctx, request, false)
+		if err != nil {
+			log.Printf("Error in RunRequest: %v", err)
+			return
+		}
+		CompareResponses(response, newResponse)
+		newResponse, err = RunRequest(ceh.ctx, request, true)
+		if err != nil {
+			log.Printf("Error in RunRequest: %v", err)
+			return
+		}
+		CompareResponses(response, newResponse)
 	}(response)
 }
 
