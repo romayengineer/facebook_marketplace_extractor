@@ -27,18 +27,3 @@ func GetPostDataMap(request playwright.Request) (OrderedMap, error) {
 	}
 	return om, nil
 }
-
-func GetPostData(postData OrderedMap) (string, error) {
-	postDataParts := []string{}
-	for _, key := range postData.Keys() {
-		value, exists := postData.Get(key)
-		if !exists {
-			continue
-		}
-		part := fmt.Sprintf("%s=%s", key, value)
-		postDataParts = append(postDataParts, part)
-	}
-	postDataStr := strings.Join(postDataParts, "&")
-	postDataUnscaped, err := url.QueryUnescape(postDataStr)
-	return postDataUnscaped, err
-}
