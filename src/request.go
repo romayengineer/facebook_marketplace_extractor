@@ -94,29 +94,18 @@ func CompareResponses(response playwright.Response, newResponse playwright.APIRe
 	}
 
 	bodyDecoded := string(body)
-	newBodyDecoded := string(newBody)
 
-	// newBody, err = DecompressBrotli(newBody)
-	// if err != nil {
-	// 	return false, fmt.Errorf("Error DecompressBrotli(): %w\n", err)
-	// }
-
-	// bodyEncoding := GuessEncoding(body)
-	// bodyDecoded, err := DecodeWithEncoding(body, bodyEncoding)
-	// if err != nil {
-	// 	return false, err
-	// }
-	// newBodyEncoding := GuessEncoding(newBody)
-	// newBodyDecoded, err := DecodeWithEncoding(newBody, newBodyEncoding)
-	// if err != nil {
-	// 	return false, err
-	// }
-
-	// log.Printf("Body encoding: %s, NewBody encoding: %s\n", bodyEncoding, newBodyEncoding)
+	decompressed, _ := DecompressZstd(newBody)
+	newBodyDecoded := string(decompressed)
+	// newBodyDecoded := string(newBody)
 
 	if bodyDecoded != newBodyDecoded {
-		log.Printf("body: %s\n", bodyDecoded[:min(len(bodyDecoded), 300)])
-		log.Printf("newBody: %s\n", newBodyDecoded[:min(len(newBodyDecoded), 300)])
+		bodyDecodedLen := len(bodyDecoded)
+		newBodyDecodedLen := len(newBodyDecoded)
+		log.Printf("body: %s\n", bodyDecoded[:min(bodyDecodedLen, 300)])
+		log.Printf("body length: %02d\n", bodyDecodedLen)
+		log.Printf("newBody: %s\n", newBodyDecoded[:min(newBodyDecodedLen, 300)])
+		log.Printf("newBody length: %02d\n", newBodyDecodedLen)
 		log.Printf("Response bodies differ!\n\n\n\n")
 		return false, nil
 	} else {
