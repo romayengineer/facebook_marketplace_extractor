@@ -84,6 +84,8 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 		return nil, nil
 	}
 
+	shouldSkipRequest.postDataMap.Print()
+
 	response, err := RunRequest(ctx, pwRequest, false)
 	if err != nil {
 		return response, err

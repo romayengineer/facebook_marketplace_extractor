@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 )
 
 type OrderedMap struct {
@@ -31,6 +32,13 @@ func (om *OrderedMap) GetDefault(key string, def string) string {
 
 func (om *OrderedMap) Keys() []string {
 	return om.order
+}
+
+func (om *OrderedMap) Print() {
+	for _, key := range om.Keys() {
+		value, _ := om.Get(key)
+		log.Printf("OrderedMap.Print: %s = %s", key, value)
+	}
 }
 
 func (om *OrderedMap) Compare(om2 OrderedMap) {
