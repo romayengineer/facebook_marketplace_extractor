@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -73,6 +74,49 @@ func RunRequest(ctx ContextWrapperInterface, pwRequest playwright.Request, heade
 	for h, v := range responseHeaders {
 		log.Printf("RunRequest response header: %s %s\n", h, v)
 	}
+
+	return response, nil
+}
+
+func DecompressJson(data []byte) (any, error) {
+	var jsonData any
+
+	if err := json.Unmarshal(data, &jsonData); err == nil {
+		return jsonData, nil
+	}
+
+	for _, decompressor := range Decompressors {
+		newData, err := decompressor(data)
+
+		if err != nil {
+			continue
+		}
+
+		if err := json.Unmarshal(newData, &jsonData); err == nil {
+			return jsonData, nil
+		}
+	}
+
+	return nil, fmt.Errorf("data is not json or compressed")
+}
+
+func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Request) (playwright.APIResponse, error) {
+	response, err := RunRequest(ctx, pwRequest, false)
+	if err != nil {
+		return response, err
+	}
+
+	body, err := response.Body()
+	if err != nil {
+		return response, fmt.Errorf("Error response.Body(): %w\n", err)
+	}
+
+	_, err = DecompressJson(body)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Printf("new response is JSON!")
 
 	return response, nil
 }
