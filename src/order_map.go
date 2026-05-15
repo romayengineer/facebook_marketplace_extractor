@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 )
@@ -15,6 +16,34 @@ func (om *OrderedMap) Set(key string, value string) {
 		om.order = append(om.order, key)
 	}
 	om.data[key] = value
+}
+
+func (om *OrderedMap) SetJsonString(key string, KeyIn string, value any) error {
+	val, exists := om.Get(key)
+	if !exists {
+		return fmt.Errorf("key does not exists in OrderedMap %s\n", key)
+	}
+
+	var jsonData any
+	if err := json.Unmarshal([]byte(val), &jsonData); err != nil {
+		return fmt.Errorf("key is not json string %s\n", key)
+	}
+
+	dataMap, ok := jsonData.(map[string]any)
+	if !ok {
+		return fmt.Errorf("key is not map[string]any %s\n", key)
+	}
+
+	dataMap[KeyIn] = value
+
+	jsonString, err := json.Marshal(dataMap)
+	if err != nil {
+		return fmt.Errorf("cannot convert to json string %v\n", err)
+	}
+
+	om.Set(key, string(jsonString))
+
+	return nil
 }
 
 func (om *OrderedMap) Get(key string) (string, bool) {
