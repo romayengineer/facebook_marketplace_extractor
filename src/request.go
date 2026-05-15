@@ -159,8 +159,8 @@ func CompareResponses(response playwright.Response, newResponse playwright.APIRe
 
 	if bodyDecoded != newBodyDecoded {
 		log.Printf("Response bodies differ!\n")
-		// fmt.Printf("body: %s\n", bodyDecoded)
-		fmt.Printf("newBody: %s\n", newBodyDecoded[:100])
+		log.Printf("body: %s\n", bodyDecoded[:100])
+		log.Printf("newBody: %s\n", newBodyDecoded[:100])
 		return false, nil
 	} else {
 		log.Printf("Response bodies same!\n")
