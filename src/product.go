@@ -55,15 +55,15 @@ type ProductExtractors struct {
 func NewProductExtractors() ProductExtractors {
 	return ProductExtractors{
 		extractors: []ProductExtractor{
-			ProductExtractor{
+			{
 				validator: ProductDetailsValid,
 				extractor: ProductDetailsGet,
 			},
-			ProductExtractor{
+			{
 				validator: ProductsFromSearchValid,
 				extractor: ProductsFromSearchGet,
 			},
-			ProductExtractor{
+			{
 				validator: ProducFromDataValid,
 				extractor: ProducFromDataGet,
 			},
