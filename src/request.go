@@ -77,7 +77,13 @@ func RunRequest(ctx ContextWrapperInterface, pwRequest playwright.Request, heade
 	return response, nil
 }
 
-func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Request) (playwright.APIResponse, error) {
+func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Request, shouldSkipRequest ShouldProcess) (playwright.APIResponse, error) {
+	friendlyNameToProcess := "MarketplacePDPContainerQuery"
+
+	if shouldSkipRequest.friendlyName != friendlyNameToProcess {
+		return nil, nil
+	}
+
 	response, err := RunRequest(ctx, pwRequest, false)
 	if err != nil {
 		return response, err
@@ -90,10 +96,22 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 
 	bodyDecompressed, err := Decompress(body)
 	if err != nil {
-		return nil, err
+		return response, err
 	}
 
 	log.Printf("body was compressed: %s\n", bodyDecompressed[:100])
+
+	jsonDatas, err := ExtractJsonFromBody(bodyDecompressed)
+	if err != nil {
+		log.Printf("Error ExtractJsonFromBody(): %v\n", err)
+		return response, err
+	}
+
+	_, err = WriteJsonResponse(jsonDatas, friendlyNameToProcess)
+	if err != nil {
+		log.Printf("Error WriteJsonResponse(): %v\n", err)
+		return response, err
+	}
 
 	return response, nil
 }

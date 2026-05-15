@@ -143,7 +143,7 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 		if shouldSkipRequest.friendlyName != "MarketplacePDPContainerQuery" {
 			return
 		}
-		newResponse, err := RunRequestDecompress(ceh.ctx, request)
+		newResponse, err := RunRequestDecompress(ceh.ctx, request, shouldSkipRequest)
 		if err != nil {
 			log.Printf("Error in RunRequest: %v", err)
 			return
