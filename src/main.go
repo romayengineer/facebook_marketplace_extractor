@@ -41,6 +41,7 @@ var (
 		"FBScreenTimeLogger_syncMutation":                                            {},
 		"FBYRPTimeLimitsEnforcementQuery":                                            {},
 		"fetchMWChatVideoAutoplaySettingQuery":                                       {},
+		"MarketplaceNotificationsUpdateSeenStateMutation":                            {},
 		"MarketplacePDPRightColumnAdsQuery":                                          {},
 		"MAWFetchXMAData_fetchXmaPreviewDataQuery":                                   {},
 		"MAWVerifyThreadCutover_ContactCapabilities2Query":                           {},
