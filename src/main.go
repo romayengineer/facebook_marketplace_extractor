@@ -129,20 +129,24 @@ func GetDetails() {
 	page, _ := ctx.NewPage()
 	pages, _ := NewPages(page)
 
-	ForEachDetail(func(filePath string, jsonData any) {
-		productId := GetKey(jsonData, "ID")
-		if productId == nil {
-			return
-		}
+	ForEachDetail(func(filePath string, jsonData any) bool {
 		PriceAmount := GetKey(jsonData, "PriceAmount")
 		if PriceAmount != nil {
-			return
+			return true
 		}
+
+		productId := GetKey(jsonData, "ID")
+		if productId == nil {
+			return true
+		}
+
 		// fmt.Printf("product %s does not have description\n", productId.(string))
 		pages.GoToProduct(productId.(string))
 
 		// sleep for 5 seconds
 		time.Sleep(3 * time.Second)
+
+		return true
 	}, false)
 
 	WaitingForInput()
@@ -161,17 +165,20 @@ func SaveProductsIfAny(products []MarketplaceItemDetails) bool {
 
 func ProcessData() {
 	productExtractors := NewProductExtractors()
-	ForEachResponse(func(filePath string, jsonData any) {
+	ForEachResponse(func(filePath string, jsonData any) bool {
 		for _, extractor := range productExtractors.extractors {
 			product, _ := extractor.extractor(jsonData)
 			if hasAny := SaveProductsIfAny(product); hasAny == true {
-				return
+				return true
 			}
 		}
+
 		fmt.Printf("no product found deleting file: %s\n", filePath)
 		if err := os.Remove(filePath); err != nil {
 			fmt.Printf("Error deleting file %s: %v\n", filePath, err)
 		}
+
+		return true
 	}, true)
 }
 

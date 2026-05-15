@@ -89,7 +89,7 @@ func GetFilePaths(prefix string, sortit bool) []string {
 	return filePaths
 }
 
-func ForEachJsonInData(prefix string, process func(filePath string, jsonData any), sortit bool) {
+func ForEachJsonInData(prefix string, process func(filePath string, jsonData any) bool, sortit bool) {
 	// open and read all files in data folder that start with response and end in .json
 
 	filePaths := GetFilePaths(prefix, sortit)
@@ -110,15 +110,19 @@ func ForEachJsonInData(prefix string, process func(filePath string, jsonData any
 			continue
 		}
 
-		process(filePath, jsonData)
+		shouldContinue := process(filePath, jsonData)
+
+		if !shouldContinue {
+			return
+		}
 	}
 
 }
 
-func ForEachResponse(process func(filePath string, jsonData any), sortit bool) {
+func ForEachResponse(process func(filePath string, jsonData any) bool, sortit bool) {
 	ForEachJsonInData("response_", process, sortit)
 }
 
-func ForEachDetail(process func(filePath string, jsonData any), sortit bool) {
+func ForEachDetail(process func(filePath string, jsonData any) bool, sortit bool) {
 	ForEachJsonInData("detail_", process, sortit)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/playwright-community/playwright-go"
 )
@@ -82,6 +83,45 @@ func RunRequest(ctx ContextWrapperInterface, pwRequest playwright.Request, heade
 }
 
 func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Request, shouldSkipRequest ShouldProcess) (playwright.APIResponse, error) {
+
+	var err error
+	var newResponse playwright.APIResponse
+	var requestCounter int
+
+	processLimit := 50
+
+	ForEachDetail(func(filePath string, jsonData any) bool {
+
+		description := GetKey(jsonData, "Description")
+		if description != nil {
+			return true
+		}
+
+		productId := GetKey(jsonData, "ID")
+		if productId == nil {
+			return true
+		}
+
+		shouldSkipRequest.postDataMap.SetJsonString("variables", "targetId", productId)
+
+		newResponse, err = RunRequestDecompressOne(ctx, pwRequest, shouldSkipRequest)
+
+		time.Sleep(1 * time.Second)
+
+		requestCounter++
+
+		if requestCounter >= processLimit {
+			return false
+		}
+
+		return true
+
+	}, false)
+
+	return newResponse, err
+}
+
+func RunRequestDecompressOne(ctx ContextWrapperInterface, pwRequest playwright.Request, shouldSkipRequest ShouldProcess) (playwright.APIResponse, error) {
 	friendlyNameToProcess := "MarketplacePDPContainerQuery"
 
 	if shouldSkipRequest.friendlyName != friendlyNameToProcess {
