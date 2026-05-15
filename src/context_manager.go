@@ -79,7 +79,7 @@ func (ceh *ContextEventHandlers) OnRequest(request playwright.Request) {
 			friendlyName = "unknown"
 		}
 		if friendlyName == "MarketplacePDPContainerQuery" {
-			newResponse, err := RunRequest(request, ceh.ctx)
+			newResponse, err := RunRequest(ceh.ctx, request, false)
 			if err != nil {
 				log.Printf("Error in RunRequest: %v", err)
 				return
@@ -157,7 +157,13 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 			log.Printf("Error WriteJsonResponse(): %v\n", err)
 		}
 		if friendlyName == "MarketplacePDPContainerQuery" {
-			newResponse, err := RunRequest(request, ceh.ctx)
+			newResponse, err := RunRequest(ceh.ctx, request, false)
+			if err != nil {
+				log.Printf("Error in RunRequest: %v", err)
+				return
+			}
+			CompareResponses(response, newResponse)
+			newResponse, err = RunRequest(ceh.ctx, request, true)
 			if err != nil {
 				log.Printf("Error in RunRequest: %v", err)
 				return
