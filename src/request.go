@@ -88,8 +88,6 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 	var newResponse playwright.APIResponse
 	var requestCounter int
 
-	processLimit := 50
-
 	ForEachDetail(func(filePath string, jsonData any) bool {
 
 		description := GetKey(jsonData, "Description")
@@ -110,14 +108,18 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 
 		requestCounter++
 
-		if requestCounter >= processLimit {
-			return false
+		if (requestCounter % 20) == 0 {
+			time.Sleep(3 * time.Second)
+			log.Printf("RunRequestDecompress ProcessData after %04d requests\n", requestCounter)
+			ProcessData()
 		}
 
 		return true
 
 	}, false)
 
+	time.Sleep(3 * time.Second)
+	log.Printf("RunRequestDecompress ProcessData after %04d requests\n", requestCounter)
 	ProcessData()
 
 	return newResponse, err
