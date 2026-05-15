@@ -10,6 +10,15 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
+type DecompressorFunc func(data []byte) ([]byte, error)
+
+// list of decompressors in order or most likely used
+var Decompressors = []DecompressorFunc{
+	DecompressZstd,
+	DecompressGzip,
+	DecompressBrotli,
+}
+
 func DecompressBrotli(data []byte) ([]byte, error) {
 	reader := brotli.NewReader(bytes.NewReader(data))
 	result, err := io.ReadAll(reader)
