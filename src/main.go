@@ -2,9 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
-	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -184,29 +182,9 @@ func ProcessData() {
 }
 
 func main() {
-	action := flag.String("action", "search", "Action to perform: search, process_data, get_details")
-	logLevel := flag.String("log-level", "debug", "Log level: debug, info, warn, error")
-	flag.Parse()
+	flags := NewFlags()
 
-	var level slog.Level
-	switch strings.ToLower(*logLevel) {
-	case "debug":
-		level = slog.LevelDebug
-	case "info":
-		level = slog.LevelInfo
-	case "warn":
-		level = slog.LevelWarn
-	case "error":
-		level = slog.LevelError
-	default:
-		level = slog.LevelDebug
-	}
-
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-		Level: level,
-	})))
-
-	switch *action {
+	switch flags.action {
 	case "search":
 		SearchProducts()
 	case "process_data":
@@ -214,7 +192,7 @@ func main() {
 	case "get_details":
 		GetDetails()
 	default:
-		LogError0("Unknown action", "action", *action)
+		LogError0("Unknown action", "action", flags.action)
 		os.Exit(1)
 	}
 }
