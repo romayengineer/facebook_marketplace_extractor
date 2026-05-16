@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -108,7 +108,8 @@ func Begin() (ContextWrapperInterface, error) {
 func SearchProducts() {
 	ctx, err := Begin()
 	if err != nil {
-		log.Fatalf("error Begin: %v", err)
+		slog.Error("Error in Begin", "error", err)
+		os.Exit(1)
 	}
 	defer ctx.Close()
 
@@ -122,7 +123,8 @@ func SearchProducts() {
 func GetDetails() {
 	ctx, err := Begin()
 	if err != nil {
-		log.Fatalf("error Begin: %v", err)
+		slog.Error("Error in Begin", "error", err)
+		os.Exit(1)
 	}
 	defer ctx.Close()
 
@@ -140,10 +142,7 @@ func GetDetails() {
 			return true
 		}
 
-		// fmt.Printf("product %s does not have description\n", productId.(string))
 		pages.GoToProduct(productId.(string))
-
-		// sleep for 5 seconds
 		time.Sleep(3 * time.Second)
 
 		return true
@@ -173,20 +172,39 @@ func ProcessData() {
 			}
 		}
 
-		log.Printf("ProcessData no product found deleting file: %s\n", filePath)
+		slog.Info("ProcessData no product found, deleting file", "path", filePath)
 		if err := os.Remove(filePath); err != nil {
-			log.Printf("ProcessData Error deleting file %s: %v\n", filePath, err)
+			slog.Error("ProcessData error deleting file", "path", filePath, "error", err)
 		}
 
 		return true
 	}, true)
 
-	log.Printf("ProcessData all files processed\n")
+	slog.Info("ProcessData all files processed")
 }
 
 func main() {
-	action := flag.String("action", "search", "Action to perform: search")
+	action := flag.String("action", "search", "Action to perform: search, process_data, get_details")
+	logLevel := flag.String("log-level", "debug", "Log level: debug, info, warn, error")
 	flag.Parse()
+
+	var level slog.Level
+	switch strings.ToLower(*logLevel) {
+	case "debug":
+		level = slog.LevelDebug
+	case "info":
+		level = slog.LevelInfo
+	case "warn":
+		level = slog.LevelWarn
+	case "error":
+		level = slog.LevelError
+	default:
+		level = slog.LevelDebug
+	}
+
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		Level: level,
+	})))
 
 	switch *action {
 	case "search":
@@ -196,6 +214,7 @@ func main() {
 	case "get_details":
 		GetDetails()
 	default:
-		log.Fatalf("unknown action: %s", *action)
+		slog.Error("Unknown action", "action", *action)
+		os.Exit(1)
 	}
 }

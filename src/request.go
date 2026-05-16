@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -44,14 +44,10 @@ func RunRequestWithData(ctx ContextWrapperInterface, pwRequest playwright.Reques
 		return nil, fmt.Errorf("Error in GetHeaders: %w\n", err)
 	}
 
-	log.Printf("RunRequest url: %s\n", url)
-	log.Printf("RunRequest method: %s\n", method)
-
-	// log.Printf("RunRequest data: %s\n", data)
-
-	log.Printf("RunRequest request headers count: %02d\n", len(headers))
+	slog.Debug("RunRequest", "url", url, "method", method)
+	slog.Debug("RunRequest request headers", "count", len(headers))
 	for h, v := range headers {
-		log.Printf("RunRequest request header: %s : %s\n", h, v)
+		slog.Debug("RunRequest header", "key", h, "value", v)
 	}
 
 	response, err := ctx.Fetch(url,
@@ -66,9 +62,9 @@ func RunRequestWithData(ctx ContextWrapperInterface, pwRequest playwright.Reques
 	}
 
 	responseHeaders := response.Headers()
-	log.Printf("RunRequest response headers count: %02d\n", len(responseHeaders))
+	slog.Debug("RunRequest response headers", "count", len(responseHeaders))
 	for h, v := range responseHeaders {
-		log.Printf("RunRequest response header: %s %s\n", h, v)
+		slog.Debug("RunRequest response header", "key", h, "value", v)
 	}
 
 	return response, nil
@@ -88,7 +84,7 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 	var newResponse playwright.APIResponse
 	var requestCounter int
 
-	log.Printf("RunRequestDecompress ProcessData after %04d requests\n", requestCounter)
+	slog.Info("RunRequestDecompress starting", "initialRequests", requestCounter)
 	ProcessData()
 
 	ForEachDetail(func(filePath string, jsonData any) bool {
@@ -113,7 +109,7 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 
 		if (requestCounter % 20) == 0 {
 			time.Sleep(3 * time.Second)
-			log.Printf("RunRequestDecompress ProcessData after %04d requests\n", requestCounter)
+			slog.Info("RunRequestDecompress checkpoint", "requests", requestCounter)
 			ProcessData()
 		}
 
@@ -122,7 +118,7 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 	}, false)
 
 	time.Sleep(3 * time.Second)
-	log.Printf("RunRequestDecompress ProcessData after %04d requests\n", requestCounter)
+	slog.Info("RunRequestDecompress finished", "totalRequests", requestCounter)
 	ProcessData()
 
 	return newResponse, err
@@ -153,17 +149,17 @@ func RunRequestDecompressOne(ctx ContextWrapperInterface, pwRequest playwright.R
 		return response, err
 	}
 
-	log.Printf("body was compressed: %s\n", bodyDecompressed[:100])
+	slog.Debug("Body decompressed", "size", len(bodyDecompressed))
 
 	jsonDatas, err := ExtractJsonFromBody(bodyDecompressed)
 	if err != nil {
-		log.Printf("Error ExtractJsonFromBody(): %v\n", err)
+		slog.Error("Error ExtractJsonFromBody()", "error", err)
 		return response, err
 	}
 
 	_, err = WriteJsonResponse(jsonDatas, friendlyNameToProcess)
 	if err != nil {
-		log.Printf("Error WriteJsonResponse(): %v\n", err)
+		slog.Error("Error WriteJsonResponse()", "error", err)
 		return response, err
 	}
 
@@ -197,16 +193,12 @@ func CompareResponses(response playwright.Response, newResponse playwright.APIRe
 	}
 
 	if AreStringsEqual(bodyDecoded, newBodyDecoded) {
-		log.Printf("Response bodies same!\n\n\n\n")
+		slog.Info("Response bodies are identical")
 		return true, nil
 	} else {
 		bodyDecodedLen := len(bodyDecoded)
 		newBodyDecodedLen := len(newBodyDecoded)
-		log.Printf("body: %s\n", bodyDecoded[:min(bodyDecodedLen, 300)])
-		log.Printf("body length: %02d\n", bodyDecodedLen)
-		log.Printf("newBody: %s\n", newBodyDecoded[:min(newBodyDecodedLen, 300)])
-		log.Printf("newBody length: %02d\n", newBodyDecodedLen)
-		log.Printf("Response bodies differ!\n\n\n\n")
+		slog.Warn("Response bodies differ", "originalLength", bodyDecodedLen, "newLength", newBodyDecodedLen)
 		return false, nil
 	}
 }

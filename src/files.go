@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
-	"log"
+	"log/slog"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -73,7 +73,8 @@ func GetFilePaths(prefix string, sortit bool) []string {
 	})
 
 	if err != nil {
-		log.Fatalf("error reading data directory: %v", err)
+		slog.Error("Error reading data directory", "error", err)
+		os.Exit(1)
 	}
 
 	if sortit {
@@ -100,13 +101,13 @@ func ForEachJsonInData(prefix string, process func(filePath string, jsonData any
 
 		body, err := os.ReadFile(filePath)
 		if err != nil {
-			log.Printf("error reading file %s: %v", filePath, err)
+			slog.Error("Error reading file", "path", filePath, "error", err)
 			continue
 		}
 
 		var jsonData any
 		if err := json.Unmarshal(body, &jsonData); err != nil {
-			log.Printf("error parsing JSON from %s: %v", filePath, err)
+			slog.Error("Error parsing JSON", "path", filePath, "error", err)
 			continue
 		}
 

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -28,7 +28,8 @@ func NewConfig() (*Config, error) {
 	password := os.Getenv("FME_PASSWORD")
 
 	if username == "" || password == "" {
-		log.Fatalf("USERNAME or PASSWORD not set in .env file")
+		slog.Error("USERNAME or PASSWORD not set in .env file")
+		os.Exit(1)
 	}
 
 	fmt.Printf("Loaded credentials - Username: %s\n", username)

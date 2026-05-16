@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/url"
 	"regexp"
 	"strings"
@@ -96,26 +96,20 @@ func (ceh *ContextEventHandlers) OnRequest(request playwright.Request) {
 		}
 		newResponse, err := RunRequest(ceh.ctx, req, false)
 		if err != nil {
-			log.Printf("Error in RunRequest: %v", err)
+			slog.Error("Error in RunRequest", "error", err)
 			return
 		}
 		body, err := newResponse.Body()
 		if err != nil {
-			log.Printf("Error response.Body(): %v\n", err)
+			slog.Error("Error response.Body()", "error", err)
 		}
-		// bodyEncoding := GuessEncoding(body)
-		// bodyDecoded, err := DecodeWithEncoding(body, bodyEncoding)
-		// if err != nil {
-		// 	log.Printf("Error DecodeWithEncoding(): %v\n", err)
-		// 	return
-		// }
-		log.Printf("OnRequest body original: %s\n", body[:100])
+		slog.Debug("OnRequest body original", "size", len(body))
 		body, err = DecompressBrotli(body)
 		if err != nil {
-			log.Printf("Error DecompressBrotli(): %v\n", err)
+			slog.Error("Error DecompressBrotli()", "error", err)
 			return
 		}
-		log.Printf("OnRequest body decompressed: %s\n", body[:100])
+		slog.Debug("OnRequest body decompressed", "size", len(body))
 	}(request)
 }
 
@@ -128,24 +122,24 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 		}
 		body, err := resp.Body()
 		if err != nil {
-			log.Printf("Error resp.Body(): %v\n", err)
+			slog.Error("Error resp.Body()", "error", err)
 			return
 		}
 		jsonDatas, err := ExtractJsonFromBody(body)
 		if err != nil {
-			log.Printf("Error ExtractJsonFromBody(): %v\n", err)
+			slog.Error("Error ExtractJsonFromBody()", "error", err)
 			return
 		}
 		_, err = WriteJsonResponse(jsonDatas, shouldSkipRequest.friendlyName)
 		if err != nil {
-			log.Printf("Error WriteJsonResponse(): %v\n", err)
+			slog.Error("Error WriteJsonResponse()", "error", err)
 		}
 		if shouldSkipRequest.friendlyName != "MarketplacePDPContainerQuery" {
 			return
 		}
 		newResponse, err := RunRequestDecompress(ceh.ctx, request, shouldSkipRequest)
 		if err != nil {
-			log.Printf("Error in RunRequest: %v", err)
+			slog.Error("Error in RunRequestDecompress", "error", err)
 			return
 		}
 		CompareResponses(resp, newResponse)
@@ -167,22 +161,16 @@ func GetExtension(path string) string {
 func ParseURL(urlString string) {
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
-		log.Printf("Error parsing URL: %v\n", err)
+		slog.Error("Error parsing URL", "error", err)
 		return
 	}
 
-	log.Printf("Protocol: %s\n", parsedURL.Scheme)
-	log.Printf("Host: %s\n", parsedURL.Host)
-	log.Printf("Hostname: %s\n", parsedURL.Hostname())
-	log.Printf("Port: %s\n", parsedURL.Port())
-	log.Printf("Path: %s\n", parsedURL.Path)
-	log.Printf("Query: %s\n", parsedURL.RawQuery)
-	log.Printf("Fragment: %s\n", parsedURL.Fragment)
+	slog.Debug("URL details", "scheme", parsedURL.Scheme, "host", parsedURL.Host, "port", parsedURL.Port(), "path", parsedURL.Path)
 
 	if parsedURL.RawQuery != "" {
 		query := parsedURL.Query()
 		for key, values := range query {
-			log.Printf("Query param %s: %v\n", key, values)
+			slog.Debug("Query param", "key", key, "values", values)
 		}
 	}
 }
@@ -197,7 +185,7 @@ func (ceh *ContextEventHandlers) Route(r playwright.Route) {
 	urlString := request.URL()
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
-		log.Printf("Error parsing URL: %v\n", err)
+		slog.Error("Error parsing URL", "error", err)
 		r.Continue()
 		return
 	}

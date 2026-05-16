@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 )
 
 type OrderedMap struct {
@@ -66,7 +66,7 @@ func (om *OrderedMap) Keys() []string {
 func (om *OrderedMap) Print() {
 	for _, key := range om.Keys() {
 		value, _ := om.Get(key)
-		log.Printf("OrderedMap.Print: %s = %s", key, value)
+		slog.Debug("OrderedMap entry", "key", key, "value", value)
 	}
 }
 

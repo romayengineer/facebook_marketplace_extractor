@@ -5,7 +5,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 
 	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/zstd"
@@ -24,7 +24,7 @@ func Decompress(data []byte) ([]byte, error) {
 
 	encoding, err := DetectBestWithConfidence(data)
 	if err == nil {
-		log.Printf("Decompress encoding match: %s\n", encoding)
+		slog.Debug("Decompress encoding match", "encoding", encoding)
 		return DecodeWithEncoding(data, encoding)
 	}
 
@@ -37,7 +37,7 @@ func Decompress(data []byte) ([]byte, error) {
 
 		encoding, err := DetectBestWithConfidence(newData)
 		if err == nil {
-			log.Printf("Decompress encoding match: %s\n", encoding)
+			slog.Debug("Decompress encoding match", "encoding", encoding)
 			return DecodeWithEncoding(newData, encoding)
 		}
 	}
