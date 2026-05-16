@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"time"
 )
 
 type Pages struct {
@@ -37,11 +38,36 @@ func (pl *Pages) IsInHomePage() bool {
 	return len(items) > 0
 }
 
+func (pl *Pages) ScrollDown() error {
+	maxScrollHeight := 0
+	failCounter := 0
+	maxFailCounter := 10
+	for {
+		scrollHeight, _ := pl.Page.Evaluate("document.body.scrollHeight")
+		if intHeight, ok := scrollHeight.(int); ok {
+			if intHeight > maxScrollHeight {
+				failCounter = 0
+				maxScrollHeight = intHeight
+				log.Printf("ScrollDown maxScrollHeight: %08d\n", maxScrollHeight)
+			} else {
+				failCounter++
+			}
+		}
+		if failCounter >= maxFailCounter {
+			log.Printf("ScrollDown maxScrollHeight did not increased for %02d times: %08d\n", maxFailCounter, maxScrollHeight)
+			return nil
+		}
+		time.Sleep(1 * time.Second)
+		pl.Page.Evaluate("window.scrollTo(0, document.body.scrollHeight)")
+	}
+}
+
 func (pl *Pages) MarketpaceSearch(query string) error {
 	params := url.Values{}
 	params.Add("query", query)
 	baseUrl := "https://www.facebook.com/marketplace/category/search/?" + params.Encode()
-	return pl.Page.Goto(baseUrl)
+	pl.Page.Goto(baseUrl)
+	return pl.ScrollDown()
 }
 
 func (pl *Pages) GoToProduct(id string) error {
