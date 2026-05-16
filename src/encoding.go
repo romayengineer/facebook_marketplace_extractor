@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
 	"strings"
 
 	"github.com/saintfish/chardet"
@@ -25,7 +24,7 @@ func GuessEncoding(data []byte) string {
 	detector := chardet.NewTextDetector()
 	result, err := detector.DetectBest(data)
 	if err == nil && result != nil {
-		slog.Debug("Encoding detected", "charset", result.Charset, "confidence", result.Confidence)
+		Log(LD0, "Encoding detected", "charset", result.Charset, "confidence", result.Confidence)
 		return result.Charset
 	}
 	return "utf-8"

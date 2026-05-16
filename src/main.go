@@ -108,7 +108,7 @@ func Begin() (ContextWrapperInterface, error) {
 func SearchProducts() {
 	ctx, err := Begin()
 	if err != nil {
-		slog.Error("Error in Begin", "error", err)
+		Log(LE0, "Error in Begin", "error", err)
 		os.Exit(1)
 	}
 	defer ctx.Close()
@@ -123,7 +123,7 @@ func SearchProducts() {
 func GetDetails() {
 	ctx, err := Begin()
 	if err != nil {
-		slog.Error("Error in Begin", "error", err)
+		Log(LE0, "Error in Begin", "error", err)
 		os.Exit(1)
 	}
 	defer ctx.Close()
@@ -172,15 +172,15 @@ func ProcessData() {
 			}
 		}
 
-		slog.Info("ProcessData no product found, deleting file", "path", filePath)
+		Log(LI0, "ProcessData no product found, deleting file", "path", filePath)
 		if err := os.Remove(filePath); err != nil {
-			slog.Error("ProcessData error deleting file", "path", filePath, "error", err)
+			Log(LE0, "ProcessData error deleting file", "path", filePath, "error", err)
 		}
 
 		return true
 	}, true)
 
-	slog.Info("ProcessData all files processed")
+	Log(LI0, "ProcessData all files processed")
 }
 
 func main() {
@@ -214,7 +214,7 @@ func main() {
 	case "get_details":
 		GetDetails()
 	default:
-		slog.Error("Unknown action", "action", *action)
+		Log(LE0, "Unknown action", "action", *action)
 		os.Exit(1)
 	}
 }

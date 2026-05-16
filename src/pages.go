@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
 	"net/url"
 	"time"
 )
@@ -48,13 +47,13 @@ func (pl *Pages) ScrollDown() error {
 			if intHeight > maxScrollHeight {
 				failCounter = 0
 				maxScrollHeight = intHeight
-				slog.Debug("ScrollDown maxScrollHeight", "height", maxScrollHeight)
+				Log(LD0, "ScrollDown maxScrollHeight", "height", maxScrollHeight)
 			} else {
 				failCounter++
 			}
 		}
 		if failCounter >= maxFailCounter {
-			slog.Info("ScrollDown maxScrollHeight did not increase", "failCounter", failCounter, "maxScrollHeight", maxScrollHeight)
+			Log(LI0, "ScrollDown maxScrollHeight did not increase", "failCounter", failCounter, "maxScrollHeight", maxScrollHeight)
 			return nil
 		}
 		time.Sleep(1 * time.Second)
@@ -73,6 +72,6 @@ func (pl *Pages) MarketpaceSearch(query string) error {
 
 func (pl *Pages) GoToProduct(id string) error {
 	baseUrl := fmt.Sprintf("https://www.facebook.com/marketplace/item/%s", id)
-	slog.Info("GoToProduct", "url", baseUrl)
+	Log(LI0, "GoToProduct", "url", baseUrl)
 	return pl.Page.Goto(baseUrl)
 }
