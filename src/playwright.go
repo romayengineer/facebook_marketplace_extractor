@@ -35,6 +35,7 @@ type PageWrapperInterface interface {
 	Locator(selector string) LocatorWrapperInterface
 	Close() error
 	GetByRole(role playwright.AriaRole) LocatorWrapperInterface
+	Evaluate(expression string, arg ...any) (any, error)
 }
 
 type BrowserWrapperInterface interface {
@@ -131,6 +132,11 @@ func NewPageWrapper(page playwright.Page) PageWrapperInterface {
 		Page: page,
 	}
 	return &pageWrapper
+}
+
+func (pw *PageWrapper) Evaluate(expression string, arg ...any) (any, error) {
+	response, err := pw.Page.Evaluate(expression, arg...)
+	return response, err
 }
 
 func (pw *PageWrapper) GetByRole(role playwright.AriaRole) LocatorWrapperInterface {
