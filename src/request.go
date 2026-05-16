@@ -88,6 +88,9 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 	var newResponse playwright.APIResponse
 	var requestCounter int
 
+	log.Printf("RunRequestDecompress ProcessData after %04d requests\n", requestCounter)
+	ProcessData()
+
 	ForEachDetail(func(filePath string, jsonData any) bool {
 
 		description := GetKey(jsonData, "Description")
