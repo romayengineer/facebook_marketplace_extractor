@@ -95,20 +95,20 @@ func (ceh *ContextEventHandlers) OnRequest(request playwright.Request) {
 		}
 		newResponse, err := RunRequest(ceh.ctx, req, false)
 		if err != nil {
-			Log(LE0, "Error in RunRequest", "error", err)
+			LogError0("Error in RunRequest", "error", err)
 			return
 		}
 		body, err := newResponse.Body()
 		if err != nil {
-			Log(LE0, "Error response.Body()", "error", err)
+			LogError0("Error response.Body()", "error", err)
 		}
-		Log(LD0, "OnRequest body original", "size", len(body))
+		LogDebug0("OnRequest body original", "size", len(body))
 		body, err = DecompressBrotli(body)
 		if err != nil {
-			Log(LE0, "Error DecompressBrotli()", "error", err)
+			LogError0("Error DecompressBrotli()", "error", err)
 			return
 		}
-		Log(LD0, "OnRequest body decompressed", "size", len(body))
+		LogDebug0("OnRequest body decompressed", "size", len(body))
 	}(request)
 }
 
@@ -121,24 +121,24 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 		}
 		body, err := resp.Body()
 		if err != nil {
-			Log(LE0, "Error resp.Body()", "error", err)
+			LogError0("Error resp.Body()", "error", err)
 			return
 		}
 		jsonDatas, err := ExtractJsonFromBody(body)
 		if err != nil {
-			Log(LE0, "Error ExtractJsonFromBody()", "error", err)
+			LogError0("Error ExtractJsonFromBody()", "error", err)
 			return
 		}
 		_, err = WriteJsonResponse(jsonDatas, shouldSkipRequest.friendlyName)
 		if err != nil {
-			Log(LE0, "Error WriteJsonResponse()", "error", err)
+			LogError0("Error WriteJsonResponse()", "error", err)
 		}
 		if shouldSkipRequest.friendlyName != "MarketplacePDPContainerQuery" {
 			return
 		}
 		newResponse, err := RunRequestDecompress(ceh.ctx, request, shouldSkipRequest)
 		if err != nil {
-			Log(LE0, "Error in RunRequestDecompress", "error", err)
+			LogError0("Error in RunRequestDecompress", "error", err)
 			return
 		}
 		CompareResponses(resp, newResponse)
@@ -160,16 +160,16 @@ func GetExtension(path string) string {
 func ParseURL(urlString string) {
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
-		Log(LE0, "Error parsing URL", "error", err)
+		LogError0("Error parsing URL", "error", err)
 		return
 	}
 
-	Log(LD0, "URL details", "scheme", parsedURL.Scheme, "host", parsedURL.Host, "port", parsedURL.Port(), "path", parsedURL.Path)
+	LogDebug0("URL details", "scheme", parsedURL.Scheme, "host", parsedURL.Host, "port", parsedURL.Port(), "path", parsedURL.Path)
 
 	if parsedURL.RawQuery != "" {
 		query := parsedURL.Query()
 		for key, values := range query {
-			Log(LD0, "Query param", "key", key, "values", values)
+			LogDebug0("Query param", "key", key, "values", values)
 		}
 	}
 }
@@ -184,7 +184,7 @@ func (ceh *ContextEventHandlers) Route(r playwright.Route) {
 	urlString := request.URL()
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
-		Log(LE0, "Error parsing URL", "error", err)
+		LogError0("Error parsing URL", "error", err)
 		r.Continue()
 		return
 	}

@@ -43,10 +43,10 @@ func RunRequestWithData(ctx ContextWrapperInterface, pwRequest playwright.Reques
 		return nil, fmt.Errorf("Error in GetHeaders: %w\n", err)
 	}
 
-	Log(LD0, "RunRequest", "url", url, "method", method)
-	Log(LD0, "RunRequest request headers", "count", len(headers))
+	LogDebug0("RunRequest", "url", url, "method", method)
+	LogDebug0("RunRequest request headers", "count", len(headers))
 	for h, v := range headers {
-		Log(LD0, "RunRequest header", "key", h, "value", v)
+		LogDebug0("RunRequest header", "key", h, "value", v)
 	}
 
 	response, err := ctx.Fetch(url,
@@ -61,9 +61,9 @@ func RunRequestWithData(ctx ContextWrapperInterface, pwRequest playwright.Reques
 	}
 
 	responseHeaders := response.Headers()
-	Log(LD0, "RunRequest response headers", "count", len(responseHeaders))
+	LogDebug0("RunRequest response headers", "count", len(responseHeaders))
 	for h, v := range responseHeaders {
-		Log(LD0, "RunRequest response header", "key", h, "value", v)
+		LogDebug0("RunRequest response header", "key", h, "value", v)
 	}
 
 	return response, nil
@@ -83,7 +83,7 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 	var newResponse playwright.APIResponse
 	var requestCounter int
 
-	Log(LI0, "RunRequestDecompress starting", "initialRequests", requestCounter)
+	LogInfo0("RunRequestDecompress starting", "initialRequests", requestCounter)
 	ProcessData()
 
 	ForEachDetail(func(filePath string, jsonData any) bool {
@@ -108,7 +108,7 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 
 		if (requestCounter % 20) == 0 {
 			time.Sleep(3 * time.Second)
-			Log(LI0, "RunRequestDecompress checkpoint", "requests", requestCounter)
+			LogInfo0("RunRequestDecompress checkpoint", "requests", requestCounter)
 			ProcessData()
 		}
 
@@ -117,7 +117,7 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 	}, false)
 
 	time.Sleep(3 * time.Second)
-	Log(LI0, "RunRequestDecompress finished", "totalRequests", requestCounter)
+	LogInfo0("RunRequestDecompress finished", "totalRequests", requestCounter)
 	ProcessData()
 
 	return newResponse, err
@@ -148,17 +148,17 @@ func RunRequestDecompressOne(ctx ContextWrapperInterface, pwRequest playwright.R
 		return response, err
 	}
 
-	Log(LD0, "Body decompressed", "size", len(bodyDecompressed))
+	LogDebug0("Body decompressed", "size", len(bodyDecompressed))
 
 	jsonDatas, err := ExtractJsonFromBody(bodyDecompressed)
 	if err != nil {
-		Log(LE0, "Error ExtractJsonFromBody()", "error", err)
+		LogError0("Error ExtractJsonFromBody()", "error", err)
 		return response, err
 	}
 
 	_, err = WriteJsonResponse(jsonDatas, friendlyNameToProcess)
 	if err != nil {
-		Log(LE0, "Error WriteJsonResponse()", "error", err)
+		LogError0("Error WriteJsonResponse()", "error", err)
 		return response, err
 	}
 
@@ -192,12 +192,12 @@ func CompareResponses(response playwright.Response, newResponse playwright.APIRe
 	}
 
 	if AreStringsEqual(bodyDecoded, newBodyDecoded) {
-		Log(LI0, "Response bodies are identical")
+		LogInfo0("Response bodies are identical")
 		return true, nil
 	} else {
 		bodyDecodedLen := len(bodyDecoded)
 		newBodyDecodedLen := len(newBodyDecoded)
-		Log(LW0, "Response bodies differ", "originalLength", bodyDecodedLen, "newLength", newBodyDecodedLen)
+		LogWarn0("Response bodies differ", "originalLength", bodyDecodedLen, "newLength", newBodyDecodedLen)
 		return false, nil
 	}
 }
