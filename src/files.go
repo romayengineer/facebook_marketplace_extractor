@@ -29,8 +29,16 @@ func WriteFileAndDirs(name string, data []byte, perm os.FileMode) error {
 	return nil
 }
 
+func TimeNow() int64 {
+	return time.Now().UnixNano()
+}
+
+func TimeYesterday() int64 {
+	return time.Now().AddDate(0, 0, -1).UnixNano()
+}
+
 func WriteRandomJsonFile(prefix string, friendly_name string, body []byte) error {
-	timestamp := time.Now().UnixNano()
+	timestamp := TimeNow()
 	random := rand.Intn(1000000)
 
 	fileDir := filepath.Join(DataDir, friendly_name)

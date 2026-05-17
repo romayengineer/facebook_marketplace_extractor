@@ -162,10 +162,10 @@ func SaveProductsIfAny(products []MarketplaceItemDetails) bool {
 	return false
 }
 
-func GetTimestamp(filePath string) (int, error) {
+func GetTimestamp(filePath string) (int64, error) {
 	lastFilePathParts := strings.SplitN(filepath.Base(filePath), "_", 3)
 	lastTimestampStr := lastFilePathParts[1]
-	lastTimestamp, err := strconv.Atoi(lastTimestampStr)
+	lastTimestamp, err := strconv.ParseInt(lastTimestampStr, 10, 64)
 	if err != nil {
 		LogError0("GetTimestamp", "cound not get timestamp", "filePath", filePath)
 		return 0, fmt.Errorf("cound not get timestamp %s\n", filePath)
@@ -173,7 +173,7 @@ func GetTimestamp(filePath string) (int, error) {
 	return lastTimestamp, nil
 }
 
-func ProcessData(startAtTimestamp int) (int, error) {
+func ProcessData(startAtTimestamp int64) (int64, error) {
 	var lastFilePath string
 	var filesProcessedCounter int
 	var filesDeletedCounter int
