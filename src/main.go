@@ -177,6 +177,7 @@ func ProcessData(startAtTimestamp int64) (int64, error) {
 	var lastFilePath string
 	var filesProcessedCounter int
 	var filesDeletedCounter int
+	var gotRateLimit bool
 
 	productExtractors := NewProductExtractors()
 	ForEachResponse(func(filePath string, jsonData any) bool {
@@ -200,6 +201,10 @@ func ProcessData(startAtTimestamp int64) (int64, error) {
 			}
 		}
 
+		if IsErrorRateLimit(jsonData) {
+			gotRateLimit = true
+		}
+
 		LogDebug0("ProcessData", "no product found, deleting file", "path", filePath)
 		if err := os.Remove(filePath); err != nil {
 			LogError0("ProcessData", "error deleting file", "path", filePath, "error", err)
@@ -217,6 +222,10 @@ func ProcessData(startAtTimestamp int64) (int64, error) {
 	}
 
 	LogInfo0("ProcessData", "all files processed", "lastTimestamp", lastTimestamp, "filesProcessedCounter", filesProcessedCounter, "filesDeletedCounter", filesDeletedCounter)
+
+	if gotRateLimit {
+		LogFatal("got rate limit")
+	}
 
 	return lastTimestamp, nil
 }

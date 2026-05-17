@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
 type AttributeData struct {
@@ -69,6 +70,30 @@ func NewProductExtractors() ProductExtractors {
 			},
 		},
 	}
+}
+
+func IsErrorRateLimit(data any) bool {
+	errors := GetKey(data, "errors")
+
+	errorsList, ok := errors.([]any)
+	if !ok {
+		return false
+	}
+
+	for _, err := range errorsList {
+		message := GetKey(err, "message")
+
+		if message == nil {
+			continue
+		}
+
+		if strings.ToLower(message.(string)) == "rate limit exceeded" {
+			return true
+		}
+
+	}
+
+	return false
 }
 
 func ProductDetailsValid(data any) bool {
