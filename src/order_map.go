@@ -65,7 +65,7 @@ func (om *OrderedMap) Keys() []string {
 func (om *OrderedMap) Print() {
 	for _, key := range om.Keys() {
 		value, _ := om.Get(key)
-		LogDebug0("OrderedMap entry", "key", key, "value", value)
+		LogDebug0("Print", "entry", "key", key, "value", value)
 	}
 }
 

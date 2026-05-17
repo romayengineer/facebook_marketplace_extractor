@@ -18,46 +18,47 @@ const (
 	LE0 slog.Level = 8
 )
 
-func Log(level slog.Level, msg string, args ...any) {
-	slog.Log(context.Background(), level, msg, args...)
+func Log(level slog.Level, funcName string, msg string, args ...any) {
+	allArgs := append([]any{"funcName", funcName}, args...)
+	slog.Log(context.Background(), level, msg, allArgs...)
 }
 
-func LogDebug0(msg string, args ...any) {
-	slog.Log(context.Background(), LD0, msg, args...)
+func LogDebug0(funcName string, msg string, args ...any) {
+	Log(LD0, funcName, msg, args...)
 }
 
-func LogDebug1(msg string, args ...any) {
-	slog.Log(context.Background(), LD1, msg, args...)
+func LogDebug1(funcName string, msg string, args ...any) {
+	Log(LD1, funcName, msg, args...)
 }
 
-func LogDebug2(msg string, args ...any) {
-	slog.Log(context.Background(), LD2, msg, args...)
+func LogDebug2(funcName string, msg string, args ...any) {
+	Log(LD2, funcName, msg, args...)
 }
 
-func LogDebug3(msg string, args ...any) {
-	slog.Log(context.Background(), LD3, msg, args...)
+func LogDebug3(funcName string, msg string, args ...any) {
+	Log(LD3, funcName, msg, args...)
 }
 
-func LogInfo0(msg string, args ...any) {
-	slog.Log(context.Background(), LI0, msg, args...)
+func LogInfo0(funcName string, msg string, args ...any) {
+	Log(LI0, funcName, msg, args...)
 }
 
-func LogInfo1(msg string, args ...any) {
-	slog.Log(context.Background(), LI1, msg, args...)
+func LogInfo1(funcName string, msg string, args ...any) {
+	Log(LI1, funcName, msg, args...)
 }
 
-func LogInfo2(msg string, args ...any) {
-	slog.Log(context.Background(), LI2, msg, args...)
+func LogInfo2(funcName string, msg string, args ...any) {
+	Log(LI2, funcName, msg, args...)
 }
 
-func LogInfo3(msg string, args ...any) {
-	slog.Log(context.Background(), LI3, msg, args...)
+func LogInfo3(funcName string, msg string, args ...any) {
+	Log(LI3, funcName, msg, args...)
 }
 
-func LogWarn0(msg string, args ...any) {
-	slog.Log(context.Background(), LW0, msg, args...)
+func LogWarn0(funcName string, msg string, args ...any) {
+	Log(LW0, funcName, msg, args...)
 }
 
-func LogError0(msg string, args ...any) {
-	slog.Log(context.Background(), LE0, msg, args...)
+func LogError0(funcName string, msg string, args ...any) {
+	Log(LE0, funcName, msg, args...)
 }

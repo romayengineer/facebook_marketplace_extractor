@@ -27,7 +27,7 @@ func NewConfig() (*Config, error) {
 	password := os.Getenv("FME_PASSWORD")
 
 	if username == "" || password == "" {
-		LogError0("USERNAME or PASSWORD not set in .env file")
+		LogError0("NewConfig", "USERNAME or PASSWORD not set in .env file")
 		os.Exit(1)
 	}
 

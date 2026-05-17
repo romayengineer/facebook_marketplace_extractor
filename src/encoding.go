@@ -24,7 +24,7 @@ func GuessEncoding(data []byte) string {
 	detector := chardet.NewTextDetector()
 	result, err := detector.DetectBest(data)
 	if err == nil && result != nil {
-		LogDebug0("Encoding detected", "charset", result.Charset, "confidence", result.Confidence)
+		LogDebug0("GuessEncoding", "Encoding detected", "charset", result.Charset, "confidence", result.Confidence)
 		return result.Charset
 	}
 	return "utf-8"

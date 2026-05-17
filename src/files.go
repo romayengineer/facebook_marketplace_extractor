@@ -72,7 +72,7 @@ func GetFilePaths(prefix string, sortit bool) []string {
 	})
 
 	if err != nil {
-		LogError0("Error reading data directory", "error", err)
+		LogError0("GetFilePaths", "Error reading data directory", "error", err)
 		os.Exit(1)
 	}
 
@@ -100,13 +100,13 @@ func ForEachJsonInData(prefix string, process func(filePath string, jsonData any
 
 		body, err := os.ReadFile(filePath)
 		if err != nil {
-			LogError0("Error reading file", "path", filePath, "error", err)
+			LogError0("ForEachJsonInData", "Error reading file", "path", filePath, "error", err)
 			continue
 		}
 
 		var jsonData any
 		if err := json.Unmarshal(body, &jsonData); err != nil {
-			LogError0("Error parsing JSON", "path", filePath, "error", err)
+			LogError0("ForEachJsonInData", "Error parsing JSON", "path", filePath, "error", err)
 			continue
 		}
 
