@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -160,9 +162,37 @@ func SaveProductsIfAny(products []MarketplaceItemDetails) bool {
 	return false
 }
 
-func ProcessData() {
+func GetTimestamp(filePath string) (int, error) {
+	lastFilePathParts := strings.SplitN(filepath.Base(filePath), "_", 3)
+	lastTimestampStr := lastFilePathParts[1]
+	lastTimestamp, err := strconv.Atoi(lastTimestampStr)
+	if err != nil {
+		LogError0("GetTimestamp", "cound not get timestamp", "filePath", filePath)
+		return 0, fmt.Errorf("cound not get timestamp %s\n", filePath)
+	}
+	return lastTimestamp, nil
+}
+
+func ProcessData(startAtTimestamp int) (int, error) {
+	var lastFilePath string
+	var filesProcessedCounter int
+	var filesDeletedCounter int
+
 	productExtractors := NewProductExtractors()
 	ForEachResponse(func(filePath string, jsonData any) bool {
+		lastFilePath = filePath
+
+		fileTimestamp, err := GetTimestamp(filePath)
+		if err != nil {
+			return true
+		}
+
+		if fileTimestamp < startAtTimestamp {
+			return true
+		}
+
+		filesProcessedCounter += 1
+
 		for _, extractor := range productExtractors.extractors {
 			product, _ := extractor.extractor(jsonData)
 			if hasAny := SaveProductsIfAny(product); hasAny == true {
@@ -170,15 +200,25 @@ func ProcessData() {
 			}
 		}
 
-		LogInfo0("ProcessData", "no product found, deleting file", "path", filePath)
+		LogDebug0("ProcessData", "no product found, deleting file", "path", filePath)
 		if err := os.Remove(filePath); err != nil {
 			LogError0("ProcessData", "error deleting file", "path", filePath, "error", err)
 		}
 
+		filesDeletedCounter += 1
+
 		return true
+
 	}, true)
 
-	LogInfo0("ProcessData", "all files processed")
+	lastTimestamp, err := GetTimestamp(lastFilePath)
+	if err != nil {
+		return lastTimestamp, err
+	}
+
+	LogInfo0("ProcessData", "all files processed", "lastTimestamp", lastTimestamp, "filesProcessedCounter", filesProcessedCounter, "filesDeletedCounter", filesDeletedCounter)
+
+	return lastTimestamp, nil
 }
 
 func main() {
@@ -188,7 +228,7 @@ func main() {
 	case "search":
 		SearchProducts()
 	case "process_data":
-		ProcessData()
+		ProcessData(0)
 	case "get_details":
 		GetDetails()
 	default:

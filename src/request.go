@@ -84,7 +84,7 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 	var requestCounter int
 
 	LogInfo0("RunRequestDecompress", "starting", "requestCounter", requestCounter)
-	ProcessData()
+	lastTimestamp, _ := ProcessData(0)
 
 	ForEachDetail(func(filePath string, jsonData any) bool {
 
@@ -109,7 +109,7 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 		if (requestCounter % 20) == 0 {
 			time.Sleep(3 * time.Second)
 			LogInfo0("RunRequestDecompress", "checkpoint", "requestCounter", requestCounter)
-			ProcessData()
+			lastTimestamp, _ = ProcessData(lastTimestamp)
 		}
 
 		return true
@@ -118,7 +118,7 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 
 	time.Sleep(3 * time.Second)
 	LogInfo0("RunRequestDecompress", "finished", "requestCounter", requestCounter)
-	ProcessData()
+	lastTimestamp, _ = ProcessData(lastTimestamp)
 
 	return newResponse, err
 }
