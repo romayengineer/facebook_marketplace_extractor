@@ -1,0 +1,1 @@
+time 7z a ../data_`date +%s`.zip data/
