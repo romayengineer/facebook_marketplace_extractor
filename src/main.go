@@ -131,7 +131,7 @@ func GetDetails() {
 	page, _ := ctx.NewPage()
 	pages, _ := NewPages(page)
 
-	ForEachDetail(func(filePath string, jsonData any) bool {
+	ForEachDetail(func(filePath string, jsonData map[string]any) bool {
 		PriceAmount := GetKey(jsonData, "PriceAmount")
 		if PriceAmount != nil {
 			return true
@@ -180,7 +180,7 @@ func ProcessData(startAtTimestamp int64) (int64, error) {
 	var gotRateLimit bool
 
 	productExtractors := NewProductExtractors()
-	ForEachResponse(func(filePath string, jsonData any) bool {
+	ForEachResponse(func(filePath string, jsonData map[string]any) bool {
 		lastFilePath = filePath
 
 		fileTimestamp, err := GetTimestamp(filePath)

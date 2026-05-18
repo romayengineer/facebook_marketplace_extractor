@@ -308,7 +308,7 @@ func ProcessDataInDB(startAtTimestamp int64) (int64, error) {
 		return filesProcessedCounter, err
 	}
 
-	ForEachDetail(func(filePath string, jsonData any) bool {
+	ForEachDetail(func(filePath string, jsonData map[string]any) bool {
 
 		description := GetKey(jsonData, "Description")
 		if description == nil {

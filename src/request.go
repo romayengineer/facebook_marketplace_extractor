@@ -86,7 +86,7 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 	LogInfo0("RunRequestDecompress", "starting", "requestCounter", requestCounter)
 	lastTimestamp, _ := ProcessData(0)
 
-	ForEachDetail(func(filePath string, jsonData any) bool {
+	ForEachDetail(func(filePath string, jsonData map[string]any) bool {
 
 		description := GetKey(jsonData, "Description")
 		if description != nil {
