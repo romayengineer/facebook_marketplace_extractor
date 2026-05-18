@@ -72,6 +72,36 @@ func NewProductExtractors() ProductExtractors {
 	}
 }
 
+func ToMarketplaceItemDetails(data any) MarketplaceItemDetails {
+	return MarketplaceItemDetails{
+		ID:                       GetKey(data, "ID"),
+		IDLong:                   GetKey(data, "IDLong"),
+		Category:                 GetKey(data, "Category"),
+		URL:                      GetKey(data, "URL"),
+		Title:                    GetKey(data, "Title"),
+		Description:              GetKey(data, "Description"),
+		PriceAmount:              GetKey(data, "PriceAmount"),
+		PriceCurrency:            GetKey(data, "PriceCurrency"),
+		AttributeData:            GetKey(data, "AttributeData"),
+		CreationTime:             GetKey(data, "CreationTime"),
+		LocationLatitud:          GetKey(data, "LocationLatitud"),
+		LocationLongitude:        GetKey(data, "LocationLongitude"),
+		LocationGeocodeCityID:    GetKey(data, "LocationGeocodeCityID"),
+		LocationGeocodeCityName1: GetKey(data, "LocationGeocodeCityName1"),
+		LocationGeocodeCityName2: GetKey(data, "LocationGeocodeCityName2"),
+		LocationGeocodeStateCode: GetKey(data, "LocationGeocodeStateCode"),
+		SellerID:                 GetKey(data, "SellerID"),
+		SellerName:               GetKey(data, "SellerName"),
+		Photos:                   GetKey(data, "Photos"),
+		PhotoPrimary:             GetKey(data, "PhotoPrimary"),
+		DeliveryTypes:            GetKey(data, "DeliveryTypes"),
+		IsHidden:                 GetKey(data, "IsHidden"),
+		IsLive:                   GetKey(data, "IsLive"),
+		IsPending:                GetKey(data, "IsPending"),
+		IsSold:                   GetKey(data, "IsSold"),
+	}
+}
+
 func IsErrorRateLimit(data any) bool {
 	errors := GetKey(data, "errors")
 

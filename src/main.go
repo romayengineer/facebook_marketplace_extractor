@@ -232,12 +232,20 @@ func ProcessData(startAtTimestamp int64) (int64, error) {
 
 func main() {
 	flags := NewFlags()
+	LogInfo0("main", "flags", "action", flags.action)
 
 	switch flags.action {
 	case "search":
 		SearchProducts()
 	case "process_data":
 		ProcessData(0)
+	case "serve":
+		Serve()
+	case "save":
+		_, err := ProcessDataInDB(0)
+		if err != nil {
+			LogFatal(err)
+		}
 	case "get_details":
 		GetDetails()
 	default:

@@ -13,7 +13,7 @@ type Flags struct {
 }
 
 func NewFlags() Flags {
-	action := flag.String("action", "search", "Action to perform: search, process_data, get_details")
+	action := flag.String("action", "search", "Action to perform: search, process_data, get_details, save")
 	logLevel := flag.String("log-level", "debug", "Log level: debug, info, warn, error")
 	flag.Parse()
 
