@@ -90,6 +90,17 @@ def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
     return df
 
 
+def get_highest_price(df: pd.DataFrame, count: int) -> pd.DataFrame:
+    # Show top 5 highest priced products
+    print(f"\n{'='*60}")
+    print(f"Top {count} Highest Priced Products:")
+    print(f"{'='*60}")
+    top = df.nlargest(count, 'price_amount')[['title', 'price_amount']]
+    for idx, (_, row) in enumerate(top.iterrows(), 1):
+        print(f"{idx}. {row['title'][:70]} - ${row['price_amount']:,.2f}")
+    return top
+
+
 def df_statistics(df: pd.DataFrame) -> None:
 
     print(f"✓ Loaded {len(df)} products from database")
@@ -111,6 +122,8 @@ def df_statistics(df: pd.DataFrame) -> None:
     # Show price statistics
     print(f"\nPrice statistics:")
     print(df['price_amount'].describe())
+    
+    get_highest_price(df, 10)
 
 
 def filter_price_outliers(df: pd.DataFrame) -> pd.DataFrame:
