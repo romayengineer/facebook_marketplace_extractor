@@ -70,6 +70,18 @@ def drop_higher_than(df: pd.DataFrame, limit: int) -> pd.DataFrame:
     return df
 
 
+def drop_description_len_higher_than(df: pd.DataFrame, limit: int) -> pd.DataFrame:
+    # Drop products with description length > limit
+    initial_count = len(df)
+    df = df[df['description'].str.len() <= limit]
+    removed_count = initial_count - len(df)
+
+    if removed_count > 0:
+        print(f"Dropped {removed_count} products with len(description) > {limit}")
+
+    return df
+
+
 def currency_normalization(df: pd.DataFrame, limit: int, usd_price) -> pd.DataFrame:
     # Convert prices: if price > limit, divide by USD Price (currency normalization)
     df['price_amount'] = df['price_amount'].apply(
@@ -91,8 +103,10 @@ def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
     df = currency_normalization(df, 20000, 1400)
     
     df = drop_lower_than(df, 200)
-    
+
     df = drop_higher_than(df, 5000)
+
+    df = drop_description_len_higher_than(df, 500)
 
     return df
 
@@ -164,7 +178,7 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> N
     df = products_df.copy()
 
     title_features, title_vectorizer = get_title_features(df)
-    description_features, description_vectorizer = get_title_features(df)
+    description_features, description_vectorizer = get_description_features(df)
 
     # Normalize price feature
     price_scaled = StandardScaler().fit_transform(df[['price_amount']])
@@ -395,7 +409,7 @@ def train_price_prediction_model(df: pd.DataFrame) -> tuple:
     print(f"{'='*60}")
 
     title_features, title_vectorizer = get_title_features(df)
-    description_features, description_vectorizer = get_title_features(df)
+    description_features, description_vectorizer = get_description_features(df)
 
 
     # Combine features
