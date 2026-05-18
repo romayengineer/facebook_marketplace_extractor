@@ -114,6 +114,10 @@ def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
     df = drop_higher_than(df, 10000)
 
     df = drop_description_len_higher_than(df, 500)
+    
+    df = filter_price_outliers(df)
+    
+    df = calculate_distance(df)
 
     return df
 
@@ -781,8 +785,6 @@ def predict_product_prices(df: pd.DataFrame) -> pd.DataFrame:
 def main():
     conn = get_conn()
     products_df = get_products(conn)
-    products_df = filter_price_outliers(products_df)
-    products_df = calculate_distance(products_df)
 
     df_statistics(products_df)
     plot_prices(products_df)
