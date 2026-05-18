@@ -94,7 +94,7 @@ def currency_normalization(df: pd.DataFrame, limit: int, usd_price) -> pd.DataFr
 def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
 
     # Query only the three columns we need
-    query = "SELECT title, description, price_amount FROM products"
+    query = "SELECT id, title, description, category, price_amount FROM products"
     df = pd.read_sql_query(query, conn)
 
     # Ensure price_amount is float
@@ -179,12 +179,13 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> N
 
     title_features, title_vectorizer = get_title_features(df)
     description_features, description_vectorizer = get_description_features(df)
+    category_features, category_vectorizer = get_category_features(df)
 
     # Normalize price feature
     price_scaled = StandardScaler().fit_transform(df[['price_usd']])
 
-    # Combine all features: title (50) + description (50) + price (1) = 101 dimensions
-    features = np.hstack([title_features, description_features, price_scaled])
+    # Combine all features: title (50) + description (50) + category (50) + price (1) = 151 dimensions
+    features = np.hstack([title_features, description_features, category_features, price_scaled])
     print(f"Combined feature dimensions: {features.shape[1]}")
 
     # Apply K-means clustering
@@ -384,6 +385,7 @@ def get_title_features(df: pd.DataFrame) -> Tuple[numpy.ndarray, TfidfVectorizer
     title_features = title_vectorizer.fit_transform(df['title'].fillna('')).toarray()
     return title_features, title_vectorizer
 
+
 def get_description_features(df: pd.DataFrame) -> Tuple[numpy.ndarray, TfidfVectorizer]:
     # Vectorize description features
     print("Vectorizing description features...")
@@ -394,6 +396,17 @@ def get_description_features(df: pd.DataFrame) -> Tuple[numpy.ndarray, TfidfVect
     )
     description_features = description_vectorizer.fit_transform(df['description'].fillna('')).toarray()
     return description_features, description_vectorizer
+
+
+def get_category_features(df: pd.DataFrame) -> Tuple[numpy.ndarray, TfidfVectorizer]:
+    # Vectorize category features
+    print("Vectorizing category features...")
+    category_vectorizer = TfidfVectorizer(
+        max_features=50,
+        lowercase=True
+    )
+    category_features = category_vectorizer.fit_transform(df['category'].fillna('')).toarray()
+    return category_features, category_vectorizer
 
 
 def save_model(model: Any, file_name: str) -> None:
@@ -410,10 +423,10 @@ def train_price_prediction_model(df: pd.DataFrame) -> tuple:
 
     title_features, title_vectorizer = get_title_features(df)
     description_features, description_vectorizer = get_description_features(df)
+    category_features, category_vectorizer = get_category_features(df)
 
-
-    # Combine features
-    features = np.hstack([title_features, description_features])
+    # Combine features: title (50) + description (50) + category (50) = 150 dimensions
+    features = np.hstack([title_features, description_features, category_features])
     target = df['price_usd'].values
 
     print(f"Combined feature dimensions: {features.shape[1]}")
@@ -459,24 +472,30 @@ def train_price_prediction_model(df: pd.DataFrame) -> tuple:
     top_features_idx = np.argsort(feature_importance)[-10:][::-1]
 
     print(f"\nTop 10 Important Features:")
+    title_len = len(title_vectorizer.get_feature_names_out())
+    desc_len = len(description_vectorizer.get_feature_names_out())
+
     for rank, idx in enumerate(top_features_idx, 1):
-        if idx < len(title_vectorizer.get_feature_names_out()):
+        if idx < title_len:
             feature_name = title_vectorizer.get_feature_names_out()[idx]
             source = "title"
-        else:
-            feature_name = description_vectorizer.get_feature_names_out()[idx - len(title_vectorizer.get_feature_names_out())]
+        elif idx < title_len + desc_len:
+            feature_name = description_vectorizer.get_feature_names_out()[idx - title_len]
             source = "description"
+        else:
+            feature_name = category_vectorizer.get_feature_names_out()[idx - title_len - desc_len]
+            source = "category"
         importance = feature_importance[idx]
         print(f"  {rank}. {feature_name} ({source}): {importance:.4f}")
-
 
     save_model(model, 'price_prediction_model.pkl')
     save_model(title_vectorizer, 'title_vectorizer.pkl')
     save_model(description_vectorizer, 'description_vectorizer.pkl')
-    
+    save_model(category_vectorizer, 'category_vectorizer.pkl')
+
     print(f"\n✓ Model and vectorizers saved")
 
-    return model, title_vectorizer, description_vectorizer, (X_test, y_test, y_pred_test)
+    return model, title_vectorizer, description_vectorizer, category_vectorizer, (X_test, y_test, y_pred_test)
 
 
 def plot_description_length_distribution(df: pd.DataFrame) -> None:
@@ -564,6 +583,8 @@ def predict_product_prices(df: pd.DataFrame) -> pd.DataFrame:
             title_vectorizer = pickle.load(f)
         with open('description_vectorizer.pkl', 'rb') as f:
             description_vectorizer = pickle.load(f)
+        with open('category_vectorizer.pkl', 'rb') as f:
+            category_vectorizer = pickle.load(f)
         print("✓ Model and vectorizers loaded successfully")
     except FileNotFoundError as e:
         print(f"Error: Could not load model files. {e}")
@@ -581,8 +602,12 @@ def predict_product_prices(df: pd.DataFrame) -> pd.DataFrame:
     print("Vectorizing descriptions...")
     description_features = description_vectorizer.transform(result_df['description'].fillna('')).toarray()
 
-    # Combine features
-    features = np.hstack([title_features, description_features])
+    # Vectorize category using the saved vectorizer
+    print("Vectorizing categories...")
+    category_features = category_vectorizer.transform(result_df['category'].fillna('')).toarray()
+
+    # Combine features: title (50) + description (50) + category (50) = 150 dimensions
+    features = np.hstack([title_features, description_features, category_features])
     print(f"Feature dimensions: {features.shape[1]}")
 
     # Make predictions
