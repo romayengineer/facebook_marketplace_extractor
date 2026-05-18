@@ -39,6 +39,18 @@ def get_conn() -> sqlite3.Connection:
     return conn
 
 
+def drop_lower_than(df: pd.DataFrame, limit: int) -> pd.DataFrame:
+    # Drop products with price < limit
+    initial_count = len(df)
+    df = df[df['price_amount'] >= limit]
+    removed_count = initial_count - len(df)
+
+    if removed_count > 0:
+        print(f"Dropped {removed_count} products with price < {limit}")
+        
+    return df
+
+
 def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
 
     # Query only the three columns we need
@@ -52,6 +64,8 @@ def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
     df['price_amount'] = df['price_amount'].apply(
         lambda price: price / 1400 if price > 3000 else price
     )
+    
+    df = drop_lower_than(df, 100)
 
     return df
 
