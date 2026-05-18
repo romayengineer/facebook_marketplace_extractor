@@ -105,7 +105,10 @@ def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
     
     df = currency_normalization(df, 20000, 1395)
     
-    df = drop_lower_than(df, 200)
+    initial_count = len(df)
+    print(f"Starting count of products {initial_count}")
+    
+    df = drop_lower_than(df, 50)
 
     df = drop_higher_than(df, 10000)
 
@@ -451,8 +454,8 @@ def get_price_model() -> RandomForestRegressor:
     - 1 would use a single core (slower but useful for debugging)
     """
     return RandomForestRegressor(
-        n_estimators=500,
-        max_depth=25,
+        n_estimators=1000,
+        max_depth=30,
         min_samples_split=5,
         random_state=42,
         n_jobs=-1
