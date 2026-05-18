@@ -34,9 +34,7 @@ def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
 
     return df
 
-def product_statistics(conn: sqlite3.Connection) -> None:
-    
-    df = get_products(conn)
+def product_statistics(df: pd.DataFrame) -> None:
 
     print(f"✓ Loaded {len(df)} products from database")
     print(f"\nDataset shape: {df.shape}")
@@ -61,10 +59,12 @@ def product_statistics(conn: sqlite3.Connection) -> None:
 
 def main():
     conn = get_conn()
+    products_df = get_products(conn)
     
-    product_statistics(conn)
+    product_statistics(products_df)
     
     conn.close()
+
 
 if __name__ == "__main__":
     main()
