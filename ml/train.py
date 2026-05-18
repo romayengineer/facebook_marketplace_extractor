@@ -439,6 +439,80 @@ def plot_prices(df: pd.DataFrame) -> None:
     plt.pause(0.1)
 
 
+def plot_distance_distribution(df: pd.DataFrame) -> None:
+    """Plot distribution of product distances from user location."""
+
+    print(f"\n{'='*60}")
+    print("Plotting Distance Distribution...")
+    print(f"{'='*60}")
+
+    # Filter out NaN distances
+    df_with_distance = df[df['distance'].notna()].copy()
+
+    if len(df_with_distance) == 0:
+        print("No valid distance data to plot")
+        return
+
+    # Print statistics
+    distances = df_with_distance['distance']
+    print(f"\nDistance Statistics (km):")
+    print(f"  Mean: {distances.mean():.2f} km")
+    print(f"  Median: {distances.median():.2f} km")
+    print(f"  Std Dev: {distances.std():.2f} km")
+    print(f"  Min: {distances.min():.2f} km")
+    print(f"  Max: {distances.max():.2f} km")
+    print(f"  Q1 (25%): {distances.quantile(0.25):.2f} km")
+    print(f"  Q3 (75%): {distances.quantile(0.75):.2f} km")
+
+    # Create plot
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig.suptitle('Product Distance Distribution', fontsize=16, fontweight='bold')
+
+    # Plot 1: Histogram of distances
+    axes[0, 0].hist(distances, bins=50, color='steelblue', edgecolor='black', alpha=0.7)
+    axes[0, 0].set_xlabel('Distance (km)')
+    axes[0, 0].set_ylabel('Frequency')
+    axes[0, 0].set_title('Distance Distribution')
+    axes[0, 0].axvline(distances.mean(), color='red', linestyle='--', linewidth=2, label='Mean')
+    axes[0, 0].axvline(distances.median(), color='green', linestyle='--', linewidth=2, label='Median')
+    axes[0, 0].legend()
+    axes[0, 0].grid(axis='y', alpha=0.3)
+
+    # Plot 2: Box plot
+    axes[0, 1].boxplot(distances, vert=True)
+    axes[0, 1].set_ylabel('Distance (km)')
+    axes[0, 1].set_title('Distance Box Plot')
+    axes[0, 1].grid(axis='y', alpha=0.3)
+
+    # Plot 3: Cumulative distribution
+    sorted_distances = np.sort(distances)
+    cumulative = np.arange(1, len(sorted_distances) + 1) / len(sorted_distances)
+    axes[1, 0].plot(sorted_distances, cumulative, linewidth=2, color='purple')
+    axes[1, 0].set_xlabel('Distance (km)')
+    axes[1, 0].set_ylabel('Cumulative Probability')
+    axes[1, 0].set_title('Cumulative Distance Distribution')
+    axes[1, 0].grid(alpha=0.3)
+
+    # Plot 4: Distance ranges (pie chart style)
+    distance_ranges = pd.cut(distances, bins=[0, 5, 10, 25, 50, 100, float('inf')],
+                             labels=['0-5 km', '5-10 km', '10-25 km', '25-50 km', '50-100 km', '>100 km'])
+    range_counts = distance_ranges.value_counts().sort_index()
+
+    colors = ['#2ecc71', '#3498db', '#f39c12', '#e74c3c', '#9b59b6', '#95a5a6']
+    axes[1, 1].bar(range(len(range_counts)), range_counts.values, color=colors[:len(range_counts)], edgecolor='black', alpha=0.7)
+    axes[1, 1].set_xticks(range(len(range_counts)))
+    axes[1, 1].set_xticklabels(range_counts.index, rotation=45, ha='right')
+    axes[1, 1].set_ylabel('Count')
+    axes[1, 1].set_title('Products by Distance Range')
+    axes[1, 1].grid(axis='y', alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig('distance_distribution.png', dpi=150, bbox_inches='tight')
+    print(f"\n✓ Plot saved to distance_distribution.png")
+    plt.show(block=False)
+    plt.pause(0.1)
+
+
 def get_title_features(df: pd.DataFrame) -> Tuple[numpy.ndarray, TfidfVectorizer]:
     # Vectorize title features
     print("Vectorizing title features...")
@@ -789,6 +863,7 @@ def main():
     df_statistics(products_df)
     plot_prices(products_df)
     plot_description_length_distribution(products_df)
+    plot_distance_distribution(products_df)
     classify_products(products_df, 7)
     train_price_prediction_model(products_df)
     result_df = predict_product_prices(products_df)
