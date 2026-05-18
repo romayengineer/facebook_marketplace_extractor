@@ -568,6 +568,38 @@ def plot_description_length_distribution(df: pd.DataFrame) -> None:
     plt.pause(0.1)
 
 
+def update_products_with_predictions(conn: sqlite3.Connection, result_df: pd.DataFrame) -> None:
+    """Update products table with prediction results (price_usd, predicted_price, price_error, price_error_pct)."""
+
+    print(f"\n{'='*60}")
+    print("Updating Products with Predictions...")
+    print(f"{'='*60}")
+
+    cursor = conn.cursor()
+
+    update_data = result_df[['id', 'price_usd', 'predicted_price', 'price_error', 'price_error_pct']].copy()
+
+    # Update products in database
+    try:
+        cursor.executemany(
+            """UPDATE products
+               SET price_usd = ?, predicted_price = ?, price_error = ?, price_error_pct = ?
+               WHERE id = ?""",
+            [(row['price_usd'], row['predicted_price'], row['price_error'], row['price_error_pct'], row['id'])
+             for _, row in update_data.iterrows()]
+        )
+
+        conn.commit()
+        print(f"✓ Updated {cursor.rowcount} products")
+
+    except Exception as e:
+        print(f"Error updating products: {e}")
+        conn.rollback()
+
+    finally:
+        cursor.close()
+
+
 def predict_product_prices(df: pd.DataFrame) -> pd.DataFrame:
     """Use trained model to predict prices for all products."""
 
@@ -659,7 +691,8 @@ def main():
     plot_description_length_distribution(products_df)
     classify_products(products_df, 7)
     train_price_prediction_model(products_df)
-    predict_product_prices(products_df)
+    result_df = predict_product_prices(products_df)
+    update_products_with_predictions(conn, result_df)
 
     conn.close()
 
