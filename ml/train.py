@@ -49,7 +49,7 @@ def get_conn() -> sqlite3.Connection:
 def drop_lower_than(df: pd.DataFrame, limit: int) -> pd.DataFrame:
     # Drop products with price < limit
     initial_count = len(df)
-    df = df[df['price_amount'] >= limit]
+    df = df[df['price_usd'] >= limit]
     removed_count = initial_count - len(df)
 
     if removed_count > 0:
@@ -61,7 +61,7 @@ def drop_lower_than(df: pd.DataFrame, limit: int) -> pd.DataFrame:
 def drop_higher_than(df: pd.DataFrame, limit: int) -> pd.DataFrame:
     # Drop products with price < limit
     initial_count = len(df)
-    df = df[df['price_amount'] <= limit]
+    df = df[df['price_usd'] <= limit]
     removed_count = initial_count - len(df)
 
     if removed_count > 0:
@@ -104,7 +104,7 @@ def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
     
     df = drop_lower_than(df, 200)
 
-    df = drop_higher_than(df, 5000)
+    df = drop_higher_than(df, 10000)
 
     df = drop_description_len_higher_than(df, 500)
 
