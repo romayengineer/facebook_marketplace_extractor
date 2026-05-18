@@ -451,8 +451,8 @@ def get_price_model() -> RandomForestRegressor:
     - 1 would use a single core (slower but useful for debugging)
     """
     return RandomForestRegressor(
-        n_estimators=100,
-        max_depth=20,
+        n_estimators=500,
+        max_depth=25,
         min_samples_split=5,
         random_state=42,
         n_jobs=-1
