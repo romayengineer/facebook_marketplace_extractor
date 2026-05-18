@@ -242,7 +242,7 @@ func main() {
 	case "serve":
 		Serve()
 	case "save":
-		_, err := ProcessDataInDB(0)
+		_, err := ProcessDataInDB()
 		if err != nil {
 			LogFatal(err)
 		}

@@ -115,6 +115,34 @@ func (db *PocketBaseDB) ensureProductsCollection() error {
 	return nil
 }
 
+func SetProductFields(record *models.Record, product MarketplaceItemDetails) error {
+	if record == nil {
+		return fmt.Errorf("record is nil")
+	}
+	record.Set("facebook_id_long", toString(product.IDLong))
+	record.Set("title", toString(product.Title))
+	record.Set("description", toString(product.Description))
+	record.Set("category", toString(product.Category))
+	record.Set("url", toString(product.URL))
+	record.Set("price_amount", toFloat(product.PriceAmount))
+	record.Set("price_currency", toString(product.PriceCurrency))
+	record.Set("creation_time", toInt64(product.CreationTime))
+	record.Set("location_latitude", toFloat(product.LocationLatitud))
+	record.Set("location_longitude", toFloat(product.LocationLongitude))
+	record.Set("location_city_id", toString(product.LocationGeocodeCityID))
+	record.Set("location_city_name1", toString(product.LocationGeocodeCityName1))
+	record.Set("location_city_name2", toString(product.LocationGeocodeCityName2))
+	record.Set("location_state_code", toString(product.LocationGeocodeStateCode))
+	record.Set("seller_id", toString(product.SellerID))
+	record.Set("seller_name", toString(product.SellerName))
+	record.Set("is_hidden", toBool(product.IsHidden))
+	record.Set("is_live", toBool(product.IsLive))
+	record.Set("is_pending", toBool(product.IsPending))
+	record.Set("is_sold", toBool(product.IsSold))
+
+	return nil
+}
+
 func (db *PocketBaseDB) SaveProduct(product MarketplaceItemDetails) (string, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -142,26 +170,10 @@ func (db *PocketBaseDB) SaveProduct(product MarketplaceItemDetails) (string, err
 	}
 
 	// Set all fields
-	record.Set("facebook_id_long", toString(product.IDLong))
-	record.Set("title", toString(product.Title))
-	record.Set("description", toString(product.Description))
-	record.Set("category", toString(product.Category))
-	record.Set("url", toString(product.URL))
-	record.Set("price_amount", toFloat(product.PriceAmount))
-	record.Set("price_currency", toString(product.PriceCurrency))
-	record.Set("creation_time", toInt64(product.CreationTime))
-	record.Set("location_latitude", toFloat(product.LocationLatitud))
-	record.Set("location_longitude", toFloat(product.LocationLongitude))
-	record.Set("location_city_id", toString(product.LocationGeocodeCityID))
-	record.Set("location_city_name1", toString(product.LocationGeocodeCityName1))
-	record.Set("location_city_name2", toString(product.LocationGeocodeCityName2))
-	record.Set("location_state_code", toString(product.LocationGeocodeStateCode))
-	record.Set("seller_id", toString(product.SellerID))
-	record.Set("seller_name", toString(product.SellerName))
-	record.Set("is_hidden", toBool(product.IsHidden))
-	record.Set("is_live", toBool(product.IsLive))
-	record.Set("is_pending", toBool(product.IsPending))
-	record.Set("is_sold", toBool(product.IsSold))
+	err = SetProductFields(record, product)
+	if err != nil {
+		LogFatal("error in SetProductFields")
+	}
 
 	if err := db.app.Dao().SaveRecord(record); err != nil {
 		LogError0("SaveProduct", "failed to save product", "facebook_id", facebookID, "error", err)
@@ -296,7 +308,7 @@ func Serve() (*PocketBaseDB, error) {
 	return dbInstance, err
 }
 
-func ProcessDataInDB(startAtTimestamp int64) (int64, error) {
+func ProcessDataInDB() (int64, error) {
 	var filesProcessedCounter int64
 
 	dbInstance, err := GetPocketBaseDB()
