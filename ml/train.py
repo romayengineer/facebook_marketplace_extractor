@@ -417,6 +417,48 @@ def save_model(model: Any, file_name: str) -> None:
         pickle.dump(model, f)
 
 
+def get_price_model() -> RandomForestRegressor:
+    """
+    n_estimators=100
+    - Number of decision trees in the forest
+    - More trees = more robust predictions but slower training/prediction
+    - 100 is a reasonable default; more helps reduce overfitting but with diminishing returns
+
+    max_depth=20
+    - Maximum depth/height of each individual tree
+    - Prevents trees from becoming too deep and overfitting to training data
+    - Shallower trees (lower number) = simpler model, less prone to overfitting
+    - Deeper trees (higher number) = captures more complex patterns but risk overfitting
+    - 20 is moderate; allows trees to learn patterns without going too deep
+
+    min_samples_split=5
+    - Minimum number of samples required at a node to split it into two branches
+    - Prevents the tree from creating splits on very small groups of data
+    - Higher number = simpler, more generalizable model (less overfitting)
+    - Lower number = tree can fit more complex patterns
+    - 5 means "don't split a node unless it has at least 5 samples"
+
+    random_state=42
+    - Seed for the random number generator
+    - Ensures reproducible results (same output every time you run it)
+    - Without this, results vary slightly each run due to randomness in tree building
+    - Any number works; 42 is just a convention (from Hitchhiker's Guide to the Galaxy!)
+
+    n_jobs=-1
+    - Number of CPU cores to use for parallel processing
+    - -1 means use all available cores on your machine
+    - Speeds up training significantly on multi-core systems
+    - 1 would use a single core (slower but useful for debugging)
+    """
+    return RandomForestRegressor(
+        n_estimators=100,
+        max_depth=20,
+        min_samples_split=5,
+        random_state=42,
+        n_jobs=-1
+    )
+    
+
 def train_price_prediction_model(df: pd.DataFrame) -> tuple:
     """Train a regression model to predict product prices from title and description."""
 
@@ -442,13 +484,7 @@ def train_price_prediction_model(df: pd.DataFrame) -> tuple:
 
     # Train model
     print("\nTraining Random Forest Regressor...")
-    model = RandomForestRegressor(
-        n_estimators=100,
-        max_depth=20,
-        min_samples_split=5,
-        random_state=42,
-        n_jobs=-1
-    )
+    model = get_price_model()
     model.fit(X_train, y_train)
 
     # Evaluate
