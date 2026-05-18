@@ -84,7 +84,7 @@ def drop_description_len_higher_than(df: pd.DataFrame, limit: int) -> pd.DataFra
 
 def currency_normalization(df: pd.DataFrame, limit: int, usd_price) -> pd.DataFrame:
     # Convert prices: if price > limit, divide by USD Price (currency normalization)
-    df['price_usd'] = df['price_amount'].apply(
+    df['price_usd'] = df['price_amount'].map(
         lambda price: price / usd_price if price > limit else price
     )
     
