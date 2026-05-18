@@ -589,7 +589,7 @@ def get_price_model() -> RandomForestRegressor:
     return RandomForestRegressor(
         n_estimators=2000,
         max_depth=40,
-        min_samples_split=5,
+        min_samples_split=3,
         random_state=42,
         n_jobs=-1
     )
