@@ -2,14 +2,20 @@
 import sqlite3
 import pandas as pd # type: ignore
 import os
+import numpy
+from typing import Tuple
 from sklearn.feature_extraction.text import TfidfVectorizer # type: ignore
 from sklearn.preprocessing import StandardScaler # type: ignore
 from sklearn.cluster import KMeans # type: ignore
 from sklearn.decomposition import PCA # type: ignore
+from sklearn.ensemble import RandomForestRegressor # type: ignore
+from sklearn.model_selection import train_test_split # type: ignore
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score # type: ignore
 import numpy as np
 import nltk # type: ignore
 from nltk.corpus import stopwords # type: ignore
 import matplotlib.pyplot as plt # type: ignore
+import pickle # type: ignore
 
 # Download Spanish stop words
 try:
@@ -82,7 +88,7 @@ def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
     # Ensure price_amount is float
     df['price_amount'] = pd.to_numeric(df['price_amount'], errors='coerce').astype('float64')
     
-    df = currency_normalization(df, 10000, 1400)
+    df = currency_normalization(df, 20000, 1400)
     
     df = drop_lower_than(df, 200)
     
@@ -157,22 +163,8 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> N
     # Copy dataframe
     df = products_df.copy()
 
-    # Vectorize title and description separately
-    print("Vectorizing title features...")
-    title_vectorizer = TfidfVectorizer(
-        max_features=50,
-        stop_words=list(spanish_stopwords),
-        lowercase=True
-    )
-    title_features = title_vectorizer.fit_transform(df['title'].fillna('')).toarray()
-
-    print("Vectorizing description features...")
-    description_vectorizer = TfidfVectorizer(
-        max_features=50,
-        stop_words=list(spanish_stopwords),
-        lowercase=True
-    )
-    description_features = description_vectorizer.fit_transform(df['description'].fillna('')).toarray()
+    title_features, title_vectorizer = get_title_features(df)
+    description_features, description_vectorizer = get_title_features(df)
 
     # Normalize price feature
     price_scaled = StandardScaler().fit_transform(df[['price_amount']])
@@ -367,6 +359,110 @@ def plot_prices(df: pd.DataFrame) -> None:
     plt.pause(0.1)
 
 
+def get_title_features(df: pd.DataFrame) -> Tuple[numpy.ndarray, TfidfVectorizer]:
+    # Vectorize title features
+    print("Vectorizing title features...")
+    title_vectorizer = TfidfVectorizer(
+        max_features=50,
+        stop_words=list(spanish_stopwords),
+        lowercase=True
+    )
+    title_features = title_vectorizer.fit_transform(df['title'].fillna('')).toarray()
+    return title_features, title_vectorizer
+
+def get_description_features(df: pd.DataFrame) -> Tuple[numpy.ndarray, TfidfVectorizer]:
+    # Vectorize description features
+    print("Vectorizing description features...")
+    description_vectorizer = TfidfVectorizer(
+        max_features=50,
+        stop_words=list(spanish_stopwords),
+        lowercase=True
+    )
+    description_features = description_vectorizer.fit_transform(df['description'].fillna('')).toarray()
+    return description_features, description_vectorizer
+
+
+def train_price_prediction_model(df: pd.DataFrame) -> tuple:
+    """Train a regression model to predict product prices from title and description."""
+
+    print(f"\n{'='*60}")
+    print("Training Price Prediction Model...")
+    print(f"{'='*60}")
+
+    title_features, title_vectorizer = get_title_features(df)
+    description_features, description_vectorizer = get_title_features(df)
+
+
+    # Combine features
+    features = np.hstack([title_features, description_features])
+    target = df['price_amount'].values
+
+    print(f"Combined feature dimensions: {features.shape[1]}")
+    print(f"Training samples: {len(target)}")
+
+    # Split data
+    X_train, X_test, y_train, y_test = train_test_split(
+        features, target, test_size=0.2, random_state=42
+    )
+
+    # Train model
+    print("\nTraining Random Forest Regressor...")
+    model = RandomForestRegressor(
+        n_estimators=100,
+        max_depth=20,
+        min_samples_split=5,
+        random_state=42,
+        n_jobs=-1
+    )
+    model.fit(X_train, y_train)
+
+    # Evaluate
+    print("\nModel Evaluation:")
+    y_pred_train = model.predict(X_train)
+    y_pred_test = model.predict(X_test)
+
+    train_rmse = np.sqrt(mean_squared_error(y_train, y_pred_train))
+    test_rmse = np.sqrt(mean_squared_error(y_test, y_pred_test))
+    train_mae = mean_absolute_error(y_train, y_pred_train)
+    test_mae = mean_absolute_error(y_test, y_pred_test)
+    train_r2 = r2_score(y_train, y_pred_train)
+    test_r2 = r2_score(y_test, y_pred_test)
+
+    print(f"  Train RMSE: {train_rmse:,.2f}")
+    print(f"  Test RMSE:  {test_rmse:,.2f}")
+    print(f"  Train MAE:  {train_mae:,.2f}")
+    print(f"  Test MAE:   {test_mae:,.2f}")
+    print(f"  Train R²:   {train_r2:.4f}")
+    print(f"  Test R²:    {test_r2:.4f}")
+
+    # Feature importance
+    feature_importance = model.feature_importances_
+    top_features_idx = np.argsort(feature_importance)[-10:][::-1]
+
+    print(f"\nTop 10 Important Features:")
+    for rank, idx in enumerate(top_features_idx, 1):
+        if idx < len(title_vectorizer.get_feature_names_out()):
+            feature_name = title_vectorizer.get_feature_names_out()[idx]
+            source = "title"
+        else:
+            feature_name = description_vectorizer.get_feature_names_out()[idx - len(title_vectorizer.get_feature_names_out())]
+            source = "description"
+        importance = feature_importance[idx]
+        print(f"  {rank}. {feature_name} ({source}): {importance:.4f}")
+
+    # Save model
+    with open('price_prediction_model.pkl', 'wb') as f:
+        pickle.dump(model, f)
+    with open('title_vectorizer.pkl', 'wb') as f:
+        pickle.dump(title_vectorizer, f)
+    with open('description_vectorizer.pkl', 'wb') as f:
+        pickle.dump(description_vectorizer, f)
+
+    print(f"\n✓ Model and vectorizers saved")
+
+    return model, title_vectorizer, description_vectorizer, (X_test, y_test, y_pred_test)
+
+
 def main():
     conn = get_conn()
     products_df = get_products(conn)
@@ -375,6 +471,7 @@ def main():
     df_statistics(products_df)
     plot_prices(products_df)
     classify_products(products_df, 7)
+    train_price_prediction_model(products_df)
 
     conn.close()
 
