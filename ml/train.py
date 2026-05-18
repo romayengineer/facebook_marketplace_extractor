@@ -100,7 +100,7 @@ def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
     # Ensure price_amount is float
     df['price_amount'] = pd.to_numeric(df['price_amount'], errors='coerce').astype('float64')
     
-    df = currency_normalization(df, 20000, 1400)
+    df = currency_normalization(df, 20000, 1395)
     
     df = drop_lower_than(df, 200)
 
