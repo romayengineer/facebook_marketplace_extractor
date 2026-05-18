@@ -3,6 +3,9 @@ import sqlite3
 import pandas as pd # type: ignore
 import os
 
+# Disable scientific notation in pandas
+pd.set_option('display.float_format', lambda x: f'{x:,.2f}')
+
 
 def get_conn() -> sqlite3.Connection:
     
