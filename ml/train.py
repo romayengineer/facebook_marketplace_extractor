@@ -5,6 +5,7 @@ import os
 from sklearn.feature_extraction.text import TfidfVectorizer # type: ignore
 from sklearn.preprocessing import StandardScaler # type: ignore
 from sklearn.cluster import KMeans # type: ignore
+from sklearn.decomposition import PCA # type: ignore
 import numpy as np
 import nltk # type: ignore
 from nltk.corpus import stopwords # type: ignore
@@ -208,6 +209,9 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> N
 
     df['category_name'] = df['category'].map(category_names)
 
+    # Plot the clusters
+    plot_clusters(features, kmeans, df)
+
     # Show category distribution
     print(f"\n{'='*60}")
     print("Category Distribution:")
@@ -240,6 +244,63 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> N
     df.to_csv('products_classified.csv', index=False)
     print(f"\n✓ Classified data saved to products_classified.csv")
     
+
+def plot_clusters(features: np.ndarray, kmeans: KMeans, df: pd.DataFrame) -> None:
+    """Plot K-means clusters using PCA for 2D visualization."""
+
+    print(f"\n{'='*60}")
+    print("Plotting K-means clusters...")
+    print(f"{'='*60}")
+
+    # Reduce dimensions to 2D using PCA
+    pca = PCA(n_components=2)
+    features_2d = pca.fit_transform(features)
+
+    # Create plot
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    # Plot each cluster with different color
+    colors = plt.cm.Set3(np.linspace(0, 1, kmeans.n_clusters)) # type: ignore
+
+    for cluster in range(kmeans.n_clusters):
+        mask = df['category'] == cluster
+        ax.scatter(
+            features_2d[mask, 0],
+            features_2d[mask, 1],
+            c=[colors[cluster]],
+            label=df[mask]['category_name'].iloc[0],
+            alpha=0.6,
+            s=50,
+            edgecolors='black',
+            linewidth=0.5
+        )
+
+    # Plot cluster centers
+    centers_2d = pca.transform(kmeans.cluster_centers_)
+    ax.scatter(
+        centers_2d[:, 0],
+        centers_2d[:, 1],
+        c='red',
+        marker='*',
+        s=500,
+        edgecolors='black',
+        linewidth=2,
+        label='Cluster Centers',
+        zorder=5
+    )
+
+    ax.set_xlabel(f'PC1 ({pca.explained_variance_ratio_[0]:.1%} variance)')
+    ax.set_ylabel(f'PC2 ({pca.explained_variance_ratio_[1]:.1%} variance)')
+    ax.set_title(f'K-Means Clustering ({kmeans.n_clusters} clusters)', fontsize=14, fontweight='bold')
+    ax.legend(loc='best', fontsize=10)
+    ax.grid(alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig('clusters_visualization.png', dpi=150, bbox_inches='tight')
+    print(f"✓ Cluster plot saved to clusters_visualization.png")
+    plt.show(block=False)
+    plt.pause(0.1)
+
 
 def plot_prices(df: pd.DataFrame) -> None:
     """Plot price distribution with histograms and box plots."""
@@ -297,7 +358,7 @@ def main():
 
     df_statistics(products_df)
     plot_prices(products_df)
-    classify_products(products_df)
+    classify_products(products_df, 8)
 
     conn.close()
 
