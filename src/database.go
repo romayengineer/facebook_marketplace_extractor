@@ -348,10 +348,10 @@ func ProcessDataInDB() (int64, error) {
 
 	ForEachDetail(func(filePath string, jsonData map[string]any) bool {
 
-		description := GetKey(jsonData, "Description")
-		if description == nil {
-			return true
-		}
+		// description := GetKey(jsonData, "Description")
+		// if description == nil {
+		// 	return true
+		// }
 
 		product := ToMarketplaceItemDetails(jsonData)
 		productIdDb, err := dbInstance.SaveProduct(product)

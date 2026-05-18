@@ -93,6 +93,11 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 			return true
 		}
 
+		price := toFloat(GetKey(jsonData, "PriceAmount"))
+		if price < 10000 {
+			return true
+		}
+
 		productId := GetKey(jsonData, "ID")
 		if productId == nil {
 			return true

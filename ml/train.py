@@ -114,7 +114,7 @@ def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
     
     df = drop_lower_than(df, 50)
 
-    df = drop_higher_than(df, 10000)
+    df = drop_higher_than(df, 20000)
 
     df = drop_description_len_higher_than(df, 500)
     
@@ -587,8 +587,8 @@ def get_price_model() -> RandomForestRegressor:
     - 1 would use a single core (slower but useful for debugging)
     """
     return RandomForestRegressor(
-        n_estimators=1000,
-        max_depth=30,
+        n_estimators=2000,
+        max_depth=40,
         min_samples_split=5,
         random_state=42,
         n_jobs=-1
