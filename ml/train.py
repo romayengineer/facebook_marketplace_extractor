@@ -84,7 +84,7 @@ def drop_description_len_higher_than(df: pd.DataFrame, limit: int) -> pd.DataFra
 
 def currency_normalization(df: pd.DataFrame, limit: int, usd_price) -> pd.DataFrame:
     # Convert prices: if price > limit, divide by USD Price (currency normalization)
-    df['price_amount'] = df['price_amount'].apply(
+    df['price_usd'] = df['price_amount'].apply(
         lambda price: price / usd_price if price > limit else price
     )
     
@@ -116,9 +116,9 @@ def get_highest_price(df: pd.DataFrame, count: int) -> pd.DataFrame:
     print(f"\n{'='*60}")
     print(f"Top {count} Highest Priced Products:")
     print(f"{'='*60}")
-    top = df.nlargest(count, 'price_amount')[['title', 'price_amount']]
+    top = df.nlargest(count, 'price_usd')[['title', 'price_usd']]
     for idx, (_, row) in enumerate(top.iterrows(), 1):
-        print(f"{idx}. {row['title'][:70]} - ${row['price_amount']:,.2f}")
+        print(f"{idx}. {row['title'][:70]} - ${row['price_usd']:,.2f}")
     return top
 
 
@@ -142,20 +142,20 @@ def df_statistics(df: pd.DataFrame) -> None:
 
     # Show price statistics
     print(f"\nPrice statistics:")
-    print(df['price_amount'].describe())
+    print(df['price_usd'].describe())
     
     get_highest_price(df, 10)
 
 
 def filter_price_outliers(df: pd.DataFrame) -> pd.DataFrame:
     # Remove price outliers (outside 2 std dev from mean)
-    mean_price = df['price_amount'].mean()
-    std_price = df['price_amount'].std()
+    mean_price = df['price_usd'].mean()
+    std_price = df['price_usd'].std()
     lower_bound = mean_price - (2 * std_price)
     upper_bound = mean_price + (2 * std_price)
 
     initial_count = len(df)
-    df = df[(df['price_amount'] >= lower_bound) & (df['price_amount'] <= upper_bound)]
+    df = df[(df['price_usd'] >= lower_bound) & (df['price_usd'] <= upper_bound)]
     removed_count = initial_count - len(df)
 
     print(f"\nPrice outlier removal:")
@@ -181,7 +181,7 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> N
     description_features, description_vectorizer = get_description_features(df)
 
     # Normalize price feature
-    price_scaled = StandardScaler().fit_transform(df[['price_amount']])
+    price_scaled = StandardScaler().fit_transform(df[['price_usd']])
 
     # Combine all features: title (50) + description (50) + price (1) = 101 dimensions
     features = np.hstack([title_features, description_features, price_scaled])
@@ -200,7 +200,7 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> N
     print("\nGenerating category names from model features...")
     for category in range(categories_count):
         category_products = df[df['category'] == category]
-        avg_price = category_products['price_amount'].mean()
+        avg_price = category_products['price_usd'].mean()
 
         # Get the cluster center for this category
         center = kmeans.cluster_centers_[category]
@@ -250,7 +250,7 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> N
 
     for category in range(categories_count):
         category_products = df[df['category'] == category]
-        avg_price = category_products['price_amount'].mean()
+        avg_price = category_products['price_usd'].mean()
         count = len(category_products)
         name = category_names[category]
 
@@ -335,20 +335,20 @@ def plot_prices(df: pd.DataFrame) -> None:
     fig.suptitle('Product Price Analysis', fontsize=16, fontweight='bold')
 
     # Plot 1: Histogram of all prices
-    axes[0, 0].hist(df['price_amount'], bins=50, color='skyblue', edgecolor='black', alpha=0.7)
+    axes[0, 0].hist(df['price_usd'], bins=50, color='skyblue', edgecolor='black', alpha=0.7)
     axes[0, 0].set_xlabel('Price')
     axes[0, 0].set_ylabel('Frequency')
     axes[0, 0].set_title('Price Distribution (All Products)')
     axes[0, 0].grid(axis='y', alpha=0.3)
 
     # Plot 2: Box plot
-    axes[0, 1].boxplot(df['price_amount'], vert=True)
+    axes[0, 1].boxplot(df['price_usd'], vert=True)
     axes[0, 1].set_ylabel('Price')
     axes[0, 1].set_title('Price Box Plot')
     axes[0, 1].grid(axis='y', alpha=0.3)
 
     # Plot 3: Log scale histogram
-    prices_nonzero = df[df['price_amount'] > 0]['price_amount']
+    prices_nonzero = df[df['price_usd'] > 0]['price_usd']
     axes[1, 0].hist(prices_nonzero, bins=50, color='lightcoral', edgecolor='black', alpha=0.7)
     axes[1, 0].set_xlabel('Price (Log Scale)')
     axes[1, 0].set_ylabel('Frequency')
@@ -358,7 +358,7 @@ def plot_prices(df: pd.DataFrame) -> None:
     axes[1, 0].grid(alpha=0.3)
 
     # Plot 4: Cumulative distribution
-    sorted_prices = np.sort(df['price_amount'])
+    sorted_prices = np.sort(df['price_usd'])
     cumulative = np.arange(1, len(sorted_prices) + 1) / len(sorted_prices)
     axes[1, 1].plot(sorted_prices, cumulative, linewidth=2, color='green')
     axes[1, 1].set_xlabel('Price')
@@ -414,7 +414,7 @@ def train_price_prediction_model(df: pd.DataFrame) -> tuple:
 
     # Combine features
     features = np.hstack([title_features, description_features])
-    target = df['price_amount'].values
+    target = df['price_usd'].values
 
     print(f"Combined feature dimensions: {features.shape[1]}")
     print(f"Training samples: {len(target)}")
@@ -591,31 +591,31 @@ def predict_product_prices(df: pd.DataFrame) -> pd.DataFrame:
     result_df['predicted_price'] = predicted_prices
 
     # Add prediction error (actual vs predicted)
-    if 'price_amount' in result_df.columns:
-        result_df['price_error'] = result_df['price_amount'] - result_df['predicted_price']
-        result_df['price_error_pct'] = (result_df['price_error'] / result_df['price_amount'] * 100).round(2)
+    if 'price_usd' in result_df.columns:
+        result_df['price_error'] = result_df['price_usd'] - result_df['predicted_price']
+        result_df['price_error_pct'] = (result_df['price_error'] / result_df['price_usd'] * 100).round(2)
 
         # Show statistics
         print(f"\n{'='*60}")
         print("Prediction Statistics:")
         print(f"{'='*60}")
         print(f"Average predicted price: ${result_df['predicted_price'].mean():,.2f}")
-        print(f"Average actual price: ${result_df['price_amount'].mean():,.2f}")
-        mae = mean_absolute_error(result_df['price_amount'], result_df['predicted_price'])
-        rmse = np.sqrt(mean_squared_error(result_df['price_amount'], result_df['predicted_price']))
+        print(f"Average actual price: ${result_df['price_usd'].mean():,.2f}")
+        mae = mean_absolute_error(result_df['price_usd'], result_df['predicted_price'])
+        rmse = np.sqrt(mean_squared_error(result_df['price_usd'], result_df['predicted_price']))
         print(f"Mean Absolute Error: ${mae:,.2f}")
         print(f"RMSE: ${rmse:,.2f}")
 
         # Show biggest overestimates and underestimates
         print(f"\nTop 5 Overestimated (actual < predicted):")
-        overest = result_df.nsmallest(5, 'price_error')[['title', 'price_amount', 'predicted_price', 'price_error_pct']]
+        overest = result_df.nsmallest(5, 'price_error')[['title', 'price_usd', 'predicted_price', 'price_error_pct']]
         for idx, (_, row) in enumerate(overest.iterrows(), 1):
-            print(f"  {idx}. {row['title'][:50]} | Actual: ${row['price_amount']:,.0f} | Predicted: ${row['predicted_price']:,.0f} ({row['price_error_pct']:.1f}%)")
+            print(f"  {idx}. {row['title'][:50]} | Actual: ${row['price_usd']:,.0f} | Predicted: ${row['predicted_price']:,.0f} ({row['price_error_pct']:.1f}%)")
 
         print(f"\nTop 5 Underestimated (actual > predicted):")
-        underest = result_df.nlargest(5, 'price_error')[['title', 'price_amount', 'predicted_price', 'price_error_pct']]
+        underest = result_df.nlargest(5, 'price_error')[['title', 'price_usd', 'predicted_price', 'price_error_pct']]
         for idx, (_, row) in enumerate(underest.iterrows(), 1):
-            print(f"  {idx}. {row['title'][:50]} | Actual: ${row['price_amount']:,.0f} | Predicted: ${row['predicted_price']:,.0f} ({row['price_error_pct']:.1f}%)")
+            print(f"  {idx}. {row['title'][:50]} | Actual: ${row['price_usd']:,.0f} | Predicted: ${row['predicted_price']:,.0f} ({row['price_error_pct']:.1f}%)")
 
     # Save predictions to CSV
     result_df.to_csv('products_with_predictions.csv', index=False)
