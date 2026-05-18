@@ -84,8 +84,11 @@ def drop_description_len_higher_than(df: pd.DataFrame, limit: int) -> pd.DataFra
 
 def currency_normalization(df: pd.DataFrame, limit: int, usd_price) -> pd.DataFrame:
     # Convert prices: if price > limit, divide by USD Price (currency normalization)
+    df['price_amount'] = df['price_amount'].map(
+        lambda price: round(price, 2)
+    )
     df['price_usd'] = df['price_amount'].map(
-        lambda price: price / usd_price if price > limit else price
+        lambda price: round(price / usd_price if price > limit else price, 2)
     )
     
     return df
@@ -645,11 +648,11 @@ def predict_product_prices(df: pd.DataFrame) -> pd.DataFrame:
     # Make predictions
     print(f"Making predictions for {len(result_df)} products...")
     predicted_prices = model.predict(features)
-    result_df['predicted_price'] = predicted_prices
+    result_df['predicted_price'] = predicted_prices.round(2)
 
     # Add prediction error (actual vs predicted)
     if 'price_usd' in result_df.columns:
-        result_df['price_error'] = result_df['price_usd'] - result_df['predicted_price']
+        result_df['price_error'] = (result_df['price_usd'] - result_df['predicted_price']).round(2)
         result_df['price_error_pct'] = (result_df['price_error'] / result_df['price_usd'] * 100).round(2)
 
         # Show statistics
