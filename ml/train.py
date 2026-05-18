@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend to avoid tkinter cleanup errors
+
 import sqlite3
 import pandas as pd # type: ignore
 import os
@@ -386,8 +389,7 @@ def plot_clusters(features: np.ndarray, kmeans: KMeans, df: pd.DataFrame) -> Non
     plt.tight_layout()
     plt.savefig('clusters_visualization.png', dpi=150, bbox_inches='tight')
     print(f"✓ Cluster plot saved to clusters_visualization.png")
-    plt.show(block=False)
-    plt.pause(0.1)
+    plt.close()
 
 
 def plot_prices(df: pd.DataFrame) -> None:
@@ -435,8 +437,7 @@ def plot_prices(df: pd.DataFrame) -> None:
     plt.tight_layout()
     plt.savefig('price_distribution.png', dpi=150, bbox_inches='tight')
     print(f"✓ Plot saved to price_distribution.png")
-    plt.show(block=False)
-    plt.pause(0.1)
+    plt.close()
 
 
 def plot_distance_distribution(df: pd.DataFrame) -> None:
@@ -509,8 +510,7 @@ def plot_distance_distribution(df: pd.DataFrame) -> None:
     plt.tight_layout()
     plt.savefig('distance_distribution.png', dpi=150, bbox_inches='tight')
     print(f"\n✓ Plot saved to distance_distribution.png")
-    plt.show(block=False)
-    plt.pause(0.1)
+    plt.close()
 
 
 def get_title_features(df: pd.DataFrame) -> Tuple[numpy.ndarray, TfidfVectorizer]:
@@ -739,8 +739,7 @@ def plot_description_length_distribution(df: pd.DataFrame) -> None:
     plt.tight_layout()
     plt.savefig('description_length_distribution.png', dpi=150, bbox_inches='tight')
     print(f"\n✓ Plot saved to description_length_distribution.png")
-    plt.show(block=False)
-    plt.pause(0.1)
+    plt.close()
 
 
 def update_products_with_predictions(conn: sqlite3.Connection, result_df: pd.DataFrame) -> None:
