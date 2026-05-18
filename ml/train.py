@@ -465,6 +465,76 @@ def train_price_prediction_model(df: pd.DataFrame) -> tuple:
     return model, title_vectorizer, description_vectorizer, (X_test, y_test, y_pred_test)
 
 
+def plot_description_length_distribution(df: pd.DataFrame) -> None:
+    """Plot distribution of description lengths (character and word count)."""
+
+    print(f"\n{'='*60}")
+    print("Plotting Description Length Distribution...")
+    print(f"{'='*60}")
+
+    # Calculate description lengths
+    df_copy = df.copy()
+    df_copy['description_char_length'] = df_copy['description'].fillna('').str.len()
+    df_copy['description_word_count'] = df_copy['description'].fillna('').str.split().str.len()
+
+    # Print statistics
+    print(f"\nDescription Character Length Statistics:")
+    print(f"  Mean: {df_copy['description_char_length'].mean():.0f} characters")
+    print(f"  Median: {df_copy['description_char_length'].median():.0f} characters")
+    print(f"  Min: {df_copy['description_char_length'].min()} characters")
+    print(f"  Max: {df_copy['description_char_length'].max()} characters")
+    print(f"  Std Dev: {df_copy['description_char_length'].std():.0f}")
+
+    print(f"\nDescription Word Count Statistics:")
+    print(f"  Mean: {df_copy['description_word_count'].mean():.0f} words")
+    print(f"  Median: {df_copy['description_word_count'].median():.0f} words")
+    print(f"  Min: {df_copy['description_word_count'].min()} words")
+    print(f"  Max: {df_copy['description_word_count'].max()} words")
+    print(f"  Std Dev: {df_copy['description_word_count'].std():.0f}")
+
+    # Create plot
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig.suptitle('Product Description Length Analysis', fontsize=16, fontweight='bold')
+
+    # Plot 1: Character length histogram
+    axes[0, 0].hist(df_copy['description_char_length'], bins=50, color='skyblue', edgecolor='black', alpha=0.7)
+    axes[0, 0].set_xlabel('Character Length')
+    axes[0, 0].set_ylabel('Frequency')
+    axes[0, 0].set_title('Description Character Length Distribution')
+    axes[0, 0].axvline(df_copy['description_char_length'].mean(), color='red', linestyle='--', linewidth=2, label='Mean')
+    axes[0, 0].axvline(df_copy['description_char_length'].median(), color='green', linestyle='--', linewidth=2, label='Median')
+    axes[0, 0].legend()
+    axes[0, 0].grid(axis='y', alpha=0.3)
+
+    # Plot 2: Word count histogram
+    axes[0, 1].hist(df_copy['description_word_count'], bins=50, color='lightcoral', edgecolor='black', alpha=0.7)
+    axes[0, 1].set_xlabel('Word Count')
+    axes[0, 1].set_ylabel('Frequency')
+    axes[0, 1].set_title('Description Word Count Distribution')
+    axes[0, 1].axvline(df_copy['description_word_count'].mean(), color='red', linestyle='--', linewidth=2, label='Mean')
+    axes[0, 1].axvline(df_copy['description_word_count'].median(), color='green', linestyle='--', linewidth=2, label='Median')
+    axes[0, 1].legend()
+    axes[0, 1].grid(axis='y', alpha=0.3)
+
+    # Plot 3: Box plot for character length
+    axes[1, 0].boxplot(df_copy['description_char_length'], vert=True)
+    axes[1, 0].set_ylabel('Character Length')
+    axes[1, 0].set_title('Description Character Length Box Plot')
+    axes[1, 0].grid(axis='y', alpha=0.3)
+
+    # Plot 4: Box plot for word count
+    axes[1, 1].boxplot(df_copy['description_word_count'], vert=True)
+    axes[1, 1].set_ylabel('Word Count')
+    axes[1, 1].set_title('Description Word Count Box Plot')
+    axes[1, 1].grid(axis='y', alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig('description_length_distribution.png', dpi=150, bbox_inches='tight')
+    print(f"\n✓ Plot saved to description_length_distribution.png")
+    plt.show(block=False)
+    plt.pause(0.1)
+
+
 def predict_product_prices(df: pd.DataFrame) -> pd.DataFrame:
     """Use trained model to predict prices for all products."""
 
@@ -547,6 +617,7 @@ def main():
 
     df_statistics(products_df)
     plot_prices(products_df)
+    plot_description_length_distribution(products_df)
     classify_products(products_df, 7)
     train_price_prediction_model(products_df)
     predict_product_prices(products_df)
