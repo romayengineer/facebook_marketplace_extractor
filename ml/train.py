@@ -25,7 +25,10 @@ def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
     # Query only the three columns we need
     query = "SELECT title, description, price_amount FROM products"
     df = pd.read_sql_query(query, conn)
-    
+
+    # Ensure price_amount is float
+    df['price_amount'] = pd.to_numeric(df['price_amount'], errors='coerce').astype('float64')
+
     return df
 
 
