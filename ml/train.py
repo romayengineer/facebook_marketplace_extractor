@@ -8,6 +8,7 @@ from sklearn.cluster import KMeans # type: ignore
 import numpy as np
 import nltk # type: ignore
 from nltk.corpus import stopwords # type: ignore
+import matplotlib.pyplot as plt # type: ignore
 
 # Download Spanish stop words
 try:
@@ -190,13 +191,62 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> N
     print(f"\n✓ Classified data saved to products_classified.csv")
     
 
+def plot_prices(df: pd.DataFrame) -> None:
+    """Plot price distribution with histograms and box plots."""
+
+    print(f"\n{'='*60}")
+    print("Plotting price distributions...")
+    print(f"{'='*60}")
+
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig.suptitle('Product Price Analysis', fontsize=16, fontweight='bold')
+
+    # Plot 1: Histogram of all prices
+    axes[0, 0].hist(df['price_amount'], bins=50, color='skyblue', edgecolor='black', alpha=0.7)
+    axes[0, 0].set_xlabel('Price')
+    axes[0, 0].set_ylabel('Frequency')
+    axes[0, 0].set_title('Price Distribution (All Products)')
+    axes[0, 0].grid(axis='y', alpha=0.3)
+
+    # Plot 2: Box plot
+    axes[0, 1].boxplot(df['price_amount'], vert=True)
+    axes[0, 1].set_ylabel('Price')
+    axes[0, 1].set_title('Price Box Plot')
+    axes[0, 1].grid(axis='y', alpha=0.3)
+
+    # Plot 3: Log scale histogram
+    prices_nonzero = df[df['price_amount'] > 0]['price_amount']
+    axes[1, 0].hist(prices_nonzero, bins=50, color='lightcoral', edgecolor='black', alpha=0.7)
+    axes[1, 0].set_xlabel('Price (Log Scale)')
+    axes[1, 0].set_ylabel('Frequency')
+    axes[1, 0].set_yscale('log')
+    axes[1, 0].set_xscale('log')
+    axes[1, 0].set_title('Price Distribution (Log Scale)')
+    axes[1, 0].grid(alpha=0.3)
+
+    # Plot 4: Cumulative distribution
+    sorted_prices = np.sort(df['price_amount'])
+    cumulative = np.arange(1, len(sorted_prices) + 1) / len(sorted_prices)
+    axes[1, 1].plot(sorted_prices, cumulative, linewidth=2, color='green')
+    axes[1, 1].set_xlabel('Price')
+    axes[1, 1].set_ylabel('Cumulative Probability')
+    axes[1, 1].set_title('Cumulative Price Distribution')
+    axes[1, 1].grid(alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig('price_distribution.png', dpi=150, bbox_inches='tight')
+    print(f"✓ Plot saved to price_distribution.png")
+    plt.show()
+
+
 def main():
     conn = get_conn()
     products_df = get_products(conn)
-    
+
     df_statistics(products_df)
+    plot_prices(products_df)
     classify_products(products_df)
-    
+
     conn.close()
 
 

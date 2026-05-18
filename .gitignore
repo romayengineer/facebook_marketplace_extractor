@@ -11,3 +11,4 @@ main
 /pb_data
 *.csv
 .venv
+*.png
