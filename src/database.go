@@ -143,20 +143,19 @@ func SetProductFields(record *models.Record, product MarketplaceItemDetails) err
 	return nil
 }
 
-func (db *PocketBaseDB) SaveProduct(product MarketplaceItemDetails) (string, error) {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+func (db *PocketBaseDB) GetProductOrNew(product MarketplaceItemDetails) (*models.Record, error) {
 
 	collection, err := db.app.Dao().FindCollectionByNameOrId("products")
 	if err != nil {
 		LogError0("SaveProduct", "collection not found", "error", err)
-		return "", fmt.Errorf("products collection not found: %v", err)
+		return nil, fmt.Errorf("products collection not found: %v", err)
 	}
 
 	facebookID := toString(product.ID)
 	var record *models.Record
 
 	// Try to find existing record by facebook_id
+
 	existingRecord, err := db.app.Dao().FindFirstRecordByData(collection.Id, "facebook_id", facebookID)
 	if err == nil && existingRecord != nil {
 		// Update existing record
@@ -169,11 +168,25 @@ func (db *PocketBaseDB) SaveProduct(product MarketplaceItemDetails) (string, err
 		LogDebug0("SaveProduct", "creating new product", "facebook_id", facebookID)
 	}
 
+	return record, nil
+}
+
+func (db *PocketBaseDB) SaveProduct(product MarketplaceItemDetails) (string, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	record, err := db.GetProductOrNew(product)
+	if err != nil {
+		LogFatal("error in GetProductOrNew")
+	}
+
 	// Set all fields
 	err = SetProductFields(record, product)
 	if err != nil {
 		LogFatal("error in SetProductFields")
 	}
+
+	facebookID := toString(product.ID)
 
 	if err := db.app.Dao().SaveRecord(record); err != nil {
 		LogError0("SaveProduct", "failed to save product", "facebook_id", facebookID, "error", err)
