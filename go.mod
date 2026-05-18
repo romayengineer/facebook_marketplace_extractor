@@ -7,6 +7,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.16.7
+	github.com/mozillazg/go-unidecode v0.2.0
 	github.com/playwright-community/playwright-go v0.5700.1
 	github.com/pocketbase/pocketbase v0.21.3
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
@@ -62,7 +63,6 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-sqlite3 v1.14.19 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
-	github.com/mozillazg/go-unidecode v0.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/pocketbase/dbx v1.10.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect

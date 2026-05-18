@@ -122,8 +122,8 @@ func SetProductFields(record *models.Record, product MarketplaceItemDetails) err
 		return fmt.Errorf("record is nil")
 	}
 	record.Set("facebook_id_long", toString(product.IDLong))
-	record.Set("title", toString(product.Title))
-	record.Set("description", toString(product.Description))
+	record.Set("title", toStringClean(product.Title))
+	record.Set("description", toStringClean(product.Description))
 	record.Set("category", toString(product.Category))
 	record.Set("url", toString(product.URL))
 	record.Set("price_amount", toFloat(product.PriceAmount))
