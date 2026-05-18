@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 
+	"github.com/mozillazg/go-unidecode"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/models"
 	"github.com/pocketbase/pocketbase/models/schema"
@@ -147,7 +149,7 @@ func (db *PocketBaseDB) GetProductOrNew(product MarketplaceItemDetails) (*models
 
 	collection, err := db.app.Dao().FindCollectionByNameOrId("products")
 	if err != nil {
-		LogError0("SaveProduct", "collection not found", "error", err)
+		LogError0("GetProductOrNew", "collection not found", "error", err)
 		return nil, fmt.Errorf("products collection not found: %v", err)
 	}
 
@@ -155,17 +157,16 @@ func (db *PocketBaseDB) GetProductOrNew(product MarketplaceItemDetails) (*models
 	var record *models.Record
 
 	// Try to find existing record by facebook_id
-
 	existingRecord, err := db.app.Dao().FindFirstRecordByData(collection.Id, "facebook_id", facebookID)
 	if err == nil && existingRecord != nil {
 		// Update existing record
 		record = existingRecord
-		LogDebug0("SaveProduct", "updating existing product", "facebook_id", facebookID)
+		LogDebug0("GetProductOrNew", "updating existing product", "facebook_id", facebookID)
 	} else {
 		// Create new record
 		record = models.NewRecord(collection)
 		record.Set("facebook_id", facebookID)
-		LogDebug0("SaveProduct", "creating new product", "facebook_id", facebookID)
+		LogDebug0("GetProductOrNew", "creating new product", "facebook_id", facebookID)
 	}
 
 	return record, nil
@@ -240,6 +241,18 @@ func toString(v any) string {
 		return ""
 	}
 	return fmt.Sprintf("%v", v)
+}
+
+func toStringClean(v any) string {
+	if v == nil {
+		return ""
+	}
+	value := fmt.Sprintf("%v", v)
+	// Convert UTF-8 to ASCII using unidecode
+	value = unidecode.Unidecode(value)
+	// Convert to lowercase
+	value = strings.ToLower(value)
+	return value
 }
 
 func toFloat(v any) float64 {
