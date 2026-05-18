@@ -34,9 +34,7 @@ def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
 
     return df
 
-
-def main():
-    conn = get_conn()
+def product_statistics(conn: sqlite3.Connection) -> None:
     
     df = get_products(conn)
 
@@ -59,6 +57,12 @@ def main():
     # Show price statistics
     print(f"\nPrice statistics:")
     print(df['price_amount'].describe())
+    
+
+def main():
+    conn = get_conn()
+    
+    product_statistics(conn)
     
     conn.close()
 
