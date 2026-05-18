@@ -16,6 +16,7 @@ import nltk # type: ignore
 from nltk.corpus import stopwords # type: ignore
 import matplotlib.pyplot as plt # type: ignore
 import pickle # type: ignore
+from dotenv import load_dotenv # type: ignore
 
 # Download Spanish stop words
 try:
@@ -97,7 +98,7 @@ def currency_normalization(df: pd.DataFrame, limit: int, usd_price) -> pd.DataFr
 def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
 
     # Query only the three columns we need
-    query = "SELECT id, title, description, category, price_amount FROM products"
+    query = "SELECT id, title, description, category, price_amount, location_latitude, location_longitude FROM products"
     df = pd.read_sql_query(query, conn)
 
     # Ensure price_amount is float
@@ -169,7 +170,61 @@ def filter_price_outliers(df: pd.DataFrame) -> pd.DataFrame:
     print(f"  Valid range: {lower_bound:,.2f} - {upper_bound:,.2f}")
     print(f"  Removed {removed_count} outliers ({removed_count/initial_count*100:.1f}%)")
     print(f"  Remaining products: {len(df)}")
-    
+
+    return df
+
+
+def calculate_distance(df: pd.DataFrame) -> pd.DataFrame:
+    """Calculate distance from each product location to user location using Haversine formula."""
+
+    print(f"\n{'='*60}")
+    print("Calculating Distance from Products...")
+    print(f"{'='*60}")
+
+    # Load environment variables
+    load_dotenv()
+    my_latitude = float(os.environ['MY_LOCATION_LATITUDE'])
+    my_longitude = float(os.environ['MY_LOCATION_LONGITUDE'])
+
+    print(f"User location: ({my_latitude}, {my_longitude})")
+
+    # Haversine formula to calculate distance between two lat/lon points
+    def haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+        """Calculate distance in kilometers between two points."""
+        from math import radians, sin, cos, sqrt, atan2
+
+        R = 6371  # Earth radius in kilometers
+
+        lat1_rad = radians(lat1)
+        lat2_rad = radians(lat2)
+        dlat = radians(lat2 - lat1)
+        dlon = radians(lon2 - lon1)
+
+        a = sin(dlat / 2) ** 2 + cos(lat1_rad) * cos(lat2_rad) * sin(dlon / 2) ** 2
+        c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+        return R * c
+
+    # Calculate distance for each product
+    df['distance'] = df.apply(
+        lambda row: haversine(
+            my_latitude,
+            my_longitude,
+            row['location_latitude'],
+            row['location_longitude']
+        ) if pd.notna(row['location_latitude']) and pd.notna(row['location_longitude']) else np.nan,
+        axis=1
+    )
+
+    # Print distance statistics
+    valid_distances = df['distance'].dropna()
+    print(f"\nDistance Statistics (km):")
+    print(f"  Mean: {valid_distances.mean():.2f} km")
+    print(f"  Median: {valid_distances.median():.2f} km")
+    print(f"  Min: {valid_distances.min():.2f} km")
+    print(f"  Max: {valid_distances.max():.2f} km")
+    print(f"  Products with valid location: {len(valid_distances)}/{len(df)}")
+
     return df
 
 
@@ -619,15 +674,15 @@ def update_products_with_predictions(conn: sqlite3.Connection, result_df: pd.Dat
 
     cursor = conn.cursor()
 
-    update_data = result_df[['id', 'price_usd', 'predicted_price', 'price_error', 'price_error_pct']].copy()
+    update_data = result_df[['id', 'price_usd', 'predicted_price', 'price_error', 'price_error_pct', 'distance']].copy()
 
     # Update products in database
     try:
         cursor.executemany(
             """UPDATE products
-               SET price_usd = ?, predicted_price = ?, price_error = ?, price_error_pct = ?
+               SET price_usd = ?, predicted_price = ?, price_error = ?, price_error_pct = ?, distance = ?
                WHERE id = ?""",
-            [(row['price_usd'], row['predicted_price'], row['price_error'], row['price_error_pct'], row['id'])
+            [(row['price_usd'], row['predicted_price'], row['price_error'], row['price_error_pct'], row['distance'], row['id'])
              for _, row in update_data.iterrows()]
         )
 
@@ -727,6 +782,7 @@ def main():
     conn = get_conn()
     products_df = get_products(conn)
     products_df = filter_price_outliers(products_df)
+    products_df = calculate_distance(products_df)
 
     df_statistics(products_df)
     plot_prices(products_df)
