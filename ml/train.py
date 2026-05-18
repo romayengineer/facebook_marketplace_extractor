@@ -73,6 +73,26 @@ def df_statistics(df: pd.DataFrame) -> None:
     print(df['price_amount'].describe())
 
 
+def filter_price_outliers(df: pd.DataFrame) -> pd.DataFrame:
+    # Remove price outliers (outside 2 std dev from mean)
+    mean_price = df['price_amount'].mean()
+    std_price = df['price_amount'].std()
+    lower_bound = mean_price - (2 * std_price)
+    upper_bound = mean_price + (2 * std_price)
+
+    initial_count = len(df)
+    df = df[(df['price_amount'] >= lower_bound) & (df['price_amount'] <= upper_bound)]
+    removed_count = initial_count - len(df)
+
+    print(f"\nPrice outlier removal:")
+    print(f"  Mean: {mean_price:,.2f} | Std Dev: {std_price:,.2f}")
+    print(f"  Valid range: {lower_bound:,.2f} - {upper_bound:,.2f}")
+    print(f"  Removed {removed_count} outliers ({removed_count/initial_count*100:.1f}%)")
+    print(f"  Remaining products: {len(df)}")
+    
+    return df
+
+
 def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> None:
     """Classify products into N categories using title, description, and price."""
 
@@ -83,6 +103,8 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> N
     # Combine title and description
     df = products_df.copy()
     df['text'] = df['title'].fillna('') + ' ' + df['description'].fillna('')
+    
+    df = filter_price_outliers(df)
 
     # Vectorize text using TF-IDF with Spanish stop words
     print("Vectorizing text features...")
