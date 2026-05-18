@@ -465,6 +465,81 @@ def train_price_prediction_model(df: pd.DataFrame) -> tuple:
     return model, title_vectorizer, description_vectorizer, (X_test, y_test, y_pred_test)
 
 
+def predict_product_prices(df: pd.DataFrame) -> pd.DataFrame:
+    """Use trained model to predict prices for all products."""
+
+    print(f"\n{'='*60}")
+    print("Predicting Product Prices...")
+    print(f"{'='*60}")
+
+    # Load saved model and vectorizers
+    try:
+        with open('price_prediction_model.pkl', 'rb') as f:
+            model = pickle.load(f)
+        with open('title_vectorizer.pkl', 'rb') as f:
+            title_vectorizer = pickle.load(f)
+        with open('description_vectorizer.pkl', 'rb') as f:
+            description_vectorizer = pickle.load(f)
+        print("✓ Model and vectorizers loaded successfully")
+    except FileNotFoundError as e:
+        print(f"Error: Could not load model files. {e}")
+        print("Please train the model first by running train_price_prediction_model()")
+        return df
+
+    # Copy dataframe to avoid modifying original
+    result_df = df.copy()
+
+    # Vectorize title using the saved vectorizer
+    print("Vectorizing titles...")
+    title_features = title_vectorizer.transform(result_df['title'].fillna('')).toarray()
+
+    # Vectorize description using the saved vectorizer
+    print("Vectorizing descriptions...")
+    description_features = description_vectorizer.transform(result_df['description'].fillna('')).toarray()
+
+    # Combine features
+    features = np.hstack([title_features, description_features])
+    print(f"Feature dimensions: {features.shape[1]}")
+
+    # Make predictions
+    print(f"Making predictions for {len(result_df)} products...")
+    predicted_prices = model.predict(features)
+    result_df['predicted_price'] = predicted_prices
+
+    # Add prediction error (actual vs predicted)
+    if 'price_amount' in result_df.columns:
+        result_df['price_error'] = result_df['price_amount'] - result_df['predicted_price']
+        result_df['price_error_pct'] = (result_df['price_error'] / result_df['price_amount'] * 100).round(2)
+
+        # Show statistics
+        print(f"\n{'='*60}")
+        print("Prediction Statistics:")
+        print(f"{'='*60}")
+        print(f"Average predicted price: ${result_df['predicted_price'].mean():,.2f}")
+        print(f"Average actual price: ${result_df['price_amount'].mean():,.2f}")
+        mae = mean_absolute_error(result_df['price_amount'], result_df['predicted_price'])
+        rmse = np.sqrt(mean_squared_error(result_df['price_amount'], result_df['predicted_price']))
+        print(f"Mean Absolute Error: ${mae:,.2f}")
+        print(f"RMSE: ${rmse:,.2f}")
+
+        # Show biggest overestimates and underestimates
+        print(f"\nTop 5 Overestimated (actual < predicted):")
+        overest = result_df.nsmallest(5, 'price_error')[['title', 'price_amount', 'predicted_price', 'price_error_pct']]
+        for idx, (_, row) in enumerate(overest.iterrows(), 1):
+            print(f"  {idx}. {row['title'][:50]} | Actual: ${row['price_amount']:,.0f} | Predicted: ${row['predicted_price']:,.0f} ({row['price_error_pct']:.1f}%)")
+
+        print(f"\nTop 5 Underestimated (actual > predicted):")
+        underest = result_df.nlargest(5, 'price_error')[['title', 'price_amount', 'predicted_price', 'price_error_pct']]
+        for idx, (_, row) in enumerate(underest.iterrows(), 1):
+            print(f"  {idx}. {row['title'][:50]} | Actual: ${row['price_amount']:,.0f} | Predicted: ${row['predicted_price']:,.0f} ({row['price_error_pct']:.1f}%)")
+
+    # Save predictions to CSV
+    result_df.to_csv('products_with_predictions.csv', index=False)
+    print(f"\n✓ Predictions saved to products_with_predictions.csv")
+
+    return result_df
+
+
 def main():
     conn = get_conn()
     products_df = get_products(conn)
@@ -474,6 +549,7 @@ def main():
     plot_prices(products_df)
     classify_products(products_df, 7)
     train_price_prediction_model(products_df)
+    predict_product_prices(products_df)
 
     conn.close()
 
