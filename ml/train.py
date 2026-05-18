@@ -154,24 +154,32 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> N
     print(f"Classifying products into {categories_count} categories...")
     print(f"{'='*60}")
 
-    # Combine title and description
+    # Copy dataframe
     df = products_df.copy()
-    df['text'] = df['title'].fillna('') + ' ' + df['description'].fillna('')
 
-    # Vectorize text using TF-IDF with Spanish stop words
-    print("Vectorizing text features...")
-    vectorizer = TfidfVectorizer(
-        max_features=100,
+    # Vectorize title and description separately
+    print("Vectorizing title features...")
+    title_vectorizer = TfidfVectorizer(
+        max_features=50,
         stop_words=list(spanish_stopwords),
         lowercase=True
     )
-    text_features = vectorizer.fit_transform(df['text']).toarray()
+    title_features = title_vectorizer.fit_transform(df['title'].fillna('')).toarray()
+
+    print("Vectorizing description features...")
+    description_vectorizer = TfidfVectorizer(
+        max_features=50,
+        stop_words=list(spanish_stopwords),
+        lowercase=True
+    )
+    description_features = description_vectorizer.fit_transform(df['description'].fillna('')).toarray()
 
     # Normalize price feature
     price_scaled = StandardScaler().fit_transform(df[['price_amount']])
 
-    # Combine text + price features
-    features = np.hstack([text_features, price_scaled])
+    # Combine all features: title (50) + description (50) + price (1) = 101 dimensions
+    features = np.hstack([title_features, description_features, price_scaled])
+    print(f"Combined feature dimensions: {features.shape[1]}")
 
     # Apply K-means clustering
     print(f"Training K-means with {categories_count} clusters...")
@@ -179,7 +187,8 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> N
     df['category'] = kmeans.fit_predict(features)
 
     # Generate category names from model features
-    feature_names = vectorizer.get_feature_names_out()
+    title_feature_names = title_vectorizer.get_feature_names_out()
+    description_feature_names = description_vectorizer.get_feature_names_out()
     category_names = {}
 
     print("\nGenerating category names from model features...")
@@ -190,12 +199,19 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> N
         # Get the cluster center for this category
         center = kmeans.cluster_centers_[category]
 
-        # Extract top 3 words from TF-IDF features
-        top_features_idx = np.argsort(center[:len(feature_names)])[-3:][::-1]
-        top_words = [feature_names[i].title() for i in top_features_idx]
+        # Extract top words from title features (first 50)
+        title_center = center[:len(title_feature_names)]
+        top_title_idx = np.argsort(title_center)[-2:][::-1]
+        top_title_words = [title_feature_names[i].title() for i in top_title_idx if i < len(title_feature_names)]
+
+        # Extract top words from description features (next 50)
+        desc_center = center[len(title_feature_names):len(title_feature_names)+len(description_feature_names)]
+        top_desc_idx = np.argsort(desc_center)[-1:][::-1]
+        top_desc_words = [description_feature_names[i].title() for i in top_desc_idx if i < len(description_feature_names)]
 
         # Create name from top words
-        category_name = " & ".join(top_words)
+        top_words = top_title_words + top_desc_words
+        category_name = " & ".join(top_words[:3])
 
         # Add price tier
         if avg_price > 500000:
@@ -358,7 +374,7 @@ def main():
 
     df_statistics(products_df)
     plot_prices(products_df)
-    classify_products(products_df, 8)
+    classify_products(products_df, 7)
 
     conn.close()
 
