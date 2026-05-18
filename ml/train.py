@@ -51,6 +51,15 @@ def drop_lower_than(df: pd.DataFrame, limit: int) -> pd.DataFrame:
     return df
 
 
+def currency_normalization(df: pd.DataFrame, limit: int, usd_price) -> pd.DataFrame:
+    # Convert prices: if price > limit, divide by USD Price (currency normalization)
+    df['price_amount'] = df['price_amount'].apply(
+        lambda price: price / usd_price if price > limit else price
+    )
+    
+    return df
+
+
 def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
 
     # Query only the three columns we need
@@ -59,11 +68,8 @@ def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
 
     # Ensure price_amount is float
     df['price_amount'] = pd.to_numeric(df['price_amount'], errors='coerce').astype('float64')
-
-    # Convert prices: if price > 3000, divide by 1400 (currency normalization)
-    df['price_amount'] = df['price_amount'].apply(
-        lambda price: price / 1400 if price > 3000 else price
-    )
+    
+    df = currency_normalization(df, 10000, 1400)
     
     df = drop_lower_than(df, 100)
 
