@@ -51,6 +51,18 @@ def drop_lower_than(df: pd.DataFrame, limit: int) -> pd.DataFrame:
     return df
 
 
+def drop_higher_than(df: pd.DataFrame, limit: int) -> pd.DataFrame:
+    # Drop products with price < limit
+    initial_count = len(df)
+    df = df[df['price_amount'] <= limit]
+    removed_count = initial_count - len(df)
+
+    if removed_count > 0:
+        print(f"Dropped {removed_count} products with price > {limit}")
+        
+    return df
+
+
 def currency_normalization(df: pd.DataFrame, limit: int, usd_price) -> pd.DataFrame:
     # Convert prices: if price > limit, divide by USD Price (currency normalization)
     df['price_amount'] = df['price_amount'].apply(
@@ -71,7 +83,9 @@ def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
     
     df = currency_normalization(df, 10000, 1400)
     
-    df = drop_lower_than(df, 100)
+    df = drop_lower_than(df, 200)
+    
+    df = drop_higher_than(df, 5000)
 
     return df
 
