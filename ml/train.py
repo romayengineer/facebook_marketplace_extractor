@@ -2,13 +2,24 @@
 import sqlite3
 import pandas as pd # type: ignore
 import os
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import KMeans
+from sklearn.feature_extraction.text import TfidfVectorizer # type: ignore
+from sklearn.preprocessing import StandardScaler # type: ignore
+from sklearn.cluster import KMeans # type: ignore
 import numpy as np
+import nltk # type: ignore
+from nltk.corpus import stopwords # type: ignore
+
+# Download Spanish stop words
+try:
+    nltk.data.find('corpora/stopwords')
+except LookupError:
+    nltk.download('stopwords')
 
 # Disable scientific notation in pandas
 pd.set_option('display.float_format', lambda x: f'{x:,.2f}')
+
+# Get Spanish stop words
+spanish_stopwords = set(stopwords.words('spanish'))
 
 
 def get_conn() -> sqlite3.Connection:
@@ -73,9 +84,13 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> N
     df = products_df.copy()
     df['text'] = df['title'].fillna('') + ' ' + df['description'].fillna('')
 
-    # Vectorize text using TF-IDF
+    # Vectorize text using TF-IDF with Spanish stop words
     print("Vectorizing text features...")
-    vectorizer = TfidfVectorizer(max_features=100, stop_words='english', lowercase=True)
+    vectorizer = TfidfVectorizer(
+        max_features=100,
+        stop_words=list(spanish_stopwords),
+        lowercase=True
+    )
     text_features = vectorizer.fit_transform(df['text']).toarray()
 
     # Normalize price feature
@@ -89,25 +104,64 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> N
     kmeans = KMeans(n_clusters=categories_count, random_state=42, n_init=10)
     df['category'] = kmeans.fit_predict(features)
 
-    # Show category distribution
-    print(f"\nCategory Distribution:")
-    print(df['category'].value_counts().sort_index())
+    # Generate category names from model features
+    feature_names = vectorizer.get_feature_names_out()
+    category_names = {}
 
-    # Show sample products per category
+    print("\nGenerating category names from model features...")
+    for category in range(categories_count):
+        category_products = df[df['category'] == category]
+        avg_price = category_products['price_amount'].mean()
+
+        # Get the cluster center for this category
+        center = kmeans.cluster_centers_[category]
+
+        # Extract top 3 words from TF-IDF features
+        top_features_idx = np.argsort(center[:len(feature_names)])[-3:][::-1]
+        top_words = [feature_names[i].title() for i in top_features_idx]
+
+        # Create name from top words
+        category_name = " & ".join(top_words)
+
+        # Add price tier
+        if avg_price > 500000:
+            category_name += " (Premium)"
+        elif avg_price < 50000:
+            category_name += " (Budget)"
+        else:
+            category_name += " (Mid-Range)"
+
+        category_names[category] = category_name
+
+    df['category_name'] = df['category'].map(category_names)
+
+    # Show category distribution
     print(f"\n{'='*60}")
-    print("Sample products per category:")
+    print("Category Distribution:")
+    print(f"{'='*60}")
+    for category in range(categories_count):
+        count = len(df[df['category'] == category])
+        name = category_names[category]
+        print(f"  {name}: {count} products")
+
+    # Show products per category
+    print(f"\n{'='*60}")
+    print("Product Categories:")
     print(f"{'='*60}")
 
     for category in range(categories_count):
         category_products = df[df['category'] == category]
         avg_price = category_products['price_amount'].mean()
         count = len(category_products)
+        name = category_names[category]
 
-        print(f"\n📦 Category {category} ({count} products, avg price: {avg_price:,.2f})")
+        print(f"\n📦 {name}")
+        print(f"   Products: {count} | Avg Price: {avg_price:,.2f}")
+        print(f"   Sample items:")
 
-        # Show top 3 most relevant products
-        for idx, (_, row) in enumerate(category_products.head(3).iterrows()):
-            print(f"   • {row['title'][:60]}")
+        # Show top 3 products
+        for idx, (_, row) in enumerate(category_products.head(3).iterrows(), 1):
+            print(f"      {idx}. {row['title'][:60]}")
 
     # Save classified data
     df.to_csv('products_classified.csv', index=False)
