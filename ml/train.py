@@ -2,6 +2,10 @@
 import sqlite3
 import pandas as pd # type: ignore
 import os
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+import numpy as np
 
 # Disable scientific notation in pandas
 pd.set_option('display.float_format', lambda x: f'{x:,.2f}')
@@ -56,6 +60,58 @@ def df_statistics(df: pd.DataFrame) -> None:
     # Show price statistics
     print(f"\nPrice statistics:")
     print(df['price_amount'].describe())
+
+
+def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> None:
+    """Classify products into N categories using title, description, and price."""
+
+    print(f"\n{'='*60}")
+    print(f"Classifying products into {categories_count} categories...")
+    print(f"{'='*60}")
+
+    # Combine title and description
+    df = products_df.copy()
+    df['text'] = df['title'].fillna('') + ' ' + df['description'].fillna('')
+
+    # Vectorize text using TF-IDF
+    print("Vectorizing text features...")
+    vectorizer = TfidfVectorizer(max_features=100, stop_words='english', lowercase=True)
+    text_features = vectorizer.fit_transform(df['text']).toarray()
+
+    # Normalize price feature
+    price_scaled = StandardScaler().fit_transform(df[['price_amount']])
+
+    # Combine text + price features
+    features = np.hstack([text_features, price_scaled])
+
+    # Apply K-means clustering
+    print(f"Training K-means with {categories_count} clusters...")
+    kmeans = KMeans(n_clusters=categories_count, random_state=42, n_init=10)
+    df['category'] = kmeans.fit_predict(features)
+
+    # Show category distribution
+    print(f"\nCategory Distribution:")
+    print(df['category'].value_counts().sort_index())
+
+    # Show sample products per category
+    print(f"\n{'='*60}")
+    print("Sample products per category:")
+    print(f"{'='*60}")
+
+    for category in range(categories_count):
+        category_products = df[df['category'] == category]
+        avg_price = category_products['price_amount'].mean()
+        count = len(category_products)
+
+        print(f"\n📦 Category {category} ({count} products, avg price: {avg_price:,.2f})")
+
+        # Show top 3 most relevant products
+        for idx, (_, row) in enumerate(category_products.head(3).iterrows()):
+            print(f"   • {row['title'][:60]}")
+
+    # Save classified data
+    df.to_csv('products_classified.csv', index=False)
+    print(f"\n✓ Classified data saved to products_classified.csv")
     
 
 def main():
@@ -63,6 +119,7 @@ def main():
     products_df = get_products(conn)
     
     df_statistics(products_df)
+    classify_products(products_df)
     
     conn.close()
 
