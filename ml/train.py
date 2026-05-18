@@ -3,7 +3,7 @@ import sqlite3
 import pandas as pd # type: ignore
 import os
 import numpy
-from typing import Tuple
+from typing import Tuple, Any
 from sklearn.feature_extraction.text import TfidfVectorizer # type: ignore
 from sklearn.preprocessing import StandardScaler # type: ignore
 from sklearn.cluster import KMeans # type: ignore
@@ -382,6 +382,11 @@ def get_description_features(df: pd.DataFrame) -> Tuple[numpy.ndarray, TfidfVect
     return description_features, description_vectorizer
 
 
+def save_model(model: Any, file_name: str) -> None:
+    with open(file_name, 'wb') as f:
+        pickle.dump(model, f)
+
+
 def train_price_prediction_model(df: pd.DataFrame) -> tuple:
     """Train a regression model to predict product prices from title and description."""
 
@@ -450,14 +455,11 @@ def train_price_prediction_model(df: pd.DataFrame) -> tuple:
         importance = feature_importance[idx]
         print(f"  {rank}. {feature_name} ({source}): {importance:.4f}")
 
-    # Save model
-    with open('price_prediction_model.pkl', 'wb') as f:
-        pickle.dump(model, f)
-    with open('title_vectorizer.pkl', 'wb') as f:
-        pickle.dump(title_vectorizer, f)
-    with open('description_vectorizer.pkl', 'wb') as f:
-        pickle.dump(description_vectorizer, f)
 
+    save_model(model, 'price_prediction_model.pkl')
+    save_model(title_vectorizer, 'title_vectorizer.pkl')
+    save_model(description_vectorizer, 'description_vectorizer.pkl')
+    
     print(f"\n✓ Model and vectorizers saved")
 
     return model, title_vectorizer, description_vectorizer, (X_test, y_test, y_pred_test)
