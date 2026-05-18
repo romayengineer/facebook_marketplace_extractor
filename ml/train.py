@@ -286,7 +286,8 @@ def plot_prices(df: pd.DataFrame) -> None:
     plt.tight_layout()
     plt.savefig('price_distribution.png', dpi=150, bbox_inches='tight')
     print(f"✓ Plot saved to price_distribution.png")
-    plt.show()
+    plt.show(block=False)
+    plt.pause(0.1)
 
 
 def main():
@@ -299,6 +300,10 @@ def main():
     classify_products(products_df)
 
     conn.close()
+
+    # Keep plot window open until user closes it
+    print("\n✓ Analysis complete! Plot window will stay open. Close it to exit.")
+    plt.show(block=True)
 
 
 if __name__ == "__main__":
