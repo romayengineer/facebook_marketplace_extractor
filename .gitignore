@@ -9,3 +9,5 @@ main
 /draft
 *.log
 /pb_data
+*.csv
+.venv
