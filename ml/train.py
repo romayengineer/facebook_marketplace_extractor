@@ -48,6 +48,11 @@ def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
     # Ensure price_amount is float
     df['price_amount'] = pd.to_numeric(df['price_amount'], errors='coerce').astype('float64')
 
+    # Convert prices: if price > 3000, divide by 1400 (currency normalization)
+    df['price_amount'] = df['price_amount'].apply(
+        lambda price: price / 1400 if price > 3000 else price
+    )
+
     return df
 
 
@@ -104,8 +109,6 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> N
     # Combine title and description
     df = products_df.copy()
     df['text'] = df['title'].fillna('') + ' ' + df['description'].fillna('')
-    
-    df = filter_price_outliers(df)
 
     # Vectorize text using TF-IDF with Spanish stop words
     print("Vectorizing text features...")
@@ -242,6 +245,7 @@ def plot_prices(df: pd.DataFrame) -> None:
 def main():
     conn = get_conn()
     products_df = get_products(conn)
+    products_df = filter_price_outliers(products_df)
 
     df_statistics(products_df)
     plot_prices(products_df)
