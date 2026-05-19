@@ -192,8 +192,9 @@ def filter_price_outliers(df: pd.DataFrame) -> pd.DataFrame:
     # Remove price outliers (outside 2 std dev from mean)
     mean_price = df["price_usd"].mean()
     std_price = df["price_usd"].std()
-    lower_bound = mean_price - (2 * std_price)
-    upper_bound = mean_price + (2 * std_price)
+    # using 1 as the floor as we want to filter prices with 0
+    lower_bound = max(1, mean_price - (1 * std_price))
+    upper_bound = mean_price + (1 * std_price)
 
     initial_count = len(df)
     df = df[(df["price_usd"] >= lower_bound) & (df["price_usd"] <= upper_bound)]
