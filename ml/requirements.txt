@@ -3,3 +3,4 @@ scikit-learn
 nltk
 matplotlib
 dotenv
+xgboost

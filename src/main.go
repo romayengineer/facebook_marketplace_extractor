@@ -115,7 +115,7 @@ func SearchProducts() {
 
 	page, _ := ctx.NewPage()
 	pages, _ := NewPages(page)
-	pages.MarketpaceSearch("gpu")
+	pages.MarketpaceSearch("pc gamer")
 
 	WaitingForInput()
 }
