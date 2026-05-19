@@ -165,7 +165,7 @@ def get_highest_price(df: pd.DataFrame, count: int) -> pd.DataFrame:
 
 def df_statistics(df: pd.DataFrame) -> None:
 
-    print(f"✓ Loaded {len(df)} products from database")
+    print(f"Loaded {len(df)} products from database")
     print(f"\nDataset shape: {df.shape}")
     print(f"\nColumns: {df.columns.tolist()}")
 
@@ -339,7 +339,7 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> K
         count = len(category_products)
         name = category_names[category]
 
-        print(f"\n📦 {name}")
+        print(f"\nProduct Category {name}")
         print(f"   Products: {count} | Avg Price: {avg_price:,.2f}")
         print(f"   Sample items:")
 
@@ -349,7 +349,7 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> K
 
     # Save classified data
     df.to_csv("products_classified.csv", index=False)
-    print(f"\n✓ Classified data saved to products_classified.csv")
+    print(f"\nClassified data saved to products_classified.csv")
 
     return kmeans
 
@@ -576,7 +576,7 @@ def train_price_prediction_model(
         df_for_category[category_name] = models
 
         save_pkls(category_name, models)
-        print(f"\n✓ Model and vectorizers saved")
+        print(f"\nModel and vectorizers saved")
 
     return df_for_category
 
@@ -627,7 +627,7 @@ def update_products_with_predictions(
         )
 
         conn.commit()
-        print(f"✓ Updated {cursor.rowcount} products")
+        print(f"Updated {cursor.rowcount} products")
 
     except Exception as e:
         print(f"Error updating products: {e}")
@@ -682,7 +682,7 @@ def clean_products(conn: sqlite3.Connection, df: pd.DataFrame) -> None:
         )
 
         conn.commit()
-        print(f"✓ Updated {cursor.rowcount} products")
+        print(f"Updated {cursor.rowcount} products")
 
     except Exception as e:
         print(f"Error updating products: {e}")
@@ -796,10 +796,6 @@ def predict_product_prices(df: pd.DataFrame, kmeans: KMeans) -> pd.DataFrame:
         category_df_list.append(category_df)
 
     result_df = pd.concat(category_df_list, ignore_index=True)
-
-    # Save predictions to CSV
-    result_df.to_csv("products_with_predictions.csv", index=False)
-    print(f"\n✓ Predictions saved to products_with_predictions.csv")
 
     return result_df
 
