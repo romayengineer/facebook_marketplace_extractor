@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
-import matplotlib
-
-matplotlib.use("Agg")  # Use non-interactive backend to avoid tkinter cleanup errors
-
-import sqlite3
-import pandas as pd  # type: ignore
 import os
+import pickle  # type: ignore
+import sqlite3
+from dataclasses import dataclass, fields
+from typing import Any, Dict, List, Optional, Tuple
+
+import nltk  # type: ignore
 import numpy
-from typing import Tuple, Any, Dict, Optional, List
-from sklearn.feature_extraction.text import TfidfVectorizer  # type: ignore
+import numpy as np
+import pandas as pd  # type: ignore
+from dotenv import load_dotenv
+from nltk.corpus import stopwords  # type: ignore
 from sklearn.cluster import KMeans  # type: ignore
 from sklearn.ensemble import RandomForestRegressor  # type: ignore
+from sklearn.feature_extraction.text import TfidfVectorizer  # type: ignore
+from sklearn.metrics import (  # type: ignore
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score,
+)
 from sklearn.model_selection import train_test_split  # type: ignore
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score  # type: ignore
-import numpy as np
-import nltk  # type: ignore
-from nltk.corpus import stopwords  # type: ignore
-import matplotlib.pyplot as plt  # type: ignore
-import pickle  # type: ignore
-from dotenv import load_dotenv  # type: ignore
-from dataclasses import dataclass, fields
 
 # Download Spanish stop words
 try:
@@ -225,7 +225,7 @@ def calculate_distance(df: pd.DataFrame) -> pd.DataFrame:
     # Haversine formula to calculate distance between two lat/lon points
     def haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
         """Calculate distance in kilometers between two points."""
-        from math import radians, sin, cos, sqrt, atan2
+        from math import atan2, cos, radians, sin, sqrt
 
         R = 6371  # Earth radius in kilometers
 
@@ -795,10 +795,6 @@ def main():
     update_products_with_predictions(conn, result_df)
 
     conn.close()
-
-    # Keep plot window open until user closes it
-    print("\n✓ Analysis complete! Plot window will stay open. Close it to exit.")
-    plt.show(block=True)
 
 
 if __name__ == "__main__":

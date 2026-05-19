@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 import matplotlib
-
-matplotlib.use("Agg")  # Use non-interactive backend to avoid tkinter cleanup errors
-
+import matplotlib.pyplot as plt  # type: ignore
+import numpy as np
 import pandas as pd  # type: ignore
 from sklearn.cluster import KMeans  # type: ignore
 from sklearn.decomposition import PCA  # type: ignore
-import numpy as np
-import matplotlib.pyplot as plt  # type: ignore
+
+matplotlib.use("Agg")  # Use non-interactive backend to avoid tkinter cleanup errors
 
 
 def plot_clusters(features: np.ndarray, kmeans: KMeans, df: pd.DataFrame) -> None:
