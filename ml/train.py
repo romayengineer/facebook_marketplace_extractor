@@ -295,12 +295,12 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> K
     category_names = {}
 
     print("\nGenerating category names from model features...")
-    for category in range(categories_count):
-        category_products = df[df["category_index"] == category]
+    for category_index in range(categories_count):
+        category_products = df[df["category_index"] == category_index]
         avg_price = category_products["price_usd"].mean()
 
         # Get the cluster center for this category
-        center = kmeans.cluster_centers_[category]
+        center = kmeans.cluster_centers_[category_index]
 
         # Extract top words from title features (first 50)
         title_center = center[: len(title_feature_names)]
@@ -311,11 +311,13 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> K
             if i < len(title_feature_names)
         ]
 
-        # Create name from top words
+        # Create category_name from top words use category_index so the name is unique
         top_words = top_title_words
-        category_name = "_".join(top_words[:5]).upper()
+        category_name = (
+            str(category_index).zfill(2) + "_" + "_".join(top_words[:5]).upper()
+        )
 
-        category_names[category] = category_name
+        category_names[category_index] = category_name
 
     df["category_name"] = df["category_index"].map(category_names)
 
