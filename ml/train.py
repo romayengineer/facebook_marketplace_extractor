@@ -294,6 +294,8 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> K
     title_feature_names = title_vectorizer.get_feature_names_out()
     category_names = {}
 
+    words_to_pick = 5
+
     print("\nGenerating category names from model features...")
     for category_index in range(categories_count):
         category_products = df[df["category_index"] == category_index]
@@ -304,7 +306,7 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> K
 
         # Extract top words from title features (first 50)
         title_center = center[: len(title_feature_names)]
-        top_title_idx = np.argsort(title_center)[-2:][::-1]
+        top_title_idx = np.argsort(title_center)[-words_to_pick:][::-1]
         top_title_words = [
             title_feature_names[i].title()
             for i in top_title_idx
@@ -314,7 +316,9 @@ def classify_products(products_df: pd.DataFrame, categories_count: int = 5) -> K
         # Create category_name from top words use category_index so the name is unique
         top_words = top_title_words
         category_name = (
-            str(category_index).zfill(2) + "_" + "_".join(top_words[:5]).upper()
+            str(category_index).zfill(2)
+            + "_"
+            + "_".join(top_words[:words_to_pick]).upper()
         )
 
         category_names[category_index] = category_name
@@ -808,7 +812,7 @@ def main() -> None:
 
     # df_statistics(products_df)
 
-    kmeans = classify_products(products_df, 5)
+    kmeans = classify_products(products_df, 10)
     products_df = filter_price_outliers_by_category(products_df, kmeans)
 
     train_price_prediction_model(products_df, kmeans)
