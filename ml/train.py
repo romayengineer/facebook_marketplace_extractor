@@ -145,7 +145,7 @@ def get_products(conn: sqlite3.Connection) -> pd.DataFrame:
 
     df = drop_description_len_higher_than(df, 500)
 
-    df = filter_price_outliers(df)
+    # df = filter_price_outliers(df)
 
     df = calculate_distance(df)
 
@@ -458,6 +458,22 @@ def get_price_model() -> RandomForestRegressor:
     return RandomForestRegressor(
         n_estimators=2000, max_depth=40, min_samples_split=3, random_state=42, n_jobs=-1
     )
+
+
+def filter_price_outliers_by_category(df: pd.DataFrame, kmeans: KMeans) -> pd.DataFrame:
+
+    filtered_dfs: List[pd.DataFrame] = []
+
+    for cluster in range(kmeans.n_clusters):  # type: ignore
+        category_df = df[df["category_index"] == cluster]
+        category_name: str = category_df["category_name"].iloc[0]
+
+        print(f"\nPrice outlier removal for category {category_name}:")
+        filtered = filter_price_outliers(category_df)
+        filtered_dfs.append(filtered)
+
+    result_df = pd.concat(filtered_dfs, ignore_index=True)
+    return result_df
 
 
 def train_price_prediction_model(
@@ -794,6 +810,8 @@ def main() -> None:
     # df_statistics(products_df)
 
     kmeans = classify_products(products_df, 5)
+    products_df = filter_price_outliers_by_category(products_df, kmeans)
+
     train_price_prediction_model(products_df, kmeans)
     result_df = predict_product_prices(products_df, kmeans)
     update_products_with_predictions(conn, result_df)
