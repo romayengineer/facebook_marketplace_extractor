@@ -251,9 +251,9 @@ def calculate_distance(df: pd.DataFrame) -> pd.DataFrame:
                 row["location_latitude"],
                 row["location_longitude"],
             )
-            if pd.notna(row["location_latitude"])
-            and pd.notna(row["location_longitude"])
-            else np.nan
+            # if latitude and longitude are 0 then distance is 0
+            if row["location_latitude"] != 0 and row["location_longitude"] != 0
+            else 0
         ),
         axis=1,
     )
