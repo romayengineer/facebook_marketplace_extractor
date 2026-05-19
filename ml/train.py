@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import os
-import pickle  # type: ignore
+import pickle
 import sqlite3
 from dataclasses import dataclass, fields
 from typing import Any, Dict, List, Optional, Tuple
@@ -94,7 +94,9 @@ def drop_description_len_higher_than(df: pd.DataFrame, limit: int) -> pd.DataFra
     return df
 
 
-def currency_normalization(df: pd.DataFrame, limit: int, usd_price) -> pd.DataFrame:
+def currency_normalization(
+    df: pd.DataFrame, limit: int, usd_price: int
+) -> pd.DataFrame:
     # Convert prices: if price > limit, divide by USD Price (currency normalization)
     prices_above_limit_before = (df["price_amount"] > limit).sum()
 
@@ -783,7 +785,7 @@ def predict_product_prices(df: pd.DataFrame, kmeans: KMeans) -> pd.DataFrame:
     return result_df
 
 
-def main():
+def main() -> None:
     conn = get_conn()
     products_df = get_products(conn)
 
