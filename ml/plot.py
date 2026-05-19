@@ -3,8 +3,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd  # type: ignore
-from sklearn.cluster import KMeans  # type: ignore
-from sklearn.decomposition import PCA  # type: ignore
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 
 matplotlib.use("Agg")  # Use non-interactive backend to avoid tkinter cleanup errors
 
@@ -26,7 +26,7 @@ def plot_clusters(features: np.ndarray, kmeans: KMeans, df: pd.DataFrame) -> Non
     # Plot each cluster with different color
     colors = plt.cm.Set3(np.linspace(0, 1, kmeans.n_clusters))  # type: ignore
 
-    for cluster in range(kmeans.n_clusters):
+    for cluster in range(kmeans.n_clusters):  # type: ignore
         mask = df["category_index"] == cluster
         ax.scatter(
             features_2d[mask, 0],
@@ -56,7 +56,7 @@ def plot_clusters(features: np.ndarray, kmeans: KMeans, df: pd.DataFrame) -> Non
     ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0]:.1%} variance)")
     ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1]:.1%} variance)")
     ax.set_title(
-        f"K-Means Clustering ({kmeans.n_clusters} clusters)",
+        f"K-Means Clustering ({kmeans.n_clusters} clusters)",  # type: ignore
         fontsize=14,
         fontweight="bold",
     )

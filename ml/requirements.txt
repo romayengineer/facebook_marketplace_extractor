@@ -4,3 +4,6 @@ nltk
 matplotlib
 dotenv
 xgboost
+isort
+black
+scikit-learn-stubs

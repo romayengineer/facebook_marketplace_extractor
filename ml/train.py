@@ -11,15 +11,15 @@ import numpy as np
 import pandas as pd  # type: ignore
 from dotenv import load_dotenv
 from nltk.corpus import stopwords  # type: ignore
-from sklearn.cluster import KMeans  # type: ignore
-from sklearn.ensemble import RandomForestRegressor  # type: ignore
-from sklearn.feature_extraction.text import TfidfVectorizer  # type: ignore
-from sklearn.metrics import (  # type: ignore
+from sklearn.cluster import KMeans
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import (
     mean_absolute_error,
     mean_squared_error,
     r2_score,
 )
-from sklearn.model_selection import train_test_split  # type: ignore
+from sklearn.model_selection import train_test_split
 
 # Download Spanish stop words
 try:
@@ -375,7 +375,9 @@ def get_description_features(df: pd.DataFrame) -> Tuple[numpy.ndarray, TfidfVect
     return description_features, description_vectorizer
 
 
-def get_category_features(df: pd.DataFrame) -> Tuple[numpy.ndarray, TfidfVectorizer]:
+def get_category_features(
+    df: pd.DataFrame,
+) -> Tuple[numpy.ndarray, Optional[TfidfVectorizer]]:
     # Vectorize category features
     print("Vectorizing category features...")
     categories = df["category"].fillna("").astype(str).str.strip()
@@ -465,7 +467,7 @@ def train_price_prediction_model(
 
     df_for_category: Dict[str, ModelsPKL] = {}
 
-    for cluster in range(kmeans.n_clusters):
+    for cluster in range(kmeans.n_clusters):  # type: ignore
         category_df = df[df["category_index"] == cluster]
         category_name: str = category_df["category_name"].iloc[0]
 
@@ -678,7 +680,7 @@ def predict_product_prices(df: pd.DataFrame, kmeans: KMeans) -> pd.DataFrame:
 
     category_df_list: List[pd.DataFrame] = []
 
-    for cluster in range(kmeans.n_clusters):
+    for cluster in range(kmeans.n_clusters):  # type: ignore
         category_df = df[df["category_index"] == cluster]
         category_name: str = category_df["category_name"].iloc[0]
 
