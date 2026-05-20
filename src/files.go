@@ -68,6 +68,11 @@ func GetFilePaths(prefix string, sortit bool) []string {
 			return nil
 		}
 
+		// skip archived folder
+		if strings.Contains(path, "archived") {
+			return nil
+		}
+
 		fileName := d.Name()
 
 		if !strings.HasPrefix(fileName, prefix) || !strings.HasSuffix(fileName, ".json") {
@@ -97,8 +102,10 @@ func GetFilePaths(prefix string, sortit bool) []string {
 	return filePaths
 }
 
-func ForEachJsonInData(prefix string, process func(filePath string, jsonData map[string]any) bool, sortit bool) {
+func ForEachJsonInData(prefix string, process func(filePath string, jsonData map[string]any) bool, sortit bool) int {
 	// open and read all files in data folder that start with response and end in .json
+
+	filesReadCounter := 0
 
 	filePaths := GetFilePaths(prefix, sortit)
 
@@ -120,17 +127,21 @@ func ForEachJsonInData(prefix string, process func(filePath string, jsonData map
 
 		shouldContinue := process(filePath, jsonData)
 
+		filesReadCounter++
+
 		if !shouldContinue {
-			return
+			return filesReadCounter
 		}
 	}
 
+	return filesReadCounter
+
 }
 
-func ForEachResponse(process func(filePath string, jsonData map[string]any) bool, sortit bool) {
-	ForEachJsonInData("response_", process, sortit)
+func ForEachResponse(process func(filePath string, jsonData map[string]any) bool, sortit bool) int {
+	return ForEachJsonInData("response_", process, sortit)
 }
 
-func ForEachDetail(process func(filePath string, jsonData map[string]any) bool, sortit bool) {
-	ForEachJsonInData("detail_", process, sortit)
+func ForEachDetail(process func(filePath string, jsonData map[string]any) bool, sortit bool) int {
+	return ForEachJsonInData("detail_", process, sortit)
 }

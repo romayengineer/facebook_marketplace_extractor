@@ -164,6 +164,10 @@ func SaveProductsIfAny(products []MarketplaceItemDetails) bool {
 
 func GetTimestamp(filePath string) (int64, error) {
 	lastFilePathParts := strings.SplitN(filepath.Base(filePath), "_", 3)
+	if len(lastFilePathParts) < 2 {
+		LogWarn0("GetTimestamp", "filePath does not have time", "filePath", filePath)
+		return 0, fmt.Errorf("filePath does not have time")
+	}
 	lastTimestampStr := lastFilePathParts[1]
 	lastTimestamp, err := strconv.ParseInt(lastTimestampStr, 10, 64)
 	if err != nil {
@@ -174,13 +178,14 @@ func GetTimestamp(filePath string) (int64, error) {
 }
 
 func ProcessData(startAtTimestamp int64) (int64, error) {
+	var lastTimestamp int64
 	var lastFilePath string
 	var filesProcessedCounter int
 	var filesDeletedCounter int
 	var gotRateLimit bool
 
 	productExtractors := NewProductExtractors()
-	ForEachResponse(func(filePath string, jsonData map[string]any) bool {
+	filesReadCounter := ForEachResponse(func(filePath string, jsonData map[string]any) bool {
 		lastFilePath = filePath
 
 		fileTimestamp, err := GetTimestamp(filePath)
@@ -193,6 +198,8 @@ func ProcessData(startAtTimestamp int64) (int64, error) {
 		}
 
 		filesProcessedCounter += 1
+
+		LogInfo0("ProcessData", "read file", "filePath", filePath)
 
 		for _, extractor := range productExtractors.extractors {
 			product, _ := extractor.extractor(jsonData)
@@ -216,12 +223,9 @@ func ProcessData(startAtTimestamp int64) (int64, error) {
 
 	}, true)
 
-	lastTimestamp, err := GetTimestamp(lastFilePath)
-	if err != nil {
-		return lastTimestamp, err
-	}
+	lastTimestamp, _ = GetTimestamp(lastFilePath)
 
-	LogInfo0("ProcessData", "all files processed", "lastTimestamp", lastTimestamp, "filesProcessedCounter", filesProcessedCounter, "filesDeletedCounter", filesDeletedCounter)
+	LogInfo0("ProcessData", "all files processed", "lastTimestamp", lastTimestamp, "filesProcessedCounter", filesProcessedCounter, "filesReadCounter", filesReadCounter, "filesDeletedCounter", filesDeletedCounter)
 
 	if gotRateLimit {
 		LogFatal("got rate limit")
