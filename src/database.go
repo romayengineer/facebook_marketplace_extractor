@@ -108,8 +108,8 @@ func (db *PocketBaseDB) ensureProductsCollection() error {
 
 	collection.Schema = s
 
-	// Add index on facebook_id for fast lookups
-	collection.Indexes = append(collection.Indexes, "CREATE INDEX IF NOT EXISTS `idx_facebook_id` ON `products` (facebook_id)")
+	// Add Unique index on facebook_id for fast lookups
+	collection.Indexes = append(collection.Indexes, "CREATE UNIQUE INDEX IF NOT EXISTS `idx_facebook_id` ON `products` (facebook_id)")
 
 	// Save the collection to database
 	if err := db.app.Dao().SaveCollection(collection); err != nil {
@@ -148,50 +148,87 @@ func SetProductFields(record *models.Record, product MarketplaceItemDetails) err
 	return nil
 }
 
-func (db *PocketBaseDB) getProductRecordByID(collection *models.Collection, facebookID string) (*models.Record, error) {
-	existingRecord, err := db.app.Dao().FindFirstRecordByData(collection.Id, "facebook_id", facebookID)
-	if err == nil && existingRecord != nil {
-		return existingRecord, nil
-	}
-	return nil, nil
-}
-
 func (db *PocketBaseDB) SaveProduct(product MarketplaceItemDetails) (string, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	collection, err := db.app.Dao().FindCollectionByNameOrId("products")
-	if err != nil {
-		LogError0("SaveProduct", "collection not found", "error", err)
-		return "", fmt.Errorf("products collection not found: %v", err)
-	}
-
 	facebookID := toString(product.ID)
 
-	// Upsert: find existing record or create new one
-	record, _ := db.getProductRecordByID(collection, facebookID)
-	if record == nil {
-		record = models.NewRecord(collection)
-		record.Set("facebook_id", facebookID)
-		LogDebug0("SaveProduct", "creating new product", "facebook_id", facebookID)
-	} else {
-		LogDebug0("SaveProduct", "updating existing product", "facebook_id", facebookID)
-	}
+	sql := `INSERT INTO products (
+		facebook_id, facebook_id_long, title, description, category, url,
+		price_amount, price_currency, creation_time, location_latitude,
+		location_longitude, location_city_id, location_city_name1,
+		location_city_name2, location_state_code, seller_id, seller_name,
+		is_hidden, is_live, is_pending, is_sold
+	) VALUES ({:facebook_id}, {:facebook_id_long}, {:title}, {:description}, {:category}, {:url},
+		{:price_amount}, {:price_currency}, {:creation_time}, {:location_latitude},
+		{:location_longitude}, {:location_city_id}, {:location_city_name1},
+		{:location_city_name2}, {:location_state_code}, {:seller_id}, {:seller_name},
+		{:is_hidden}, {:is_live}, {:is_pending}, {:is_sold})
+	ON CONFLICT(facebook_id) DO UPDATE SET
+		facebook_id_long = excluded.facebook_id_long,
+		title = excluded.title,
+		description = excluded.description,
+		category = excluded.category,
+		url = excluded.url,
+		price_amount = excluded.price_amount,
+		price_currency = excluded.price_currency,
+		creation_time = excluded.creation_time,
+		location_latitude = excluded.location_latitude,
+		location_longitude = excluded.location_longitude,
+		location_city_id = excluded.location_city_id,
+		location_city_name1 = excluded.location_city_name1,
+		location_city_name2 = excluded.location_city_name2,
+		location_state_code = excluded.location_state_code,
+		seller_id = excluded.seller_id,
+		seller_name = excluded.seller_name,
+		is_hidden = excluded.is_hidden,
+		is_live = excluded.is_live,
+		is_pending = excluded.is_pending,
+		is_sold = excluded.is_sold`
 
-	// Set all fields
-	if err := SetProductFields(record, product); err != nil {
-		LogError0("SaveProduct", "error setting fields", "facebook_id", facebookID, "error", err)
+	_, err := db.app.Dao().DB().NewQuery(sql).Bind(map[string]interface{}{
+		"facebook_id":         facebookID,
+		"facebook_id_long":    toString(product.IDLong),
+		"title":               toStringClean(product.Title),
+		"description":         toStringClean(product.Description),
+		"category":            toString(product.Category),
+		"url":                 toString(product.URL),
+		"price_amount":        toFloat(product.PriceAmount),
+		"price_currency":      toString(product.PriceCurrency),
+		"creation_time":       toInt64(product.CreationTime),
+		"location_latitude":   toFloat(product.LocationLatitud),
+		"location_longitude":  toFloat(product.LocationLongitude),
+		"location_city_id":    toString(product.LocationGeocodeCityID),
+		"location_city_name1": toString(product.LocationGeocodeCityName1),
+		"location_city_name2": toString(product.LocationGeocodeCityName2),
+		"location_state_code": toString(product.LocationGeocodeStateCode),
+		"seller_id":           toString(product.SellerID),
+		"seller_name":         toString(product.SellerName),
+		"is_hidden":           toBool(product.IsHidden),
+		"is_live":             toBool(product.IsLive),
+		"is_pending":          toBool(product.IsPending),
+		"is_sold":             toBool(product.IsSold),
+	}).Execute()
+
+	if err != nil {
+		LogError0("SaveProduct", "failed to upsert product", "facebook_id", facebookID, "error", err)
 		return "", err
 	}
 
-	// Single write operation
-	if err := db.app.Dao().SaveRecord(record); err != nil {
-		LogError0("SaveProduct", "failed to save product", "facebook_id", facebookID, "error", err)
+	var result struct {
+		ID string
+	}
+	err = db.app.Dao().DB().NewQuery("SELECT id FROM products WHERE facebook_id = {:facebook_id} LIMIT 1").Bind(map[string]interface{}{
+		"facebook_id": facebookID,
+	}).One(&result)
+	if err != nil {
+		LogError0("SaveProduct", "failed to retrieve product id", "facebook_id", facebookID, "error", err)
 		return "", err
 	}
 
-	LogDebug0("SaveProduct", "product saved", "id", record.Id, "facebook_id", facebookID)
-	return record.Id, nil
+	LogDebug0("SaveProduct", "product saved", "id", result.ID, "facebook_id", facebookID)
+	return result.ID, nil
 }
 
 func (db *PocketBaseDB) SaveProducts(products []MarketplaceItemDetails) (int, error) {
