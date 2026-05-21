@@ -75,7 +75,7 @@ func WriteJsonResponse(jsonDatas []any, friendly_name string) (int, error) {
 	return jsonCounter, nil
 }
 
-func Begin() (ContextWrapperInterface, error) {
+func Begin(flags Flags) (ContextWrapperInterface, error) {
 	config, err := NewConfig()
 	if err != nil {
 		return nil, fmt.Errorf("error NewConfig: %v", err)
@@ -100,13 +100,13 @@ func Begin() (ContextWrapperInterface, error) {
 
 	// productExtractors := NewProductExtractors()
 
-	SetContextEventHandlers(ctx)
+	SetContextEventHandlers(ctx, flags)
 
 	return ctx, nil
 }
 
-func SearchProducts() {
-	ctx, err := Begin()
+func SearchProducts(flags Flags) {
+	ctx, err := Begin(flags)
 	if err != nil {
 		LogError0("SearchProducts", "Error in Begin", "error", err)
 		os.Exit(1)
@@ -115,13 +115,13 @@ func SearchProducts() {
 
 	page, _ := ctx.NewPage()
 	pages, _ := NewPages(page)
-	pages.MarketpaceSearch("pc gamer")
+	pages.MarketpaceSearch(flags)
 
 	WaitingForInput()
 }
 
-func GetDetails() {
-	ctx, err := Begin()
+func GetDetails(flags Flags) {
+	ctx, err := Begin(flags)
 	if err != nil {
 		LogError0("GetDetails", "Error in Begin", "error", err)
 		os.Exit(1)
@@ -238,7 +238,13 @@ func main() {
 
 	switch flags.action {
 	case "search":
-		SearchProducts()
+		// block for images is enabled here
+		// scroll down in search view is enabled
+		SearchProducts(flags)
+	case "pull_description":
+		// block for images is disabled here as it breaks graphql API
+		// scroll down in search view is disabled
+		SearchProducts(flags)
 	case "process_data":
 		ProcessData(0)
 	case "serve":
@@ -249,7 +255,7 @@ func main() {
 			LogFatal(err)
 		}
 	case "get_details":
-		GetDetails()
+		GetDetails(flags)
 	case "fill_empty":
 		FillEmpty()
 	default:

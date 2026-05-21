@@ -15,7 +15,7 @@ type Pages struct {
 
 type PagesInterface interface {
 	IsInHomePage() bool
-	MarketpaceSearch(query string) error
+	MarketpaceSearch(flags Flags) error
 	GoToProduct(id string) error
 }
 
@@ -60,12 +60,14 @@ func (pl *Pages) ScrollDown() error {
 	}
 }
 
-func (pl *Pages) MarketpaceSearch(query string) error {
+func (pl *Pages) MarketpaceSearch(flags Flags) error {
 	params := url.Values{}
-	params.Add("query", query)
+	params.Add("query", flags.keywords)
 	baseUrl := "https://www.facebook.com/marketplace/category/search/?" + params.Encode()
 	pl.Page.Goto(baseUrl)
-	// return pl.ScrollDown()
+	if flags.action == "search" {
+		return pl.ScrollDown()
+	}
 	return nil
 }
 

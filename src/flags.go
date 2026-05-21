@@ -9,13 +9,19 @@ import (
 
 type Flags struct {
 	action   string
+	keywords string
 	logLevel string
 }
 
 func NewFlags() Flags {
 	action := flag.String("action", "search", "Action to perform: search, process_data, get_details, save")
+	keywords := flag.String("keywords", "", "Keywords to search for (required when -action is search)")
 	logLevel := flag.String("log-level", "debug", "Log level: debug, info, warn, error")
 	flag.Parse()
+
+	if strings.ToLower(*action) == "search" && *keywords == "" {
+		LogFatal("keywords flag is required when action is search")
+	}
 
 	var level slog.Level
 	switch strings.ToLower(*logLevel) {
@@ -37,6 +43,7 @@ func NewFlags() Flags {
 
 	return Flags{
 		action:   *action,
+		keywords: *keywords,
 		logLevel: *logLevel,
 	}
 }
