@@ -108,6 +108,9 @@ func (db *PocketBaseDB) ensureProductsCollection() error {
 
 	collection.Schema = s
 
+	// Add index on facebook_id for fast lookups
+	collection.Indexes = append(collection.Indexes, "CREATE INDEX IF NOT EXISTS idx_facebook_id ON products(facebook_id)")
+
 	// Save the collection to database
 	if err := db.app.Dao().SaveCollection(collection); err != nil {
 		return fmt.Errorf("failed to create products collection: %v", err)
@@ -145,50 +148,43 @@ func SetProductFields(record *models.Record, product MarketplaceItemDetails) err
 	return nil
 }
 
-func (db *PocketBaseDB) GetProductOrNew(product MarketplaceItemDetails) (*models.Record, error) {
-
-	collection, err := db.app.Dao().FindCollectionByNameOrId("products")
-	if err != nil {
-		LogError0("GetProductOrNew", "collection not found", "error", err)
-		return nil, fmt.Errorf("products collection not found: %v", err)
-	}
-
-	facebookID := toString(product.ID)
-	var record *models.Record
-
-	// Try to find existing record by facebook_id
+func (db *PocketBaseDB) getProductRecordByID(collection *models.Collection, facebookID string) (*models.Record, error) {
 	existingRecord, err := db.app.Dao().FindFirstRecordByData(collection.Id, "facebook_id", facebookID)
 	if err == nil && existingRecord != nil {
-		// Update existing record
-		record = existingRecord
-		LogDebug0("GetProductOrNew", "updating existing product", "facebook_id", facebookID)
-	} else {
-		// Create new record
-		record = models.NewRecord(collection)
-		record.Set("facebook_id", facebookID)
-		LogDebug0("GetProductOrNew", "creating new product", "facebook_id", facebookID)
+		return existingRecord, nil
 	}
-
-	return record, nil
+	return nil, nil
 }
 
 func (db *PocketBaseDB) SaveProduct(product MarketplaceItemDetails) (string, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	record, err := db.GetProductOrNew(product)
+	collection, err := db.app.Dao().FindCollectionByNameOrId("products")
 	if err != nil {
-		LogFatal("error in GetProductOrNew")
-	}
-
-	// Set all fields
-	err = SetProductFields(record, product)
-	if err != nil {
-		LogFatal("error in SetProductFields")
+		LogError0("SaveProduct", "collection not found", "error", err)
+		return "", fmt.Errorf("products collection not found: %v", err)
 	}
 
 	facebookID := toString(product.ID)
 
+	// Upsert: find existing record or create new one
+	record, _ := db.getProductRecordByID(collection, facebookID)
+	if record == nil {
+		record = models.NewRecord(collection)
+		record.Set("facebook_id", facebookID)
+		LogDebug0("SaveProduct", "creating new product", "facebook_id", facebookID)
+	} else {
+		LogDebug0("SaveProduct", "updating existing product", "facebook_id", facebookID)
+	}
+
+	// Set all fields
+	if err := SetProductFields(record, product); err != nil {
+		LogError0("SaveProduct", "error setting fields", "facebook_id", facebookID, "error", err)
+		return "", err
+	}
+
+	// Single write operation
 	if err := db.app.Dao().SaveRecord(record); err != nil {
 		LogError0("SaveProduct", "failed to save product", "facebook_id", facebookID, "error", err)
 		return "", err
