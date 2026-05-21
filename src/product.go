@@ -211,7 +211,7 @@ func ProductDetailsGet(data any) ([]MarketplaceItemDetails, error) {
 
 	detailSellerId := GetKey(detail, "target.marketplace_listing_seller.id")
 	detailSellerName := GetKey(detail, "target.marketplace_listing_seller.name")
-	detailPhotos := GetKey(detail, "target.listing_photos")
+	detailPhotos := GetPhotosURI(GetKey(detail, "target.listing_photos"))
 
 	marketplaceItemDetails := MarketplaceItemDetails{
 		ID:                       productId,
@@ -266,6 +266,22 @@ func ProductsFromSearchValid(data any) bool {
 	return false
 }
 
+func GetPhotoURI(photo any) any {
+	return GetKey(photo, "image.uri")
+}
+
+func GetPhotosURI(photos any) any {
+	photosList, ok := photos.([]any)
+	if !ok {
+		return nil
+	}
+	photosListURIs := []any{}
+	for _, photo := range photosList {
+		photosListURIs = append(photosListURIs, GetPhotoURI(photo))
+	}
+	return photosListURIs
+}
+
 func ProductsFromSearchGet(data any) ([]MarketplaceItemDetails, error) {
 	edges := GetKey(data, "data.marketplace_search.feed_units.edges")
 	if edges == nil {
@@ -306,7 +322,7 @@ func ProductsFromSearchGet(data any) ([]MarketplaceItemDetails, error) {
 		sellerId := GetKey(listing, "marketplace_listing_seller.id")
 		sellerName := GetKey(listing, "marketplace_listing_seller.name")
 
-		photoPrimary := GetKey(listing, "primary_listing_photo")
+		photoPrimary := GetPhotoURI(GetKey(listing, "primary_listing_photo"))
 
 		productDeliveryTypes := GetKey(listing, "delivery_types")
 
