@@ -16,7 +16,7 @@ type ItemLocation struct {
 	Longitude float64
 }
 
-type LocationAttrs struct {
+type Location struct {
 	LocationLatitud          any
 	LocationLongitude        any
 	LocationGeocodeCityID    any
@@ -26,27 +26,32 @@ type LocationAttrs struct {
 }
 
 type MarketplaceItemDetails struct {
-	ID                 any
-	TaxonomiPathJoined any
-	IDLong             any
-	Category           any
-	URL                any
-	Title              any
-	Description        any
-	PriceAmount        any
-	PriceCurrency      any
-	AttributeData      any
-	CreationTime       any
-	Location           LocationAttrs
-	SellerID           any
-	SellerName         any
-	Photos             any
-	PhotoPrimary       any
-	DeliveryTypes      any
-	IsHidden           any
-	IsLive             any
-	IsPending          any
-	IsSold             any
+	ID                       any
+	TaxonomiPathJoined       any
+	IDLong                   any
+	Category                 any
+	URL                      any
+	Title                    any
+	Description              any
+	PriceAmount              any
+	PriceCurrency            any
+	AttributeData            any
+	CreationTime             any
+	LocationLatitud          any
+	LocationLongitude        any
+	LocationGeocodeCityID    any
+	LocationGeocodeCityName1 any
+	LocationGeocodeCityName2 any
+	LocationGeocodeStateCode any
+	SellerID                 any
+	SellerName               any
+	Photos                   any
+	PhotoPrimary             any
+	DeliveryTypes            any
+	IsHidden                 any
+	IsLive                   any
+	IsPending                any
+	IsSold                   any
 }
 
 type ProductExtractor struct {
@@ -78,35 +83,32 @@ func NewProductExtractors() ProductExtractors {
 }
 
 func ToMarketplaceItemDetails(data map[string]any) MarketplaceItemDetails {
-	location := LocationAttrs{
+	return MarketplaceItemDetails{
+		ID:                       data["ID"],
+		IDLong:                   data["IDLong"],
+		Category:                 data["Category"],
+		URL:                      data["URL"],
+		Title:                    data["Title"],
+		Description:              data["Description"],
+		PriceAmount:              data["PriceAmount"],
+		PriceCurrency:            data["PriceCurrency"],
+		AttributeData:            data["AttributeData"],
+		CreationTime:             data["CreationTime"],
+		SellerID:                 data["SellerID"],
+		SellerName:               data["SellerName"],
+		Photos:                   data["Photos"],
+		PhotoPrimary:             data["PhotoPrimary"],
+		DeliveryTypes:            data["DeliveryTypes"],
+		IsHidden:                 data["IsHidden"],
+		IsLive:                   data["IsLive"],
+		IsPending:                data["IsPending"],
+		IsSold:                   data["IsSold"],
 		LocationLatitud:          data["LocationLatitud"],
 		LocationLongitude:        data["LocationLongitude"],
 		LocationGeocodeCityID:    data["LocationGeocodeCityID"],
 		LocationGeocodeCityName1: data["LocationGeocodeCityName1"],
 		LocationGeocodeCityName2: data["LocationGeocodeCityName2"],
 		LocationGeocodeStateCode: data["LocationGeocodeStateCode"],
-	}
-	return MarketplaceItemDetails{
-		ID:            data["ID"],
-		IDLong:        data["IDLong"],
-		Category:      data["Category"],
-		URL:           data["URL"],
-		Title:         data["Title"],
-		Description:   data["Description"],
-		PriceAmount:   data["PriceAmount"],
-		PriceCurrency: data["PriceCurrency"],
-		AttributeData: data["AttributeData"],
-		CreationTime:  data["CreationTime"],
-		SellerID:      data["SellerID"],
-		SellerName:    data["SellerName"],
-		Photos:        data["Photos"],
-		PhotoPrimary:  data["PhotoPrimary"],
-		DeliveryTypes: data["DeliveryTypes"],
-		IsHidden:      data["IsHidden"],
-		IsLive:        data["IsLive"],
-		IsPending:     data["IsPending"],
-		IsSold:        data["IsSold"],
-		Location:      location,
 	}
 }
 
@@ -166,8 +168,8 @@ func GetTaxonomiPathJoined(detail any) any {
 	return taxonomiPathJoined
 }
 
-func GetLocationAttrs(location any) LocationAttrs {
-	return LocationAttrs{
+func GetLocationAttrs(location any) Location {
+	return Location{
 		LocationLatitud:          GetKey(location, "latitude"),
 		LocationLongitude:        GetKey(location, "longitude"),
 		LocationGeocodeCityName1: GetKey(location, "reverse_geocode.city"),
@@ -212,20 +214,25 @@ func ProductDetailsGet(data any) ([]MarketplaceItemDetails, error) {
 	detailPhotos := GetKey(detail, "target.listing_photos")
 
 	marketplaceItemDetails := MarketplaceItemDetails{
-		ID:                 productId,
-		TaxonomiPathJoined: taxonomiPathJoined,
-		IDLong:             productIdLong,
-		URL:                productUrl,
-		Title:              productTitle,
-		Description:        productDescription,
-		PriceAmount:        productPriceAmount,
-		PriceCurrency:      productPriceCurrency,
-		AttributeData:      productAttributeData,
-		CreationTime:       productCreation,
-		SellerID:           detailSellerId,
-		SellerName:         detailSellerName,
-		Photos:             detailPhotos,
-		Location:           location,
+		ID:                       productId,
+		TaxonomiPathJoined:       taxonomiPathJoined,
+		IDLong:                   productIdLong,
+		URL:                      productUrl,
+		Title:                    productTitle,
+		Description:              productDescription,
+		PriceAmount:              productPriceAmount,
+		PriceCurrency:            productPriceCurrency,
+		AttributeData:            productAttributeData,
+		CreationTime:             productCreation,
+		SellerID:                 detailSellerId,
+		SellerName:               detailSellerName,
+		Photos:                   detailPhotos,
+		LocationLatitud:          location.LocationLatitud,
+		LocationLongitude:        location.LocationLongitude,
+		LocationGeocodeCityName1: location.LocationGeocodeCityName1,
+		LocationGeocodeCityName2: location.LocationGeocodeCityName2,
+		LocationGeocodeStateCode: location.LocationGeocodeStateCode,
+		LocationGeocodeCityID:    location.LocationGeocodeCityID,
 	}
 
 	products = append(products, marketplaceItemDetails)
@@ -304,20 +311,25 @@ func ProductsFromSearchGet(data any) ([]MarketplaceItemDetails, error) {
 		productDeliveryTypes := GetKey(listing, "delivery_types")
 
 		marketplaceItemDetails := MarketplaceItemDetails{
-			ID:            productId,
-			URL:           productUrl,
-			Title:         title,
-			CreationTime:  time,
-			PriceAmount:   price,
-			Location:      location,
-			SellerID:      sellerId,
-			SellerName:    sellerName,
-			PhotoPrimary:  photoPrimary,
-			DeliveryTypes: productDeliveryTypes,
-			IsHidden:      isHidden,
-			IsLive:        isLive,
-			IsPending:     isPending,
-			IsSold:        isSold,
+			ID:                       productId,
+			URL:                      productUrl,
+			Title:                    title,
+			CreationTime:             time,
+			PriceAmount:              price,
+			LocationLatitud:          location.LocationLatitud,
+			LocationLongitude:        location.LocationLongitude,
+			LocationGeocodeCityName1: location.LocationGeocodeCityName1,
+			LocationGeocodeCityName2: location.LocationGeocodeCityName2,
+			LocationGeocodeStateCode: location.LocationGeocodeStateCode,
+			LocationGeocodeCityID:    location.LocationGeocodeCityID,
+			SellerID:                 sellerId,
+			SellerName:               sellerName,
+			PhotoPrimary:             photoPrimary,
+			DeliveryTypes:            productDeliveryTypes,
+			IsHidden:                 isHidden,
+			IsLive:                   isLive,
+			IsPending:                isPending,
+			IsSold:                   isSold,
 		}
 
 		products = append(products, marketplaceItemDetails)
@@ -364,14 +376,19 @@ func ProducFromDataGet(data any) ([]MarketplaceItemDetails, error) {
 	productCreation := GetKey(node, "listing.creation_time")
 
 	marketplaceItemDetails := MarketplaceItemDetails{
-		ID:            productId,
-		URL:           productUrl,
-		IDLong:        productIdLong,
-		Category:      productCategory,
-		Title:         productTitle,
-		PriceCurrency: productPriceCurrency,
-		Location:      location,
-		CreationTime:  productCreation,
+		ID:                       productId,
+		URL:                      productUrl,
+		IDLong:                   productIdLong,
+		Category:                 productCategory,
+		Title:                    productTitle,
+		PriceCurrency:            productPriceCurrency,
+		LocationLatitud:          location.LocationLatitud,
+		LocationLongitude:        location.LocationLongitude,
+		LocationGeocodeCityName1: location.LocationGeocodeCityName1,
+		LocationGeocodeCityName2: location.LocationGeocodeCityName2,
+		LocationGeocodeStateCode: location.LocationGeocodeStateCode,
+		LocationGeocodeCityID:    location.LocationGeocodeCityID,
+		CreationTime:             productCreation,
 	}
 
 	products = append(products, marketplaceItemDetails)
