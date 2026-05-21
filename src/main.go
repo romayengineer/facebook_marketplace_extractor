@@ -199,8 +199,6 @@ func ProcessData(startAtTimestamp int64) (int64, error) {
 
 		filesProcessedCounter += 1
 
-		LogInfo0("ProcessData", "read file", "filePath", filePath)
-
 		for _, extractor := range productExtractors.extractors {
 			product, _ := extractor.extractor(jsonData)
 			if hasAny := SaveProductsIfAny(product); hasAny == true {

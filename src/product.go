@@ -147,6 +147,9 @@ func ProductDetailsGet(data any) ([]MarketplaceItemDetails, error) {
 	productIdLong := GetKey(detail, "target.product_item.id")
 
 	productUrl := GetKey(detail, "target.story.url")
+	if productUrl == nil {
+		productUrl = fmt.Sprintf("https://www.facebook.com/marketplace/item/%s/", productId.(string))
+	}
 	productTitle := GetKey(detail, "target.marketplace_listing_title")
 	productDescription := GetKey(detail, "target.redacted_description.text")
 	productPriceAmount := GetKey(detail, "target.listing_price.amount")
@@ -242,6 +245,8 @@ func ProductsFromSearchGet(data any) ([]MarketplaceItemDetails, error) {
 			continue
 		}
 
+		productUrl := fmt.Sprintf("https://www.facebook.com/marketplace/item/%s/", productId.(string))
+
 		title := GetKey(listing, "marketplace_listing_title")
 		price := GetKey(listing, "listing_price.amount")
 		time := GetKey(listing, "if_gk_just_listed_tag_on_search_feed.creation_time")
@@ -268,6 +273,7 @@ func ProductsFromSearchGet(data any) ([]MarketplaceItemDetails, error) {
 
 		marketplaceItemDetails := MarketplaceItemDetails{
 			ID:                       productId,
+			URL:                      productUrl,
 			Title:                    title,
 			CreationTime:             time,
 			PriceAmount:              price,
@@ -322,6 +328,8 @@ func ProducFromDataGet(data any) ([]MarketplaceItemDetails, error) {
 		productCategory = nil
 	}
 
+	productUrl := fmt.Sprintf("https://www.facebook.com/marketplace/item/%s/", productId.(string))
+
 	productPriceCurrency := GetKey(node, "data.price.currency")
 
 	location := GetKey(node, "entity.location")
@@ -334,6 +342,7 @@ func ProducFromDataGet(data any) ([]MarketplaceItemDetails, error) {
 
 	marketplaceItemDetails := MarketplaceItemDetails{
 		ID:                       productId,
+		URL:                      productUrl,
 		IDLong:                   productIdLong,
 		Category:                 productCategory,
 		Title:                    productTitle,
