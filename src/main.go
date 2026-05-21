@@ -250,6 +250,8 @@ func main() {
 		}
 	case "get_details":
 		GetDetails()
+	case "fill_empty":
+		FillEmpty()
 	default:
 		LogError0("main", "Unknown action", "action", flags.action)
 		os.Exit(1)

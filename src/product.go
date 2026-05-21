@@ -85,6 +85,7 @@ func NewProductExtractors() ProductExtractors {
 func ToMarketplaceItemDetails(data map[string]any) MarketplaceItemDetails {
 	return MarketplaceItemDetails{
 		ID:                       data["ID"],
+		TaxonomiPathJoined:       data["TaxonomiPathJoined"],
 		IDLong:                   data["IDLong"],
 		Category:                 data["Category"],
 		URL:                      data["URL"],

@@ -145,3 +145,33 @@ func ForEachResponse(process func(filePath string, jsonData map[string]any) bool
 func ForEachDetail(process func(filePath string, jsonData map[string]any) bool, sortit bool) int {
 	return ForEachJsonInData("detail_", process, sortit)
 }
+
+func FillEmpty() {
+
+	ForEachDetail(func(filePath string, jsonData map[string]any) bool {
+		productUrl := GetKey(jsonData, "URL")
+		if productUrl != nil {
+			return true
+		}
+
+		productId := GetKey(jsonData, "ID")
+		if productId == nil {
+			return true
+		}
+
+		productIdStr, ok := productId.(string)
+
+		if !ok {
+			return true
+		}
+
+		productUrl = ProductIDTolink(productIdStr)
+
+		jsonData["URL"] = productUrl
+
+		store := NewProductFileStore(productIdStr)
+		store.Save(ToMarketplaceItemDetails(jsonData))
+
+		return true
+	}, false)
+}
