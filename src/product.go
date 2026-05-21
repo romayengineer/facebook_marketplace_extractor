@@ -18,6 +18,7 @@ type ItemLocation struct {
 
 type MarketplaceItemDetails struct {
 	ID                       any
+	TaxonomiPathJoined       any
 	IDLong                   any
 	Category                 any
 	URL                      any
@@ -135,6 +136,29 @@ func ProductDetailsValid(data any) bool {
 	return id != nil
 }
 
+func GetTaxonomiPathJoined(detail any) any {
+	taxonomyPath := GetKey(detail, "marketplace_listing_renderable_target.seo_virtual_category.taxonomy_path")
+
+	taxonomiNames := []string{}
+	taxonomyPathList, ok := taxonomyPath.([]any)
+	if ok {
+		for _, taxonomi := range taxonomyPathList {
+			taxonomiName := GetKey(taxonomi, "seo_info.seo_url")
+			if taxonomiName == nil {
+				continue
+			}
+			taxonomiNames = append(taxonomiNames, taxonomiName.(string))
+		}
+	}
+	var taxonomiPathJoined any
+	if len(taxonomiNames) == 0 {
+		taxonomiPathJoined = nil
+	} else {
+		taxonomiPathJoined = strings.Join(taxonomiNames, ",")
+	}
+	return taxonomiPathJoined
+}
+
 func ProductDetailsGet(data any) ([]MarketplaceItemDetails, error) {
 	detail := GetKey(data, "data.viewer.marketplace_product_details_page")
 	if detail == nil {
@@ -169,12 +193,15 @@ func ProductDetailsGet(data any) ([]MarketplaceItemDetails, error) {
 	cityID := GetKey(location, "reverse_geocode.city_page.id")
 	stateCode := GetKey(location, "reverse_geocode.state")
 
+	taxonomiPathJoined := GetTaxonomiPathJoined(detail)
+
 	detailSellerId := GetKey(detail, "target.marketplace_listing_seller.id")
 	detailSellerName := GetKey(detail, "target.marketplace_listing_seller.name")
 	detailPhotos := GetKey(detail, "target.listing_photos")
 
 	marketplaceItemDetails := MarketplaceItemDetails{
 		ID:                       productId,
+		TaxonomiPathJoined:       taxonomiPathJoined,
 		IDLong:                   productIdLong,
 		URL:                      productUrl,
 		Title:                    productTitle,
