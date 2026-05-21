@@ -109,7 +109,7 @@ func (db *PocketBaseDB) ensureProductsCollection() error {
 	collection.Schema = s
 
 	// Add index on facebook_id for fast lookups
-	collection.Indexes = append(collection.Indexes, "CREATE INDEX IF NOT EXISTS idx_facebook_id ON products(facebook_id)")
+	collection.Indexes = append(collection.Indexes, "CREATE INDEX IF NOT EXISTS `idx_facebook_id` ON `products` (facebook_id)")
 
 	// Save the collection to database
 	if err := db.app.Dao().SaveCollection(collection); err != nil {
