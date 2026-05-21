@@ -267,7 +267,21 @@ func ProductsFromSearchValid(data any) bool {
 }
 
 func GetPhotoURI(photo any) any {
-	return GetKey(photo, "image.uri")
+	uri := GetKey(photo, "image.uri")
+	return uri
+	// DO NOT UNSCAPE BECAUSE Marshall scapes it back
+	// if uri == nil {
+	// 	return nil
+	// }
+	// uriStr, ok := uri.(string)
+	// if !ok {
+	// 	return nil
+	// }
+	// unquoted, err := strconv.Unquote(uriStr)
+	// if err != nil {
+	// 	return uriStr
+	// }
+	// return unquoted
 }
 
 func GetPhotosURI(photos any) any {
