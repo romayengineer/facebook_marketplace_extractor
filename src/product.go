@@ -102,6 +102,10 @@ func ToMarketplaceItemDetails(data map[string]any) MarketplaceItemDetails {
 	}
 }
 
+func ProductIDTolink(productId string) string {
+	return fmt.Sprintf("https://www.facebook.com/marketplace/item/%s/", productId)
+}
+
 func IsErrorRateLimit(data any) bool {
 	errors := GetKey(data, "errors")
 
@@ -148,7 +152,7 @@ func ProductDetailsGet(data any) ([]MarketplaceItemDetails, error) {
 
 	productUrl := GetKey(detail, "target.story.url")
 	if productUrl == nil {
-		productUrl = fmt.Sprintf("https://www.facebook.com/marketplace/item/%s/", productId.(string))
+		productUrl = ProductIDTolink(productId.(string))
 	}
 	productTitle := GetKey(detail, "target.marketplace_listing_title")
 	productDescription := GetKey(detail, "target.redacted_description.text")
@@ -245,7 +249,7 @@ func ProductsFromSearchGet(data any) ([]MarketplaceItemDetails, error) {
 			continue
 		}
 
-		productUrl := fmt.Sprintf("https://www.facebook.com/marketplace/item/%s/", productId.(string))
+		productUrl := ProductIDTolink(productId.(string))
 
 		title := GetKey(listing, "marketplace_listing_title")
 		price := GetKey(listing, "listing_price.amount")
@@ -328,7 +332,7 @@ func ProducFromDataGet(data any) ([]MarketplaceItemDetails, error) {
 		productCategory = nil
 	}
 
-	productUrl := fmt.Sprintf("https://www.facebook.com/marketplace/item/%s/", productId.(string))
+	productUrl := ProductIDTolink(productId.(string))
 
 	productPriceCurrency := GetKey(node, "data.price.currency")
 
