@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"strconv"
@@ -148,9 +149,7 @@ func SetProductFields(record *models.Record, product MarketplaceItemDetails) err
 	return nil
 }
 
-func (db *PocketBaseDB) SaveProduct(product MarketplaceItemDetails) (string, error) {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+func (db *PocketBaseDB) UpsertProduct(product MarketplaceItemDetails) (sql.Result, error) {
 
 	facebookID := toString(product.ID)
 
@@ -187,7 +186,7 @@ func (db *PocketBaseDB) SaveProduct(product MarketplaceItemDetails) (string, err
 		is_pending = excluded.is_pending,
 		is_sold = excluded.is_sold`
 
-	_, err := db.app.Dao().DB().NewQuery(sql).Bind(map[string]interface{}{
+	result, err := db.app.Dao().DB().NewQuery(sql).Bind(map[string]interface{}{
 		"facebook_id":         facebookID,
 		"facebook_id_long":    toString(product.IDLong),
 		"title":               toStringClean(product.Title),
@@ -213,22 +212,41 @@ func (db *PocketBaseDB) SaveProduct(product MarketplaceItemDetails) (string, err
 
 	if err != nil {
 		LogError0("SaveProduct", "failed to upsert product", "facebook_id", facebookID, "error", err)
-		return "", err
+		return result, err
 	}
+
+	return result, nil
+}
+
+func (db *PocketBaseDB) GetProductID(product MarketplaceItemDetails) (string, error) {
+
+	facebookID := toString(product.ID)
 
 	var result struct {
 		ID string
 	}
-	err = db.app.Dao().DB().NewQuery("SELECT id FROM products WHERE facebook_id = {:facebook_id} LIMIT 1").Bind(map[string]interface{}{
+
+	err := db.app.Dao().DB().NewQuery("SELECT id FROM products WHERE facebook_id = {:facebook_id} LIMIT 1").Bind(map[string]interface{}{
 		"facebook_id": facebookID,
 	}).One(&result)
+
 	if err != nil {
 		LogError0("SaveProduct", "failed to retrieve product id", "facebook_id", facebookID, "error", err)
 		return "", err
 	}
 
-	LogDebug0("SaveProduct", "product saved", "id", result.ID, "facebook_id", facebookID)
 	return result.ID, nil
+}
+
+func (db *PocketBaseDB) SaveProduct(product MarketplaceItemDetails) (string, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	db.UpsertProduct(product)
+	productID, _ := db.GetProductID(product)
+
+	LogDebug0("SaveProduct", "product saved", "productID", productID, "facebook_id", product.ID)
+	return productID, nil
 }
 
 func (db *PocketBaseDB) SaveProducts(products []MarketplaceItemDetails) (int, error) {
