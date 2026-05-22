@@ -1,81 +1,38 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
 	"time"
 )
 
-func GetKey(data any, path string) any {
-	keys := strings.Split(path, ".")
-
-	current := data
-	for _, key := range keys {
-		dataMap, ok := current.(map[string]any)
-		if !ok {
-			// err := fmt.Errorf("cannot access key %q: not a map", key)
-			// fmt.Println(err)
-			return nil
-		}
-
-		value, ok := dataMap[key]
-		if !ok {
-			// err := fmt.Errorf("key %q not found", key)
-			// fmt.Println(err)
-			return nil
-		}
-		current = value
-	}
-
-	return current
+type ScrapperImpl struct {
+	BlockImages        bool
+	ScrollDownOnSearch bool
+	SearchKewords      string
+	StartTimeToProcess int64
 }
 
-func ExtractJsonFromBody(body []byte) ([]any, error) {
-	jsonDatas := []any{}
-	// make sure the first byte is { (open curly brakets)
-	if body[0] != '{' {
-		return jsonDatas, nil
+func NewScrapper(flags Flags) ScrapperImpl {
+	var blockImages bool
+	var ScrollDownOnSearch bool
+	switch flags.action {
+	case "search":
+		blockImages = true
+		ScrollDownOnSearch = true
+	default:
+		blockImages = false
+		ScrollDownOnSearch = false
 	}
-
-	var jsonData any
-	if err := json.Unmarshal(body, &jsonData); err == nil {
-		jsonDatas = append(jsonDatas, jsonData)
-		return jsonDatas, nil
+	return ScrapperImpl{
+		BlockImages:        blockImages,
+		ScrollDownOnSearch: ScrollDownOnSearch,
+		StartTimeToProcess: 0,
+		SearchKewords:      flags.keywords,
 	}
-
-	var lineData any
-	for line := range strings.SplitSeq(string(body), "\n") {
-		if line[0] != '{' {
-			continue
-		}
-		lineByte := []byte(line)
-		if err := json.Unmarshal(lineByte, &lineData); err == nil {
-			jsonDatas = append(jsonDatas, lineData)
-		}
-	}
-
-	return jsonDatas, nil
-
 }
 
-func WriteJsonResponse(jsonDatas []any, friendly_name string) (int, error) {
-	jsonCounter := 0
-	var err error
-	for _, jsonData := range jsonDatas {
-		if err = WriteRandomJsonFileIndented("response", friendly_name, jsonData); err != nil {
-			return jsonCounter, err
-		}
-		jsonCounter += 1
-	}
-
-	return jsonCounter, nil
-}
-
-func Begin(flags Flags) (ContextWrapperInterface, error) {
+func (s *ScrapperImpl) Begin() (ContextWrapperInterface, error) {
 	config, err := NewConfig()
 	if err != nil {
 		return nil, fmt.Errorf("error NewConfig: %v", err)
@@ -100,13 +57,13 @@ func Begin(flags Flags) (ContextWrapperInterface, error) {
 
 	// productExtractors := NewProductExtractors()
 
-	SetContextEventHandlers(ctx, flags)
+	SetContextEventHandlers(ctx, s.BlockImages)
 
 	return ctx, nil
 }
 
-func SearchProducts(flags Flags) {
-	ctx, err := Begin(flags)
+func (s *ScrapperImpl) SearchProducts() {
+	ctx, err := s.Begin()
 	if err != nil {
 		LogError0("SearchProducts", "Error in Begin", "error", err)
 		os.Exit(1)
@@ -115,13 +72,13 @@ func SearchProducts(flags Flags) {
 
 	page, _ := ctx.NewPage()
 	pages, _ := NewPages(page)
-	pages.MarketpaceSearch(flags)
+	pages.MarketpaceSearch(s.SearchKewords, s.ScrollDownOnSearch)
 
 	WaitingForInput()
 }
 
-func GetDetails(flags Flags) {
-	ctx, err := Begin(flags)
+func (s *ScrapperImpl) GetDetails() {
+	ctx, err := s.Begin()
 	if err != nil {
 		LogError0("GetDetails", "Error in Begin", "error", err)
 		os.Exit(1)
@@ -151,100 +108,19 @@ func GetDetails(flags Flags) {
 	WaitingForInput()
 }
 
-func SaveProductsIfAny(products []MarketplaceItemDetails) bool {
-	if len(products) > 0 {
-		for _, product := range products {
-			store := NewProductFileStore(product.ID.(string))
-			store.Save(product)
-		}
-		return true
-	}
-	return false
-}
-
-func GetTimestamp(filePath string) (int64, error) {
-	lastFilePathParts := strings.SplitN(filepath.Base(filePath), "_", 3)
-	if len(lastFilePathParts) < 2 {
-		LogWarn0("GetTimestamp", "filePath does not have time", "filePath", filePath)
-		return 0, fmt.Errorf("filePath does not have time")
-	}
-	lastTimestampStr := lastFilePathParts[1]
-	lastTimestamp, err := strconv.ParseInt(lastTimestampStr, 10, 64)
-	if err != nil {
-		LogError0("GetTimestamp", "cound not get timestamp", "filePath", filePath)
-		return 0, fmt.Errorf("cound not get timestamp %s\n", filePath)
-	}
-	return lastTimestamp, nil
-}
-
-func ProcessData(startAtTimestamp int64) (int64, error) {
-	var lastTimestamp int64
-	var lastFilePath string
-	var filesProcessedCounter int
-	var filesDeletedCounter int
-	var gotRateLimit bool
-
-	productExtractors := NewProductExtractors()
-	filesReadCounter := ForEachResponse(func(filePath string, jsonData map[string]any) bool {
-		lastFilePath = filePath
-
-		fileTimestamp, err := GetTimestamp(filePath)
-		if err != nil {
-			return true
-		}
-
-		if fileTimestamp < startAtTimestamp {
-			return true
-		}
-
-		filesProcessedCounter += 1
-
-		for _, extractor := range productExtractors.extractors {
-			product, _ := extractor.extractor(jsonData)
-			if hasAny := SaveProductsIfAny(product); hasAny == true {
-				return true
-			}
-		}
-
-		if IsErrorRateLimit(jsonData) {
-			gotRateLimit = true
-		}
-
-		LogDebug0("ProcessData", "no product found, deleting file", "path", filePath)
-		if err := os.Remove(filePath); err != nil {
-			LogError0("ProcessData", "error deleting file", "path", filePath, "error", err)
-		}
-
-		filesDeletedCounter += 1
-
-		return true
-
-	}, true)
-
-	lastTimestamp, _ = GetTimestamp(lastFilePath)
-
-	LogInfo0("ProcessData", "all files processed", "lastTimestamp", lastTimestamp, "filesProcessedCounter", filesProcessedCounter, "filesReadCounter", filesReadCounter, "filesDeletedCounter", filesDeletedCounter)
-
-	if gotRateLimit {
-		LogFatal("got rate limit")
-	}
-
-	return lastTimestamp, nil
-}
-
 func main() {
 	flags := NewFlags()
 	LogInfo0("main", "flags", "action", flags.action)
 
+	scrapper := NewScrapper(flags)
+
 	switch flags.action {
 	case "search":
-		// block for images is enabled here
-		// scroll down in search view is enabled
-		SearchProducts(flags)
+		scrapper.SearchProducts()
 	case "pull_description":
-		// block for images is disabled here as it breaks graphql API
-		// scroll down in search view is disabled
-		SearchProducts(flags)
+		scrapper.SearchProducts()
+	case "get_details":
+		scrapper.GetDetails()
 	case "process_data":
 		ProcessData(0)
 	case "serve":
@@ -254,8 +130,6 @@ func main() {
 		if err != nil {
 			LogFatal(err)
 		}
-	case "get_details":
-		GetDetails(flags)
 	case "fill_empty":
 		FillEmpty()
 	default:

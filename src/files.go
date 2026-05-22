@@ -8,9 +8,155 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
+
+func SaveProductsIfAny(products []MarketplaceItemDetails) bool {
+	if len(products) > 0 {
+		for _, product := range products {
+			store := NewProductFileStore(product.ID.(string))
+			store.Save(product)
+		}
+		return true
+	}
+	return false
+}
+
+func ProcessData(StartTimeToProcess int64) (int64, error) {
+	var lastTimestamp int64
+	var lastFilePath string
+	var filesProcessedCounter int
+	var filesDeletedCounter int
+	var gotRateLimit bool
+
+	productExtractors := NewProductExtractors()
+	filesReadCounter := ForEachResponse(func(filePath string, jsonData map[string]any) bool {
+		lastFilePath = filePath
+
+		fileTimestamp, err := GetTimestamp(filePath)
+		if err != nil {
+			return true
+		}
+
+		if fileTimestamp < StartTimeToProcess {
+			return true
+		}
+
+		filesProcessedCounter += 1
+
+		for _, extractor := range productExtractors.extractors {
+			product, _ := extractor.extractor(jsonData)
+			if hasAny := SaveProductsIfAny(product); hasAny == true {
+				return true
+			}
+		}
+
+		if IsErrorRateLimit(jsonData) {
+			gotRateLimit = true
+		}
+
+		LogDebug0("ProcessData", "no product found, deleting file", "path", filePath)
+		if err := os.Remove(filePath); err != nil {
+			LogError0("ProcessData", "error deleting file", "path", filePath, "error", err)
+		}
+
+		filesDeletedCounter += 1
+
+		return true
+
+	}, true)
+
+	lastTimestamp, _ = GetTimestamp(lastFilePath)
+
+	LogInfo0("ProcessData", "all files processed", "lastTimestamp", lastTimestamp, "filesProcessedCounter", filesProcessedCounter, "filesReadCounter", filesReadCounter, "filesDeletedCounter", filesDeletedCounter)
+
+	if gotRateLimit {
+		LogFatal("got rate limit")
+	}
+
+	return lastTimestamp, nil
+}
+
+func GetTimestamp(filePath string) (int64, error) {
+	lastFilePathParts := strings.SplitN(filepath.Base(filePath), "_", 3)
+	if len(lastFilePathParts) < 2 {
+		LogWarn0("GetTimestamp", "filePath does not have time", "filePath", filePath)
+		return 0, fmt.Errorf("filePath does not have time")
+	}
+	lastTimestampStr := lastFilePathParts[1]
+	lastTimestamp, err := strconv.ParseInt(lastTimestampStr, 10, 64)
+	if err != nil {
+		LogError0("GetTimestamp", "cound not get timestamp", "filePath", filePath)
+		return 0, fmt.Errorf("cound not get timestamp %s\n", filePath)
+	}
+	return lastTimestamp, nil
+}
+
+func GetKey(data any, path string) any {
+	keys := strings.Split(path, ".")
+
+	current := data
+	for _, key := range keys {
+		dataMap, ok := current.(map[string]any)
+		if !ok {
+			// err := fmt.Errorf("cannot access key %q: not a map", key)
+			// fmt.Println(err)
+			return nil
+		}
+
+		value, ok := dataMap[key]
+		if !ok {
+			// err := fmt.Errorf("key %q not found", key)
+			// fmt.Println(err)
+			return nil
+		}
+		current = value
+	}
+
+	return current
+}
+
+func ExtractJsonFromBody(body []byte) ([]any, error) {
+	jsonDatas := []any{}
+	// make sure the first byte is { (open curly brakets)
+	if body[0] != '{' {
+		return jsonDatas, nil
+	}
+
+	var jsonData any
+	if err := json.Unmarshal(body, &jsonData); err == nil {
+		jsonDatas = append(jsonDatas, jsonData)
+		return jsonDatas, nil
+	}
+
+	var lineData any
+	for line := range strings.SplitSeq(string(body), "\n") {
+		if line[0] != '{' {
+			continue
+		}
+		lineByte := []byte(line)
+		if err := json.Unmarshal(lineByte, &lineData); err == nil {
+			jsonDatas = append(jsonDatas, lineData)
+		}
+	}
+
+	return jsonDatas, nil
+}
+
+func WriteJsonResponse(jsonDatas []any, friendly_name string) (int, error) {
+	jsonCounter := 0
+	var err error
+	for _, jsonData := range jsonDatas {
+		if err = WriteRandomJsonFileIndented("response", friendly_name, jsonData); err != nil {
+			return jsonCounter, err
+		}
+		jsonCounter += 1
+	}
+
+	return jsonCounter, nil
+}
 
 func WriteFileAndDirs(name string, data []byte, perm os.FileMode) error {
 	if err := os.WriteFile(name, data, perm); err != nil {

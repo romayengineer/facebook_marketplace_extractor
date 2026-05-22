@@ -197,7 +197,7 @@ func (ceh *ContextEventHandlers) Route(r playwright.Route) {
 	r.Continue()
 }
 
-func SetContextEventHandlers(ctx ContextWrapperInterface, flags Flags) {
+func SetContextEventHandlers(ctx ContextWrapperInterface, blockImages bool) {
 
 	contextEventHandlers := ContextEventHandlers{
 		ctx: ctx,
@@ -210,7 +210,7 @@ func SetContextEventHandlers(ctx ContextWrapperInterface, flags Flags) {
 		},
 	}
 
-	if flags.action == "search" {
+	if blockImages {
 		// if contextEventHandlers.Route is enabled then the response
 		// from graphqh is invalid because there are missing headers
 		// but it does not matter on search
