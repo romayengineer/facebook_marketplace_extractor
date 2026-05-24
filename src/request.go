@@ -118,22 +118,25 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 			return true
 		}
 
-		if scrapper.PullDescriptionWithKeywords != "" {
-			title := GetKey(jsonData, "Title")
-			if title == nil {
-				return true
-			}
+		title := GetKey(jsonData, "Title")
+		if title == nil {
+			return true
+		}
 
-			titleStr, ok := title.(string)
-			if !ok {
-				return true
-			}
+		titleStr, ok := title.(string)
+		if !ok {
+			return true
+		}
+
+		if scrapper.PullDescriptionWithKeywords != "" {
 
 			// only search for this keywords
 			if !strings.Contains(strings.ToLower(titleStr), scrapper.PullDescriptionWithKeywords) {
 				return true
 			}
 		}
+
+		LogInfo0("RunRequestDecompress", "getting description for", "title", titleStr)
 
 		shouldSkipRequest.postDataMap.SetJsonString("variables", "targetId", productId)
 
