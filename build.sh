@@ -1,3 +1,3 @@
-go mod tidy
+wgo mod tidy
 
-go build -o main.exe ./src
+wgo build -o main ./src

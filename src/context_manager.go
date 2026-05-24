@@ -59,6 +59,7 @@ var friendlyNamesToSkipSet = map[string]struct{}{
 
 type ContextEventHandlers struct {
 	ctx              ContextWrapperInterface
+	scrapper         *ScrapperImpl
 	extensionsToSkip map[string]struct{}
 }
 
@@ -136,7 +137,7 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 		if shouldSkipRequest.friendlyName != "MarketplacePDPContainerQuery" {
 			return
 		}
-		newResponse, err := RunRequestDecompress(ceh.ctx, request, shouldSkipRequest)
+		newResponse, err := RunRequestDecompress(ceh.ctx, request, shouldSkipRequest, ceh.scrapper)
 		if err != nil {
 			LogError0("OnResponse", "Error in RunRequestDecompress", "error", err)
 			return
@@ -197,10 +198,11 @@ func (ceh *ContextEventHandlers) Route(r playwright.Route) {
 	r.Continue()
 }
 
-func SetContextEventHandlers(ctx ContextWrapperInterface, blockImages bool) {
+func SetContextEventHandlers(ctx ContextWrapperInterface, s *ScrapperImpl) {
 
 	contextEventHandlers := ContextEventHandlers{
-		ctx: ctx,
+		ctx:      ctx,
+		scrapper: s,
 		extensionsToSkip: map[string]struct{}{
 			".jpg":  {},
 			".webp": {},
@@ -210,7 +212,7 @@ func SetContextEventHandlers(ctx ContextWrapperInterface, blockImages bool) {
 		},
 	}
 
-	if blockImages {
+	if s.BlockImages {
 		// if contextEventHandlers.Route is enabled then the response
 		// from graphqh is invalid because there are missing headers
 		// but it does not matter on search

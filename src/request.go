@@ -77,7 +77,7 @@ func RunRequest(ctx ContextWrapperInterface, pwRequest playwright.Request, heade
 	return RunRequestWithData(ctx, pwRequest, data, headersSimple)
 }
 
-func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Request, shouldSkipRequest ShouldProcess) (playwright.APIResponse, error) {
+func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Request, shouldSkipRequest ShouldProcess, scrapper *ScrapperImpl) (playwright.APIResponse, error) {
 
 	var err error
 	var newResponse playwright.APIResponse
@@ -101,6 +101,23 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 		productId := GetKey(jsonData, "ID")
 		if productId == nil {
 			return true
+		}
+
+		if scrapper.PullDescriptionWithKeywords != "" {
+			title := GetKey(jsonData, "Title")
+			if title == nil {
+				return true
+			}
+
+			titleStr, ok := title.(string)
+			if !ok {
+				return true
+			}
+
+			// only search for this keywords
+			if !strings.Contains(strings.ToLower(titleStr), scrapper.PullDescriptionWithKeywords) {
+				return true
+			}
 		}
 
 		shouldSkipRequest.postDataMap.SetJsonString("variables", "targetId", productId)

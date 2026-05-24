@@ -7,10 +7,11 @@ import (
 )
 
 type ScrapperImpl struct {
-	BlockImages        bool
-	ScrollDownOnSearch bool
-	SearchKewords      string
-	StartTimeToProcess int64
+	BlockImages                 bool
+	ScrollDownOnSearch          bool
+	SearchKewords               string
+	StartTimeToProcess          int64
+	PullDescriptionWithKeywords string
 }
 
 func NewScrapper(flags Flags) ScrapperImpl {
@@ -25,10 +26,11 @@ func NewScrapper(flags Flags) ScrapperImpl {
 		ScrollDownOnSearch = false
 	}
 	return ScrapperImpl{
-		BlockImages:        blockImages,
-		ScrollDownOnSearch: ScrollDownOnSearch,
-		StartTimeToProcess: 0,
-		SearchKewords:      flags.keywords,
+		BlockImages:                 blockImages,
+		ScrollDownOnSearch:          ScrollDownOnSearch,
+		StartTimeToProcess:          0,
+		SearchKewords:               flags.keywords,
+		PullDescriptionWithKeywords: flags.titleKeywords,
 	}
 }
 
@@ -57,7 +59,7 @@ func (s *ScrapperImpl) Begin() (ContextWrapperInterface, error) {
 
 	// productExtractors := NewProductExtractors()
 
-	SetContextEventHandlers(ctx, s.BlockImages)
+	SetContextEventHandlers(ctx, s)
 
 	return ctx, nil
 }
