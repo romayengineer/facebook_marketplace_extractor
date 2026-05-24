@@ -103,6 +103,21 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 			return true
 		}
 
+		cityName1 := GetKey(jsonData, "LocationGeocodeCityName1")
+		if cityName1 == nil {
+			return true
+		}
+
+		cityName1Str, ok := cityName1.(string)
+		if !ok {
+			return true
+		}
+
+		// only search in this city
+		if cityName1Str != "Ciudad de Buenos Aires" {
+			return true
+		}
+
 		if scrapper.PullDescriptionWithKeywords != "" {
 			title := GetKey(jsonData, "Title")
 			if title == nil {
