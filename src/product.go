@@ -118,7 +118,10 @@ func ProductIDTolink(productId string) string {
 }
 
 func IsErrorRateLimit(data any) bool {
-	errors := GetKey(data, "errors")
+	errors, exists := GetKey(data, "errors")
+	if !exists {
+		return false
+	}
 
 	errorsList, ok := errors.([]any)
 	if !ok {
@@ -126,7 +129,7 @@ func IsErrorRateLimit(data any) bool {
 	}
 
 	for _, err := range errorsList {
-		message := GetKey(err, "message")
+		message, _ := GetKey(err, "message")
 
 		if message == nil {
 			continue
@@ -142,18 +145,32 @@ func IsErrorRateLimit(data any) bool {
 }
 
 func ProductDetailsValid(data any) bool {
-	id := GetKey(data, "data.viewer.marketplace_product_details_page.target.id")
+	id, exists := GetKey(data, "data.viewer.marketplace_product_details_page.target.id")
+	if !exists {
+		return false
+	}
 	return id != nil
 }
 
+func ProductDetailsIsDeleted(data any) bool {
+	details, exists := GetKey(data, "data.viewer.marketplace_product_details_page")
+	if exists && details == nil {
+		return true
+	}
+	return false
+}
+
 func GetTaxonomiPathJoined(detail any) any {
-	taxonomyPath := GetKey(detail, "marketplace_listing_renderable_target.seo_virtual_category.taxonomy_path")
+	taxonomyPath, exists := GetKey(detail, "marketplace_listing_renderable_target.seo_virtual_category.taxonomy_path")
+	if !exists {
+		return nil
+	}
 
 	taxonomiNames := []string{}
 	taxonomyPathList, ok := taxonomyPath.([]any)
 	if ok {
 		for _, taxonomi := range taxonomyPathList {
-			taxonomiName := GetKey(taxonomi, "seo_info.seo_url")
+			taxonomiName, _ := GetKey(taxonomi, "seo_info.seo_url")
 			if taxonomiName == nil {
 				continue
 			}
@@ -170,49 +187,57 @@ func GetTaxonomiPathJoined(detail any) any {
 }
 
 func GetLocationAttrs(location any) Location {
+	locationLatitud, _ := GetKey(location, "latitude")
+	locationLongitude, _ := GetKey(location, "longitude")
+	locationGeocodeCityName1, _ := GetKey(location, "reverse_geocode.city")
+	locationGeocodeCityName2, _ := GetKey(location, "reverse_geocode.city_page.display_name")
+	locationGeocodeCityID, _ := GetKey(location, "reverse_geocode.city_page.id")
+	locationGeocodeStateCode, _ := GetKey(location, "reverse_geocode.state")
 	return Location{
-		LocationLatitud:          GetKey(location, "latitude"),
-		LocationLongitude:        GetKey(location, "longitude"),
-		LocationGeocodeCityName1: GetKey(location, "reverse_geocode.city"),
-		LocationGeocodeCityName2: GetKey(location, "reverse_geocode.city_page.display_name"),
-		LocationGeocodeCityID:    GetKey(location, "reverse_geocode.city_page.id"),
-		LocationGeocodeStateCode: GetKey(location, "reverse_geocode.state"),
+		LocationLatitud:          locationLatitud,
+		LocationLongitude:        locationLongitude,
+		LocationGeocodeCityName1: locationGeocodeCityName1,
+		LocationGeocodeCityName2: locationGeocodeCityName2,
+		LocationGeocodeCityID:    locationGeocodeCityID,
+		LocationGeocodeStateCode: locationGeocodeStateCode,
 	}
 }
 
 func ProductDetailsGet(data any) ([]MarketplaceItemDetails, error) {
-	detail := GetKey(data, "data.viewer.marketplace_product_details_page")
-	if detail == nil {
+	detail, exists := GetKey(data, "data.viewer.marketplace_product_details_page")
+	if !exists {
 		return nil, fmt.Errorf("detail not found")
 	}
 
-	productId := GetKey(detail, "target.id")
-	if productId == nil {
+	productId, exists := GetKey(detail, "target.id")
+	if !exists || productId == nil {
 		return nil, fmt.Errorf("detail does not have id")
 	}
 
 	var products []MarketplaceItemDetails
 
-	productIdLong := GetKey(detail, "target.product_item.id")
+	productIdLong, _ := GetKey(detail, "target.product_item.id")
 
-	productUrl := GetKey(detail, "target.story.url")
+	productUrl, _ := GetKey(detail, "target.story.url")
 	if productUrl == nil {
 		productUrl = ProductIDTolink(productId.(string))
 	}
-	productTitle := GetKey(detail, "target.marketplace_listing_title")
-	productDescription := GetKey(detail, "target.redacted_description.text")
-	productPriceAmount := GetKey(detail, "target.listing_price.amount")
-	productPriceCurrency := GetKey(detail, "target.listing_price.currency")
-	productAttributeData := GetKey(detail, "target.attribute_data")
-	productCreation := GetKey(detail, "target.creation_time")
+	productTitle, _ := GetKey(detail, "target.marketplace_listing_title")
+	productDescription, _ := GetKey(detail, "target.redacted_description.text")
+	productPriceAmount, _ := GetKey(detail, "target.listing_price.amount")
+	productPriceCurrency, _ := GetKey(detail, "target.listing_price.currency")
+	productAttributeData, _ := GetKey(detail, "target.attribute_data")
+	productCreation, _ := GetKey(detail, "target.creation_time")
 
-	location := GetLocationAttrs(GetKey(detail, "marketplace_listing_renderable_target.location"))
+	locationAny, _ := GetKey(detail, "marketplace_listing_renderable_target.location")
+	location := GetLocationAttrs(locationAny)
 
 	taxonomiPathJoined := GetTaxonomiPathJoined(detail)
 
-	detailSellerId := GetKey(detail, "target.marketplace_listing_seller.id")
-	detailSellerName := GetKey(detail, "target.marketplace_listing_seller.name")
-	detailPhotos := GetPhotosURI(GetKey(detail, "target.listing_photos"))
+	detailSellerId, _ := GetKey(detail, "target.marketplace_listing_seller.id")
+	detailSellerName, _ := GetKey(detail, "target.marketplace_listing_seller.name")
+	detailPhotosAny, _ := GetKey(detail, "target.listing_photos")
+	detailPhotos := GetPhotosURI(detailPhotosAny)
 
 	marketplaceItemDetails := MarketplaceItemDetails{
 		ID:                       productId,
@@ -242,8 +267,8 @@ func ProductDetailsGet(data any) ([]MarketplaceItemDetails, error) {
 }
 
 func ProductsFromSearchValid(data any) bool {
-	edges := GetKey(data, "data.marketplace_search.feed_units.edges")
-	if edges == nil {
+	edges, exists := GetKey(data, "data.marketplace_search.feed_units.edges")
+	if !exists {
 		return false
 	}
 
@@ -253,13 +278,13 @@ func ProductsFromSearchValid(data any) bool {
 	}
 
 	for _, edge := range edgesList {
-		listing := GetKey(edge, "node.listing")
+		listing, _ := GetKey(edge, "node.listing")
 		if listing == nil {
 			continue
 		}
 
-		productId := GetKey(listing, "id")
-		if productId != nil {
+		productId, exists := GetKey(listing, "id")
+		if exists && productId != nil {
 			return true
 		}
 	}
@@ -268,7 +293,7 @@ func ProductsFromSearchValid(data any) bool {
 }
 
 func GetPhotoURI(photo any) any {
-	uri := GetKey(photo, "image.uri")
+	uri, _ := GetKey(photo, "image.uri")
 	return uri
 	// DO NOT UNSCAPE BECAUSE Marshall scapes it back
 	// if uri == nil {
@@ -298,8 +323,8 @@ func GetPhotosURI(photos any) any {
 }
 
 func ProductsFromSearchGet(data any) ([]MarketplaceItemDetails, error) {
-	edges := GetKey(data, "data.marketplace_search.feed_units.edges")
-	if edges == nil {
+	edges, exists := GetKey(data, "data.marketplace_search.feed_units.edges")
+	if !exists || edges == nil {
 		return nil, fmt.Errorf("no marketplace search found")
 	}
 
@@ -311,35 +336,37 @@ func ProductsFromSearchGet(data any) ([]MarketplaceItemDetails, error) {
 	var products []MarketplaceItemDetails
 
 	for _, edge := range edgesList {
-		listing := GetKey(edge, "node.listing")
+		listing, _ := GetKey(edge, "node.listing")
 		if listing == nil {
 			continue
 		}
 
-		productId := GetKey(listing, "id")
-		if productId == nil {
+		productId, exists := GetKey(listing, "id")
+		if !exists || productId == nil {
 			continue
 		}
 
 		productUrl := ProductIDTolink(productId.(string))
 
-		title := GetKey(listing, "marketplace_listing_title")
-		price := GetKey(listing, "listing_price.amount")
-		time := GetKey(listing, "if_gk_just_listed_tag_on_search_feed.creation_time")
+		title, _ := GetKey(listing, "marketplace_listing_title")
+		price, _ := GetKey(listing, "listing_price.amount")
+		time, _ := GetKey(listing, "if_gk_just_listed_tag_on_search_feed.creation_time")
 
-		isHidden := GetKey(listing, "is_hidden")
-		isLive := GetKey(listing, "is_live")
-		isPending := GetKey(listing, "is_pending")
-		isSold := GetKey(listing, "is_sold")
+		isHidden, _ := GetKey(listing, "is_hidden")
+		isLive, _ := GetKey(listing, "is_live")
+		isPending, _ := GetKey(listing, "is_pending")
+		isSold, _ := GetKey(listing, "is_sold")
 
-		location := GetLocationAttrs(GetKey(listing, "location"))
+		locationAny, _ := GetKey(listing, "location")
+		location := GetLocationAttrs(locationAny)
 
-		sellerId := GetKey(listing, "marketplace_listing_seller.id")
-		sellerName := GetKey(listing, "marketplace_listing_seller.name")
+		sellerId, _ := GetKey(listing, "marketplace_listing_seller.id")
+		sellerName, _ := GetKey(listing, "marketplace_listing_seller.name")
 
-		photoPrimary := GetPhotoURI(GetKey(listing, "primary_listing_photo"))
+		photoPrimaryAny, _ := GetKey(listing, "primary_listing_photo")
+		photoPrimary := GetPhotoURI(photoPrimaryAny)
 
-		productDeliveryTypes := GetKey(listing, "delivery_types")
+		productDeliveryTypes, _ := GetKey(listing, "delivery_types")
 
 		marketplaceItemDetails := MarketplaceItemDetails{
 			ID:                       productId,
@@ -370,28 +397,31 @@ func ProductsFromSearchGet(data any) ([]MarketplaceItemDetails, error) {
 }
 
 func ProducFromDataValid(data any) bool {
-	id := GetKey(data, "data.node.entity_id")
+	id, exists := GetKey(data, "data.node.entity_id")
+	if !exists {
+		return false
+	}
 	return id != nil
 }
 
 func ProducFromDataGet(data any) ([]MarketplaceItemDetails, error) {
-	node := GetKey(data, "data.node")
-	if node == nil {
+	node, exists := GetKey(data, "data.node")
+	if !exists {
 		return nil, fmt.Errorf("data node not found")
 	}
 
-	productId := GetKey(node, "entity_id")
-	if productId == nil {
+	productId, exists := GetKey(node, "entity_id")
+	if !exists || productId == nil {
 		return nil, fmt.Errorf("product does not have id")
 	}
 
 	var products []MarketplaceItemDetails
 
-	productIdLong := GetKey(node, "data.product_item_id")
+	productIdLong, _ := GetKey(node, "data.product_item_id")
 
-	productTitle := GetKey(node, "data.title")
+	productTitle, _ := GetKey(node, "data.title")
 
-	productCategory := GetKey(node, "data.upsell_type")
+	productCategory, _ := GetKey(node, "data.upsell_type")
 
 	// do not save this caterogy
 	if productCategory != nil && productCategory == "CATEGORY_MISCELLANEOUS_UPSELL" {
@@ -400,11 +430,12 @@ func ProducFromDataGet(data any) ([]MarketplaceItemDetails, error) {
 
 	productUrl := ProductIDTolink(productId.(string))
 
-	productPriceCurrency := GetKey(node, "data.price.currency")
+	productPriceCurrency, _ := GetKey(node, "data.price.currency")
 
-	location := GetLocationAttrs(GetKey(node, "entity.location"))
+	locationAny, _ := GetKey(node, "entity.location")
+	location := GetLocationAttrs(locationAny)
 
-	productCreation := GetKey(node, "listing.creation_time")
+	productCreation, _ := GetKey(node, "listing.creation_time")
 
 	marketplaceItemDetails := MarketplaceItemDetails{
 		ID:                       productId,

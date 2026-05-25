@@ -91,12 +91,12 @@ func (s *ScrapperImpl) GetDetails() {
 	pages, _ := NewPages(page)
 
 	ForEachDetail(func(filePath string, jsonData map[string]any) bool {
-		PriceAmount := GetKey(jsonData, "PriceAmount")
+		PriceAmount, _ := GetKey(jsonData, "PriceAmount")
 		if PriceAmount != nil {
 			return true
 		}
 
-		productId := GetKey(jsonData, "ID")
+		productId, _ := GetKey(jsonData, "ID")
 		if productId == nil {
 			return true
 		}

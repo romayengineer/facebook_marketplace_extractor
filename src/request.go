@@ -88,22 +88,23 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 
 	ForEachDetail(func(filePath string, jsonData map[string]any) bool {
 
-		description := GetKey(jsonData, "Description")
+		description, _ := GetKey(jsonData, "Description")
 		if description != nil {
 			return true
 		}
 
-		price := toFloat(GetKey(jsonData, "PriceAmount"))
+		priceAny, _ := GetKey(jsonData, "PriceAmount")
+		price := toFloat(priceAny)
 		if price < 10000 {
 			return true
 		}
 
-		productId := GetKey(jsonData, "ID")
+		productId, _ := GetKey(jsonData, "ID")
 		if productId == nil {
 			return true
 		}
 
-		cityName1 := GetKey(jsonData, "LocationGeocodeCityName1")
+		cityName1, _ := GetKey(jsonData, "LocationGeocodeCityName1")
 		if cityName1 == nil {
 			return true
 		}
@@ -118,7 +119,7 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 			return true
 		}
 
-		title := GetKey(jsonData, "Title")
+		title, _ := GetKey(jsonData, "Title")
 		if title == nil {
 			return true
 		}

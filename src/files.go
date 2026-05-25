@@ -94,7 +94,7 @@ func GetTimestamp(filePath string) (int64, error) {
 	return lastTimestamp, nil
 }
 
-func GetKey(data any, path string) any {
+func GetKey(data any, path string) (any, bool) {
 	keys := strings.Split(path, ".")
 
 	current := data
@@ -103,19 +103,19 @@ func GetKey(data any, path string) any {
 		if !ok {
 			// err := fmt.Errorf("cannot access key %q: not a map", key)
 			// fmt.Println(err)
-			return nil
+			return current, false
 		}
 
 		value, ok := dataMap[key]
 		if !ok {
 			// err := fmt.Errorf("key %q not found", key)
 			// fmt.Println(err)
-			return nil
+			return dataMap, false
 		}
 		current = value
 	}
 
-	return current
+	return current, true
 }
 
 func ExtractJsonFromBody(body []byte) ([]any, error) {
@@ -295,12 +295,12 @@ func ForEachDetail(process func(filePath string, jsonData map[string]any) bool, 
 func FillEmpty() {
 
 	ForEachDetail(func(filePath string, jsonData map[string]any) bool {
-		productUrl := GetKey(jsonData, "URL")
+		productUrl, _ := GetKey(jsonData, "URL")
 		if productUrl != nil {
 			return true
 		}
 
-		productId := GetKey(jsonData, "ID")
+		productId, _ := GetKey(jsonData, "ID")
 		if productId == nil {
 			return true
 		}
