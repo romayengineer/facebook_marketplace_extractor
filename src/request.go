@@ -136,7 +136,7 @@ func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Requ
 			}
 		}
 
-		LogInfo0("RunRequestDecompress", "getting description for", "title", titleStr)
+		LogInfo0("RunRequestDecompress", "getting description for", "title", titleStr, "productId", productId)
 
 		shouldSkipRequest.postDataMap.SetJsonString("variables", "targetId", productId)
 
