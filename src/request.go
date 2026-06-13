@@ -197,6 +197,8 @@ func RunRequestDecompressOne(ctx ContextWrapperInterface, pwRequest playwright.R
 		return response, err
 	}
 
+	// TODO filter out jsonDatas with ProductDetailsIsDeleted
+
 	_, err = WriteJsonResponse(jsonDatas, friendlyNameToProcess)
 	if err != nil {
 		LogError0("RunRequestDecompressOne", "Error WriteJsonResponse()", "error", err)
