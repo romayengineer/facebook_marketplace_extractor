@@ -1,3 +1,9 @@
-wgo mod tidy
+if command -v wgo &> /dev/null; then
+  GO=wgo
+else
+  GO=go
+fi
 
-wgo build -o main ./src
+$GO mod tidy
+
+$GO build -o main ./src
