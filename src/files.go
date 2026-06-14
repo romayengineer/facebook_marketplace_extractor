@@ -121,7 +121,7 @@ func GetKey(data any, path string) (any, bool) {
 func ExtractJsonFromBody(body []byte) ([]any, error) {
 	jsonDatas := []any{}
 	// make sure the first byte is { (open curly brakets)
-	if body[0] != '{' {
+	if len(body) == 0 || body[0] != '{' {
 		return jsonDatas, nil
 	}
 
@@ -133,7 +133,7 @@ func ExtractJsonFromBody(body []byte) ([]any, error) {
 
 	var lineData any
 	for line := range strings.SplitSeq(string(body), "\n") {
-		if line[0] != '{' {
+		if len(line) == 0 || line[0] != '{' {
 			continue
 		}
 		lineByte := []byte(line)

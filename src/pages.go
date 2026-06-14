@@ -36,6 +36,13 @@ func (pl *Pages) IsInHomePage() bool {
 	return len(items) > 0
 }
 
+func (pl *Pages) ScrollDownRelative() error {
+	for {
+		pl.Page.Evaluate("window.scrollBy(0, 300);")
+		time.Sleep(2 * time.Second)
+	}
+}
+
 func (pl *Pages) ScrollDown() error {
 	maxScrollHeight := 0
 	failCounter := 0
@@ -55,8 +62,8 @@ func (pl *Pages) ScrollDown() error {
 			LogInfo0("ScrollDown", "maxScrollHeight did not increase", "failCounter", failCounter, "maxScrollHeight", maxScrollHeight)
 			return nil
 		}
-		time.Sleep(1 * time.Second)
 		pl.Page.Evaluate("window.scrollTo(0, document.body.scrollHeight)")
+		time.Sleep(1 * time.Second)
 	}
 }
 
