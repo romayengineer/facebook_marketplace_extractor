@@ -19,7 +19,7 @@ func NewScrapper(flags Flags) ScrapperImpl {
 	var ScrollDownOnSearch bool
 	switch flags.action {
 	case "search":
-		blockImages = true
+		blockImages = false
 		ScrollDownOnSearch = true
 	default:
 		blockImages = false

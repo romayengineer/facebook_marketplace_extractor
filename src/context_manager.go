@@ -115,11 +115,11 @@ func (ceh *ContextEventHandlers) OnRequest(request playwright.Request) {
 
 func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 	go func(resp playwright.Response) {
-		request := resp.Request()
-		shouldSkipRequest := ShouldSkipRequest(request)
-		if shouldSkipRequest.skip {
-			return
-		}
+		// request := resp.Request()
+		// shouldSkipRequest := ShouldSkipRequest(request)
+		// if shouldSkipRequest.skip {
+		// 	return
+		// }
 		body, err := resp.Body()
 		if err != nil {
 			LogError0("OnResponse", "Error resp.Body()", "error", err)
@@ -130,18 +130,20 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 			LogError0("OnResponse", "Error ExtractJsonFromBody()", "error", err)
 			return
 		}
-		_, err = WriteJsonResponse(jsonDatas, shouldSkipRequest.friendlyName)
+		// friendlyName := shouldSkipRequest.friendlyName
+		friendlyName := "all"
+		_, err = WriteJsonResponse(jsonDatas, friendlyName)
 		if err != nil {
 			LogError0("OnResponse", "Error WriteJsonResponse()", "error", err)
 		}
-		if shouldSkipRequest.friendlyName != "MarketplacePDPContainerQuery" {
-			return
-		}
-		_, err = RunRequestDecompress(ceh.ctx, request, shouldSkipRequest, ceh.scrapper)
-		if err != nil {
-			LogError0("OnResponse", "Error in RunRequestDecompress", "error", err)
-			return
-		}
+		// if shouldSkipRequest.friendlyName != "MarketplacePDPContainerQuery" {
+		// 	return
+		// }
+		// _, err = RunRequestDecompress(ceh.ctx, request, shouldSkipRequest, ceh.scrapper)
+		// if err != nil {
+		// 	LogError0("OnResponse", "Error in RunRequestDecompress", "error", err)
+		// 	return
+		// }
 		// CompareResponses(resp, newResponse)
 		// newResponse, err = RunRequest(ceh.ctx, request, true)
 		// if err != nil {

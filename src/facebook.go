@@ -33,25 +33,26 @@ func (fs *FacebookScrapper) Login(userCredentials UserCredentials) (ContextWrapp
 	if savedSession != nil {
 		fmt.Println("Loading existing session...")
 		ctx, err := fs.Browser.NewContext(savedSession, false)
-		if err == nil {
-			page, err := ctx.NewPage()
-			if err == nil {
-				// Verify session is still valid
-				err = page.Goto("https://www.facebook.com")
-				if err == nil {
-					pages, _ := NewPages(page)
-					if pages.IsInHomePage() {
-						fmt.Println("Session restored successfully")
-						page.Close()
-						return ctx, nil
-					}
-				}
-				page.Close()
-			}
-			ctx.Close()
-		}
-		fmt.Println("session expired, deletting")
-		DeleteSession()
+		return ctx, err
+		// if err == nil {
+		// 	page, err := ctx.NewPage()
+		// 	if err == nil {
+		// 		// Verify session is still valid
+		// 		err = page.Goto("https://www.facebook.com")
+		// 		if err == nil {
+		// 			pages, _ := NewPages(page)
+		// 			if pages.IsInHomePage() {
+		// 				fmt.Println("Session restored successfully")
+		// 				page.Close()
+		// 				return ctx, nil
+		// 			}
+		// 		}
+		// 		page.Close()
+		// 	}
+		// 	ctx.Close()
+		// }
+		// fmt.Println("session expired, deletting")
+		// DeleteSession()
 	}
 
 	fmt.Println("creating new session")

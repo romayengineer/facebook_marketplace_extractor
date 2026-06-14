@@ -1,7 +1,6 @@
 package main
 
 import (
-	"net/url"
 	"time"
 )
 
@@ -68,9 +67,10 @@ func (pl *Pages) ScrollDown() error {
 }
 
 func (pl *Pages) MarketpaceSearch(searchKeyworkds string, scrollDown bool) error {
-	params := url.Values{}
-	params.Add("query", searchKeyworkds)
-	baseUrl := "https://www.facebook.com/marketplace/category/search/?" + params.Encode()
+	// params := url.Values{}
+	// params.Add("query", searchKeyworkds)
+	// baseUrl := "https://www.facebook.com/marketplace/category/search/?" + params.Encode()
+	baseUrl := "https://www.somoslamayor.com.ar/perfume"
 	pl.Page.Goto(baseUrl)
 	if scrollDown {
 		return pl.ScrollDown()
