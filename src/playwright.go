@@ -22,6 +22,7 @@ type RequestHandler func(playwright.Request)
 
 type ContextWrapperInterface interface {
 	NewPage() (PageWrapperInterface, error)
+	Pages() ([]PageWrapperInterface, error)
 	Close() error
 	StorageState() (*playwright.StorageState, error)
 	Fetch(urlOrRequest any, options ...playwright.APIRequestContextFetchOptions) (playwright.APIResponse, error)
@@ -46,6 +47,7 @@ type BrowserWrapperInterface interface {
 type PlaywrightWrapperInterface interface {
 	Run() error
 	NewBrowser(headless bool) (BrowserWrapperInterface, error)
+	LaunchPersistentContext(userDataDir string, channel string, profileDirectory string, headless bool) (ContextWrapperInterface, error)
 	Stop() error
 }
 
@@ -219,6 +221,15 @@ func (cw *ContextWrapper) NewPage() (PageWrapperInterface, error) {
 	return NewPageWrapper(page), nil
 }
 
+func (cw *ContextWrapper) Pages() ([]PageWrapperInterface, error) {
+	pages := cw.Context.Pages()
+	wrapped := []PageWrapperInterface{}
+	for _, page := range pages {
+		wrapped = append(wrapped, NewPageWrapper(page))
+	}
+	return wrapped, nil
+}
+
 func (cw *ContextWrapper) Close() error {
 	return cw.Context.Close()
 }
@@ -269,6 +280,27 @@ func (pw *PlaywrightWrapper) Run() error {
 	}
 
 	return err
+}
+
+func (pw *PlaywrightWrapper) LaunchPersistentContext(userDataDir string, channel string, profileDirectory string, headless bool) (ContextWrapperInterface, error) {
+	opts := playwright.BrowserTypeLaunchPersistentContextOptions{
+		Headless: playwright.Bool(headless),
+		Timeout:  playwright.Float(60000),
+		// Use the real OS keychain so cookies copied from a Chrome profile
+		// can be decrypted (Playwright defaults to a mock keychain).
+		IgnoreDefaultArgs: []string{"--use-mock-keychain", "--password-store=basic"},
+	}
+	if channel != "" {
+		opts.Channel = playwright.String(channel)
+	}
+	if profileDirectory != "" {
+		opts.Args = append(opts.Args, fmt.Sprintf("--profile-directory=%s", profileDirectory))
+	}
+	context, err := pw.Playwright.Chromium.LaunchPersistentContext(userDataDir, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Could not launch persistent context: %v", err)
+	}
+	return NewContextWrapper(context), nil
 }
 
 func (pw *PlaywrightWrapper) NewBrowser(headless bool) (BrowserWrapperInterface, error) {

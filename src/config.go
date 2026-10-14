@@ -13,7 +13,10 @@ type UserCredentials struct {
 }
 
 type Config struct {
-	UserCredentials UserCredentials
+	UserCredentials  UserCredentials
+	UserDataDir      string
+	BrowserChannel   string
+	ProfileDirectory string
 }
 
 func NewConfig() (*Config, error) {
@@ -25,19 +28,33 @@ func NewConfig() (*Config, error) {
 	// Read USERNAME and PASSWORD from .env
 	username := os.Getenv("FME_USERNAME")
 	password := os.Getenv("FME_PASSWORD")
+	userDataDir := os.Getenv("FME_USER_DATA_DIR")
+	browserChannel := os.Getenv("FME_BROWSER_CHANNEL")
+	profileDirectory := os.Getenv("FME_PROFILE_DIRECTORY")
 
-	if username == "" || password == "" {
+	if userDataDir == "" && (username == "" || password == "") {
 		LogError0("NewConfig", "USERNAME or PASSWORD not set in .env file")
 		os.Exit(1)
 	}
 
-	fmt.Printf("Loaded credentials - Username: %s\n", username)
+	if userDataDir != "" && browserChannel == "" {
+		browserChannel = "chrome"
+	}
+
+	if userDataDir != "" {
+		fmt.Printf("Using browser profile: %s\n", userDataDir)
+	} else {
+		fmt.Printf("Loaded credentials - Username: %s\n", username)
+	}
 
 	config := Config{
 		UserCredentials: UserCredentials{
 			Username: username,
 			Password: password,
 		},
+		UserDataDir:      userDataDir,
+		BrowserChannel:   browserChannel,
+		ProfileDirectory: profileDirectory,
 	}
 
 	return &config, nil

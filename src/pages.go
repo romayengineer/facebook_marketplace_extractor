@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -15,6 +16,7 @@ type Pages struct {
 
 type PagesInterface interface {
 	IsInHomePage() bool
+	WaitForHomePage(timeoutSeconds int) bool
 	MarketpaceSearch(searchKeyworkds string, scrollDown bool) error
 	GoToProduct(id string) error
 }
@@ -32,8 +34,37 @@ func NewPages(page PageWrapperInterface) (PagesInterface, error) {
 
 func (pl *Pages) IsInHomePage() bool {
 	pl.Page.Locator(pl.InputSearchBar).WaitFor(30_000)
+	return pl.isLoggedIn()
+}
+
+func (pl *Pages) isLoggedIn() bool {
 	items, _ := pl.Page.Locator(pl.InputSearchBar).All()
-	return len(items) > 0
+	if len(items) > 0 {
+		return true
+	}
+
+	urlAny, err := pl.Page.Evaluate("location.href")
+	if err != nil {
+		return false
+	}
+	currentURL, ok := urlAny.(string)
+	if !ok {
+		return false
+	}
+	if !strings.Contains(currentURL, "facebook.com") {
+		return false
+	}
+	return !strings.Contains(currentURL, "/login") && !strings.Contains(currentURL, "checkpoint")
+}
+
+func (pl *Pages) WaitForHomePage(timeoutSeconds int) bool {
+	for i := 0; i < timeoutSeconds; i++ {
+		if pl.isLoggedIn() {
+			return true
+		}
+		time.Sleep(1 * time.Second)
+	}
+	return false
 }
 
 func (pl *Pages) ScrollDown() error {

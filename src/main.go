@@ -40,24 +40,38 @@ func (s *ScrapperImpl) Begin() (ContextWrapperInterface, error) {
 		return nil, fmt.Errorf("error NewConfig: %v", err)
 	}
 
+	fmt.Println("STEP: starting playwright wrapper")
 	playwrightWrapper, err := NewPlaywrightWrapper()
 	if err != nil {
 		return nil, fmt.Errorf("error NewPlaywrightWrapper: %v", err)
 	}
+	fmt.Println("STEP: playwright wrapper ready")
 
-	browser, err := playwrightWrapper.NewBrowser(false)
-	if err != nil {
-		return nil, fmt.Errorf("error NewBrowser: %v", err)
+	var ctx ContextWrapperInterface
+	if config.UserDataDir != "" {
+		fmt.Println("STEP: launching persistent context")
+		ctx, err = playwrightWrapper.LaunchPersistentContext(config.UserDataDir, config.BrowserChannel, config.ProfileDirectory, false)
+		if err != nil {
+			return nil, fmt.Errorf("error LaunchPersistentContext: %v", err)
+		}
+		fmt.Println("STEP: persistent context launched")
+		if err := EnsureLoggedIn(ctx); err != nil {
+			return nil, fmt.Errorf("error EnsureLoggedIn: %v", err)
+		}
+		fmt.Println("STEP: logged in")
+	} else {
+		browser, err := playwrightWrapper.NewBrowser(false)
+		if err != nil {
+			return nil, fmt.Errorf("error NewBrowser: %v", err)
+		}
+
+		facebookScrapper := NewFacebookScrapper(browser)
+
+		ctx, err = facebookScrapper.Login(config.UserCredentials)
+		if err != nil {
+			return nil, fmt.Errorf("error Login: %v", err)
+		}
 	}
-
-	facebookScrapper := NewFacebookScrapper(browser)
-
-	ctx, err := facebookScrapper.Login(config.UserCredentials)
-	if err != nil {
-		return nil, fmt.Errorf("error Login: %v", err)
-	}
-
-	// productExtractors := NewProductExtractors()
 
 	SetContextEventHandlers(ctx, s)
 
@@ -75,6 +89,18 @@ func (s *ScrapperImpl) SearchProducts() {
 	page, _ := ctx.NewPage()
 	pages, _ := NewPages(page)
 	pages.MarketpaceSearch(s.SearchKewords, s.ScrollDownOnSearch)
+
+	urlAny, _ := page.Evaluate("location.href")
+	titleAny, _ := page.Evaluate("document.title")
+	bodyAny, _ := page.Evaluate("document.body.innerText")
+	fmt.Println("SEARCH URL:", urlAny)
+	fmt.Println("SEARCH TITLE:", titleAny)
+	if bodyStr, ok := bodyAny.(string); ok {
+		if len(bodyStr) > 500 {
+			bodyStr = bodyStr[:500]
+		}
+		fmt.Println("SEARCH BODY:", bodyStr)
+	}
 
 	WaitingForInput()
 }

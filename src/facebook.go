@@ -27,6 +27,44 @@ func WaitingForInput() {
 	scanner.Scan()
 }
 
+func EnsureLoggedIn(ctx ContextWrapperInterface) error {
+	fmt.Println("STEP: getting pages")
+	ctxPages, err := ctx.Pages()
+	if err != nil {
+		return fmt.Errorf("error Pages: %v", err)
+	}
+	fmt.Printf("STEP: got %d pages\n", len(ctxPages))
+
+	var page PageWrapperInterface
+	if len(ctxPages) > 0 {
+		page = ctxPages[0]
+	} else {
+		page, err = ctx.NewPage()
+		if err != nil {
+			return fmt.Errorf("error NewPage: %v", err)
+		}
+	}
+
+	fmt.Println("STEP: navigating to facebook")
+	if err := page.Goto("https://www.facebook.com"); err != nil {
+		return fmt.Errorf("error Goto: %v", err)
+	}
+	urlAny, _ := page.Evaluate("location.href")
+	fmt.Printf("STEP: navigated, url=%v\n", urlAny)
+	docCookie, _ := page.Evaluate("document.cookie")
+	fmt.Printf("STEP: document.cookie=%v\n", docCookie)
+
+	pages, _ := NewPages(page)
+	fmt.Println("Waiting for Facebook session...")
+	if !pages.WaitForHomePage(600) {
+		urlAny, _ := page.Evaluate("location.href")
+		return fmt.Errorf("not logged in (url: %v)", urlAny)
+	}
+	fmt.Println("Session restored successfully")
+
+	return nil
+}
+
 func (fs *FacebookScrapper) Login(userCredentials UserCredentials) (ContextWrapperInterface, error) {
 
 	savedSession := LoadSession()
@@ -94,10 +132,9 @@ func (fs *FacebookScrapper) Login(userCredentials UserCredentials) (ContextWrapp
 		return nil, fmt.Errorf("error clicking Log In button: %v", err)
 	}
 
-	WaitingForInput()
-
 	pages, _ := NewPages(page)
-	if pages.IsInHomePage() == false {
+	fmt.Println("Waiting for login to complete (solve any captcha in the browser)...")
+	if !pages.WaitForHomePage(600) {
 		return nil, fmt.Errorf("not in home page")
 	}
 
