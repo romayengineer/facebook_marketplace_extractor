@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 )
 
 const sessionFilePath = ".session.json"

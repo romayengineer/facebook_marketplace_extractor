@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 )
 
 func GetHeaders(request playwright.Request, simple bool) (map[string]string, error) {

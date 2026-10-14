@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 )
 
 type LocatorWrapperInterface interface {

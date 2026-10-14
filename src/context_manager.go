@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 )
 
 var mu sync.RWMutex
