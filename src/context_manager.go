@@ -159,16 +159,23 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 			LogError0("OnResponse", "Error ExtractJsonFromBody()", "error", err)
 			return
 		}
-		_, err = WriteJsonResponse(jsonDatas, shouldSkipRequest.friendlyName)
-		if err != nil {
-			LogError0("OnResponse", "Error WriteJsonResponse()", "error", err)
-		}
+
 		// MarketplacePDPContainerQuery responses carry the listing description
 		// (redacted_description). A PDP request is only sent when a listing is opened
 		// in the browser, so we capture this first request as a reusable template and
 		// replay it for the other listings (see FetchPDP / PullDescriptions).
 		// See docs/redacted_description.md.
 		if shouldSkipRequest.friendlyName == "MarketplacePDPContainerQuery" {
+			// Write idempotently by targetId so the click response and the replayed
+			// response for the same product collapse into one file.
+			if targetId := GetPostDataTargetId(shouldSkipRequest.postDataMap); targetId != "" {
+				if _, err := WriteJsonResponseById(jsonDatas, shouldSkipRequest.friendlyName, targetId); err != nil {
+					LogError0("OnResponse", "Error WriteJsonResponseById()", "error", err)
+				}
+			} else if _, err := WriteJsonResponse(jsonDatas, shouldSkipRequest.friendlyName); err != nil {
+				LogError0("OnResponse", "Error WriteJsonResponse()", "error", err)
+			}
+
 			if headers, err := GetHeaders(request, false); err == nil {
 				SetPDPTemplate(PDPTemplate{
 					URL:         request.URL(),
@@ -177,6 +184,11 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 					PostDataMap: shouldSkipRequest.postDataMap.Clone(),
 				})
 			}
+			return
+		}
+
+		if _, err = WriteJsonResponse(jsonDatas, shouldSkipRequest.friendlyName); err != nil {
+			LogError0("OnResponse", "Error WriteJsonResponse()", "error", err)
 		}
 	}(response)
 }

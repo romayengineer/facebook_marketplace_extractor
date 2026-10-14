@@ -104,3 +104,19 @@ func NewOrderedMap() OrderedMap {
 		order: []string{},
 	}
 }
+
+// GetPostDataTargetId extracts variables.targetId from a parsed GraphQL post-data map.
+func GetPostDataTargetId(postData OrderedMap) string {
+	varsStr, ok := postData.Get("variables")
+	if !ok {
+		return ""
+	}
+
+	var vars map[string]any
+	if err := json.Unmarshal([]byte(varsStr), &vars); err != nil {
+		return ""
+	}
+
+	targetId, _ := vars["targetId"].(string)
+	return targetId
+}

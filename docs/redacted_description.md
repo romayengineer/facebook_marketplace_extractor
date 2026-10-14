@@ -82,6 +82,12 @@ Two separate commands:
 
 Run it with `just pull-description` (optionally `-delay-ms=N`).
 
+Responses are written **once per product id** at
+`data/MarketplacePDPContainerQuery/response_0_<id>.json` (idempotent overwrite), and
+ids that already have a response on disk are skipped. Re-running therefore never
+creates duplicates. If duplicates ever appear, `just dedupe-pdp` removes them
+(keeping the newest per id).
+
 ## Notes
 
 - `ReplayHeaders` drops `content-length`/`content-encoding`/`host` from the captured
@@ -89,5 +95,6 @@ Run it with `just pull-description` (optionally `-delay-ms=N`).
   form-encoded body.
 - Pulling stops (without failing the run) on the rate-limit error, so a very large
   batch may need more than one run. Use `-delay-ms` to slow it down if needed.
+
 
 

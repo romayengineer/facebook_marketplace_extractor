@@ -56,6 +56,10 @@ search keyword *args:
 pull-description *args:
     go run ./{{src}} -action=pull_description {{args}}
 
+# Remove duplicate PDP responses, keeping the newest per product id
+dedupe-pdp:
+    go run ./{{src}} -action=dedupe_pdp
+
 # Visit each known listing to fetch details
 get-details:
     go run ./{{src}} -action=get_details

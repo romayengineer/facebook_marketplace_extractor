@@ -166,8 +166,8 @@ func FetchPDP(page PageWrapperInterface, template *PDPTemplate, productId string
 		}
 	}
 
-	if _, err := WriteJsonResponse(jsonDatas, "MarketplacePDPContainerQuery"); err != nil {
-		return false, fmt.Errorf("error WriteJsonResponse: %w", err)
+	if _, err := WriteJsonResponseById(jsonDatas, "MarketplacePDPContainerQuery", productId); err != nil {
+		return false, fmt.Errorf("error WriteJsonResponseById: %w", err)
 	}
 	return false, nil
 }

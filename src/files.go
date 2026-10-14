@@ -158,6 +158,32 @@ func WriteJsonResponse(jsonDatas []any, friendly_name string) (int, error) {
 	return jsonCounter, nil
 }
 
+// WriteJsonResponseById writes response JSON to a deterministic filename keyed by id,
+// overwriting any previous file for the same id. This makes writes idempotent so
+// re-running never accumulates duplicate responses for the same product.
+//
+// The name keeps the "<prefix>_<number>_<...>.json" shape because GetTimestamp parses
+// the second underscore-separated field as the (numeric) timestamp.
+func WriteJsonResponseById(jsonDatas []any, friendlyName string, id string) (int, error) {
+	counter := 0
+	for _, jsonData := range jsonDatas {
+		if err := WriteJsonFileDeterministic("response", friendlyName, id, jsonData); err != nil {
+			return counter, err
+		}
+		counter++
+	}
+	return counter, nil
+}
+
+func WriteJsonFileDeterministic(prefix string, friendlyName string, key string, jsonData any) error {
+	indented, err := json.MarshalIndent(jsonData, "", "  ")
+	if err != nil {
+		return err
+	}
+	filename := filepath.Join(DataDir, friendlyName, fmt.Sprintf("%s_0_%s.json", prefix, key))
+	return WriteFileAndDirs(filename, indented, 0644)
+}
+
 func WriteFileAndDirs(name string, data []byte, perm os.FileMode) error {
 	nameDir := filepath.Dir(name)
 	if err := os.MkdirAll(nameDir, 0755); err != nil {
@@ -279,6 +305,100 @@ func ForEachResponse(process func(filePath string, jsonData map[string]any) bool
 
 func ForEachDetail(process func(filePath string, jsonData map[string]any) bool, sortit bool) int {
 	return ForEachJsonInData("detail_", process, sortit)
+}
+
+const pdpDirName = "MarketplacePDPContainerQuery"
+
+// LoadPDPProductIds returns the set of product ids that already have a captured PDP
+// response on disk, so pull_description can skip them (regardless of filename).
+func LoadPDPProductIds() map[string]struct{} {
+	ids := map[string]struct{}{}
+
+	dir := filepath.Join(DataDir, pdpDirName)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return ids
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
+			continue
+		}
+
+		body, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+		if err != nil {
+			continue
+		}
+
+		var jsonData map[string]any
+		if err := json.Unmarshal(body, &jsonData); err != nil {
+			continue
+		}
+
+		id := GetKey(jsonData, "data.viewer.marketplace_product_details_page.target.id")
+		if idStr, ok := id.(string); ok {
+			ids[idStr] = struct{}{}
+		}
+	}
+
+	return ids
+}
+
+// DedupePDP removes duplicate PDP response files, keeping only the most recently
+// modified file for each product id.
+func DedupePDP() {
+	dir := filepath.Join(DataDir, pdpDirName)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		LogError0("DedupePDP", "cannot read PDP dir", "dir", dir, "error", err)
+		return
+	}
+
+	byID := map[string][]string{}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
+			continue
+		}
+		path := filepath.Join(dir, entry.Name())
+		body, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		var jsonData map[string]any
+		if err := json.Unmarshal(body, &jsonData); err != nil {
+			continue
+		}
+		id := GetKey(jsonData, "data.viewer.marketplace_product_details_page.target.id")
+		idStr, ok := id.(string)
+		if !ok {
+			continue
+		}
+		byID[idStr] = append(byID[idStr], path)
+	}
+
+	deleted := 0
+	for _, paths := range byID {
+		if len(paths) < 2 {
+			continue
+		}
+		sort.Slice(paths, func(i, j int) bool {
+			infoI, errI := os.Stat(paths[i])
+			infoJ, errJ := os.Stat(paths[j])
+			if errI != nil || errJ != nil {
+				return paths[i] > paths[j]
+			}
+			return infoI.ModTime().After(infoJ.ModTime())
+		})
+		for _, path := range paths[1:] {
+			if err := os.Remove(path); err == nil {
+				deleted++
+			} else {
+				LogWarn0("DedupePDP", "could not remove", "path", path, "error", err)
+			}
+		}
+	}
+
+	LogInfo0("DedupePDP", "finished", "uniqueIds", len(byID), "deleted", deleted)
 }
 
 func FillEmpty() {

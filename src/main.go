@@ -126,7 +126,11 @@ func (s *ScrapperImpl) PullDescriptions() {
 		return
 	}
 
+	existingPDPIds := LoadPDPProductIds()
+	LogInfo0("PullDescriptions", "loaded existing PDP responses", "count", len(existingPDPIds))
+
 	pulled := 0
+	skipped := 0
 	rateLimited := false
 	ForEachDetail(func(filePath string, jsonData map[string]any) bool {
 		description := GetKey(jsonData, "Description")
@@ -143,6 +147,12 @@ func (s *ScrapperImpl) PullDescriptions() {
 			return true
 		}
 
+		// Already captured in a previous run: don't fetch (or write) again.
+		if _, exists := existingPDPIds[productIdStr]; exists {
+			skipped++
+			return true
+		}
+
 		gotRateLimit, err := FetchPDP(page, template, productIdStr)
 		if err != nil {
 			LogError0("PullDescriptions", "Error fetching PDP", "productId", productIdStr, "error", err)
@@ -154,6 +164,7 @@ func (s *ScrapperImpl) PullDescriptions() {
 			return false
 		}
 
+		existingPDPIds[productIdStr] = struct{}{}
 		pulled++
 		if pulled%50 == 0 {
 			LogInfo0("PullDescriptions", "progress", "pulled", pulled)
@@ -164,7 +175,7 @@ func (s *ScrapperImpl) PullDescriptions() {
 		return true
 	}, false)
 
-	LogInfo0("PullDescriptions", "finished", "pulled", pulled, "rateLimited", rateLimited)
+	LogInfo0("PullDescriptions", "finished", "pulled", pulled, "skipped", skipped, "rateLimited", rateLimited)
 
 	ProcessData(0)
 }
@@ -226,6 +237,8 @@ func main() {
 		scrapper.GetDetails()
 	case "process_data":
 		ProcessData(0)
+	case "dedupe_pdp":
+		DedupePDP()
 	case "serve":
 		Serve()
 	case "save":
