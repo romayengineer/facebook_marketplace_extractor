@@ -43,7 +43,7 @@ Extracted in `ProductDetailsGet` (`src/product.go`) into `MarketplaceItemDetails
    writes the decoded body to:
 
    ```
-   data/MarketplacePDPContainerQuery/response_<timestamp>_<rand>.json
+   data/MarketplacePDPContainerQuery/response_0_<id>.json
    ```
 
 4. **The field is extracted and merged.**
@@ -54,33 +54,39 @@ Extracted in `ProductDetailsGet` (`src/product.go`) into `MarketplaceItemDetails
 
 ## Flow
 
-Two separate commands:
+Two commands, normally run in order:
 
-### `search` — collect listings
+### `just search "keyword"` — collect listings
 1. Log in with the seeded Chrome profile (`FME_USER_DATA_DIR`).
 2. `MarketpaceSearch` navigates to the Marketplace search URL and scrolls
    (bounded by `-scroll-seconds`).
 3. Search responses are captured as `CometMarketplaceSearchContentPaginationQuery`.
-4. `save`/`process_data` extracts them into `data/__Details/detail_<id>.json`
-   (without descriptions).
+4. `ProcessData` runs at the end of the search and extracts them into
+   `data/__Details/detail_<id>.json` (without descriptions), so searching alone
+   materializes new listings.
 
-### `pull_description` — fetch missing descriptions
-1. Log in, open the Marketplace home, and `Pages.OpenFirstProduct` clicks the first
+### `just pull-description` — fetch missing descriptions
+1. `ProcessData` runs first, materializing any unprocessed search responses so newly
+   searched listings are included in this pass.
+2. Log in, open the Marketplace home, and `Pages.OpenFirstProduct` clicks the first
    listing → triggers `MarketplacePDPContainerQuery`. Any listing works; it only needs
    to exist so we can capture the request.
-2. `ContextEventHandlers.OnResponse` captures that first PDP request as a reusable
+3. `ContextEventHandlers.OnResponse` captures that first PDP request as a reusable
    template (`URL`, `method`, `headers`, post-data with `variables.targetId`).
-3. For every `data/__Details/detail_<id>.json` **missing** a description,
+4. For every `data/__Details/detail_<id>.json` **missing** a description,
    `FetchPDP` clones the template, sets `variables.targetId` to that listing's id,
    and replays the request **inside the page** (a `fetch(...)` executed via
    `page.Evaluate` with `credentials: "include"`). It must run in the page: Facebook
    rejects the replayed GraphQL request (error `1357054`) when it is issued outside
    the page context, even with an identical body/headers.
-4. `FetchPDP` writes each response to `data/MarketplacePDPContainerQuery/`, stopping
+5. `FetchPDP` writes each response to `data/MarketplacePDPContainerQuery/`, stopping
    early if Facebook returns the rate-limit error.
-5. `ProcessData` runs once at the end and merges the descriptions into the detail files.
+6. `ProcessData` runs once at the end and merges the descriptions into the detail files.
 
 Run it with `just pull-description` (optionally `-delay-ms=N`).
+
+`just process-data` runs the extraction step (`ProcessData`) on its own, without a
+browser, if you ever need to materialize responses manually.
 
 Responses are written **once per product id** at
 `data/MarketplacePDPContainerQuery/response_0_<id>.json` (idempotent overwrite), and

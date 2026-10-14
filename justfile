@@ -68,6 +68,10 @@ get-details:
 save:
     go run ./{{src}} -action=save
 
+# Extract listings from raw responses into data/__Details (no descriptions)
+process-data:
+    go run ./{{src}} -action=process_data
+
 # Backfill missing URLs on existing detail files
 fill-empty:
     go run ./{{src}} -action=fill_empty

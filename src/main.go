@@ -91,6 +91,13 @@ func (s *ScrapperImpl) SearchProducts() {
 		LogError0("SearchProducts", "Error in MarketpaceSearch", "error", err)
 	}
 
+	// Extract the listings from the search responses into data/__Details now, so the
+	// search step materializes new products (with an empty Description) on its own.
+	// Descriptions are still filled afterwards by pull_description.
+	if _, err := ProcessData(0); err != nil {
+		LogError0("SearchProducts", "Error in ProcessData", "error", err)
+	}
+
 	WaitingForInput()
 }
 
@@ -108,6 +115,12 @@ func (s *ScrapperImpl) PullDescriptions() {
 
 	page, _ := ctx.NewPage()
 	pages, _ := NewPages(page)
+
+	// Materialize any as-yet-unprocessed search responses into data/__Details first,
+	// so listings found by a recent `search` run are included in this fill pass.
+	if _, err := ProcessData(0); err != nil {
+		LogError0("PullDescriptions", "Error in ProcessData", "error", err)
+	}
 
 	if err := pages.MarketplaceHome(); err != nil {
 		LogError0("PullDescriptions", "Error opening marketplace", "error", err)
