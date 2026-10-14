@@ -31,7 +31,7 @@ func NewPages(page PageWrapperInterface) (PagesInterface, error) {
 }
 
 func (pl *Pages) IsInHomePage() bool {
-	pl.Page.Locator(pl.InputSearchBar).WaitFor(10)
+	pl.Page.Locator(pl.InputSearchBar).WaitFor(30_000)
 	items, _ := pl.Page.Locator(pl.InputSearchBar).All()
 	return len(items) > 0
 }
