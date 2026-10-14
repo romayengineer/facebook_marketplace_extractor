@@ -166,14 +166,28 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 		// replay it for the other listings (see FetchPDP / PullDescriptions).
 		// See docs/redacted_description.md.
 		if shouldSkipRequest.friendlyName == "MarketplacePDPContainerQuery" {
-			// Write idempotently by targetId so the click response and the replayed
-			// response for the same product collapse into one file.
-			if targetId := GetPostDataTargetId(shouldSkipRequest.postDataMap); targetId != "" {
-				if _, err := WriteJsonResponseById(jsonDatas, shouldSkipRequest.friendlyName, targetId); err != nil {
-					LogError0("OnResponse", "Error WriteJsonResponseById()", "error", err)
+			rateLimited := false
+			for _, jsonData := range jsonDatas {
+				if IsErrorRateLimit(jsonData) {
+					rateLimited = true
+					break
 				}
-			} else if _, err := WriteJsonResponse(jsonDatas, shouldSkipRequest.friendlyName); err != nil {
-				LogError0("OnResponse", "Error WriteJsonResponse()", "error", err)
+			}
+
+			if rateLimited {
+				// Do not persist a rate-limit error as if it were a listing response:
+				// it has no target.id and would pollute the PDP dir.
+				LogWarn0("OnResponse", "PDP response was rate limited, not saving")
+			} else {
+				// Write idempotently by targetId so the click response and the replayed
+				// response for the same product collapse into one file.
+				if targetId := GetPostDataTargetId(shouldSkipRequest.postDataMap); targetId != "" {
+					if _, err := WriteJsonResponseById(jsonDatas, shouldSkipRequest.friendlyName, targetId); err != nil {
+						LogError0("OnResponse", "Error WriteJsonResponseById()", "error", err)
+					}
+				} else if _, err := WriteJsonResponse(jsonDatas, shouldSkipRequest.friendlyName); err != nil {
+					LogError0("OnResponse", "Error WriteJsonResponse()", "error", err)
+				}
 			}
 
 			if headers, err := GetHeaders(request, false); err == nil {

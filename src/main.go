@@ -189,6 +189,9 @@ func (s *ScrapperImpl) PullDescriptions() {
 	}, false)
 
 	LogInfo0("PullDescriptions", "finished", "pulled", pulled, "skipped", skipped, "rateLimited", rateLimited)
+	if rateLimited {
+		LogWarn0("PullDescriptions", "stopped early on rate limit; progress is saved, re-run later to continue (optionally -delay-ms=N)")
+	}
 
 	ProcessData(0)
 }

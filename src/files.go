@@ -73,7 +73,7 @@ func ProcessData(StartTimeToProcess int64) (int64, error) {
 	LogInfo0("ProcessData", "all files processed", "lastTimestamp", lastTimestamp, "filesProcessedCounter", filesProcessedCounter, "filesReadCounter", filesReadCounter, "filesDeletedCounter", filesDeletedCounter)
 
 	if gotRateLimit {
-		LogFatal("got rate limit")
+		LogWarn0("ProcessData", "got rate limit")
 	}
 
 	return lastTimestamp, nil
