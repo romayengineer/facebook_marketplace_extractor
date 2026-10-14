@@ -9,6 +9,8 @@ import (
 type ScrapperImpl struct {
 	BlockImages                 bool
 	ScrollDownOnSearch          bool
+	OpenProductAfterSearch      bool
+	ScrollSeconds               int
 	SearchKewords               string
 	StartTimeToProcess          int64
 	PullDescriptionWithKeywords string
@@ -17,10 +19,16 @@ type ScrapperImpl struct {
 func NewScrapper(flags Flags) ScrapperImpl {
 	var blockImages bool
 	var ScrollDownOnSearch bool
+	var OpenProductAfterSearch bool
 	switch flags.action {
 	case "search":
 		blockImages = true
 		ScrollDownOnSearch = true
+		OpenProductAfterSearch = true
+	case "pull_description":
+		blockImages = true
+		ScrollDownOnSearch = true
+		OpenProductAfterSearch = true
 	default:
 		blockImages = false
 		ScrollDownOnSearch = false
@@ -28,6 +36,8 @@ func NewScrapper(flags Flags) ScrapperImpl {
 	return ScrapperImpl{
 		BlockImages:                 blockImages,
 		ScrollDownOnSearch:          ScrollDownOnSearch,
+		OpenProductAfterSearch:      OpenProductAfterSearch,
+		ScrollSeconds:               flags.scrollSeconds,
 		StartTimeToProcess:          0,
 		SearchKewords:               flags.keywords,
 		PullDescriptionWithKeywords: flags.titleKeywords,
@@ -88,18 +98,13 @@ func (s *ScrapperImpl) SearchProducts() {
 
 	page, _ := ctx.NewPage()
 	pages, _ := NewPages(page)
-	pages.MarketpaceSearch(s.SearchKewords, s.ScrollDownOnSearch)
+	if err := pages.MarketpaceSearch(s.SearchKewords, s.ScrollDownOnSearch, s.ScrollSeconds); err != nil {
+		LogError0("SearchProducts", "Error in MarketpaceSearch", "error", err)
+	}
 
-	urlAny, _ := page.Evaluate("location.href")
-	titleAny, _ := page.Evaluate("document.title")
-	bodyAny, _ := page.Evaluate("document.body.innerText")
-	fmt.Println("SEARCH URL:", urlAny)
-	fmt.Println("SEARCH TITLE:", titleAny)
-	if bodyStr, ok := bodyAny.(string); ok {
-		if len(bodyStr) > 500 {
-			bodyStr = bodyStr[:500]
-		}
-		fmt.Println("SEARCH BODY:", bodyStr)
+	if s.OpenProductAfterSearch {
+		fmt.Println("Opening first product to trigger MarketplacePDPContainerQuery...")
+		pages.OpenFirstProduct()
 	}
 
 	WaitingForInput()

@@ -12,6 +12,7 @@ type Flags struct {
 	keywords      string
 	logLevel      string
 	titleKeywords string
+	scrollSeconds int
 }
 
 func NewFlags() Flags {
@@ -19,14 +20,15 @@ func NewFlags() Flags {
 	keywords := flag.String("keywords", "", "Keywords to search for (required when -action is search)")
 	titleKeywords := flag.String("title-keywords", "", "Keywords to pull descriptions from (required when -action is pull_description)")
 	logLevel := flag.String("log-level", "debug", "Log level: debug, info, warn, error")
+	scrollSeconds := flag.Int("scroll-seconds", 60, "Max seconds to scroll search results before opening a product")
 	flag.Parse()
 
 	if strings.ToLower(*action) == "search" && *keywords == "" {
 		LogFatal("keywords flag is required when action is search")
 	}
 
-	if strings.ToLower(*action) == "pull_description" && *titleKeywords == "" {
-		LogFatal("title-keywords flag is required when action is pull_description")
+	if strings.ToLower(*action) == "pull_description" && *keywords == "" {
+		LogFatal("keywords flag is required when action is pull_description")
 	}
 
 	var level slog.Level
@@ -52,5 +54,6 @@ func NewFlags() Flags {
 		keywords:      *keywords,
 		logLevel:      *logLevel,
 		titleKeywords: *titleKeywords,
+		scrollSeconds: *scrollSeconds,
 	}
 }

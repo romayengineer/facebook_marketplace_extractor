@@ -134,6 +134,11 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 		if err != nil {
 			LogError0("OnResponse", "Error WriteJsonResponse()", "error", err)
 		}
+		// MarketplacePDPContainerQuery responses carry the listing description
+		// (redacted_description). A PDP request is only sent when a listing is opened
+		// in the browser, so the scraper clicks the first search result
+		// (Pages.OpenFirstProduct) to obtain this template. Reuse the captured request
+		// to fetch details for every known product. See docs/redacted_description.md.
 		if shouldSkipRequest.friendlyName != "MarketplacePDPContainerQuery" {
 			return
 		}

@@ -17,7 +17,8 @@ type Pages struct {
 type PagesInterface interface {
 	IsInHomePage() bool
 	WaitForHomePage(timeoutSeconds int) bool
-	MarketpaceSearch(searchKeyworkds string, scrollDown bool) error
+	MarketpaceSearch(searchKeyworkds string, scrollDown bool, scrollSeconds int) error
+	OpenFirstProduct() bool
 	GoToProduct(id string) error
 }
 
@@ -67,11 +68,16 @@ func (pl *Pages) WaitForHomePage(timeoutSeconds int) bool {
 	return false
 }
 
-func (pl *Pages) ScrollDown() error {
+func (pl *Pages) ScrollDown(maxSeconds int) error {
 	maxScrollHeight := 0
 	failCounter := 0
 	maxFailCounter := 10
+	start := time.Now()
 	for {
+		if maxSeconds > 0 && time.Since(start) >= time.Duration(maxSeconds)*time.Second {
+			LogInfo0("ScrollDown", "max scroll time reached", "seconds", maxSeconds, "maxScrollHeight", maxScrollHeight)
+			return nil
+		}
 		scrollHeight, _ := pl.Page.Evaluate("document.body.scrollHeight")
 		if intHeight, ok := scrollHeight.(int); ok {
 			if intHeight > maxScrollHeight {
@@ -91,13 +97,13 @@ func (pl *Pages) ScrollDown() error {
 	}
 }
 
-func (pl *Pages) MarketpaceSearch(searchKeyworkds string, scrollDown bool) error {
+func (pl *Pages) MarketpaceSearch(searchKeyworkds string, scrollDown bool, scrollSeconds int) error {
 	params := url.Values{}
 	params.Add("query", searchKeyworkds)
 	baseUrl := "https://www.facebook.com/marketplace/category/search/?" + params.Encode()
 	pl.Page.Goto(baseUrl)
 	if scrollDown {
-		return pl.ScrollDown()
+		return pl.ScrollDown(scrollSeconds)
 	}
 	return nil
 }
@@ -106,4 +112,41 @@ func (pl *Pages) GoToProduct(id string) error {
 	baseUrl := ProductIDTolink(id)
 	LogInfo0("GoToProduct", "Goto", "url", baseUrl)
 	return pl.Page.Goto(baseUrl)
+}
+
+// OpenFirstProduct clicks the first Marketplace listing on the search page.
+//
+// This is required to obtain `redacted_description`: Facebook only sends the
+// MarketplacePDPContainerQuery request (which contains the description) when a
+// listing is opened through a client-side click. A direct Goto does not reliably
+// trigger it, so we click the link instead. See docs/redacted_description.md.
+func (pl *Pages) OpenFirstProduct() bool {
+	link := pl.Page.Locator(`a[href*="/marketplace/item/"]`).Nth(0)
+	if err := link.Click(); err != nil {
+		LogWarn0("OpenFirstProduct", "click failed, falling back to direct navigation", "error", err)
+		return pl.openFirstProductByHref()
+	}
+	LogInfo0("OpenFirstProduct", "clicked first product link")
+	return true
+}
+
+func (pl *Pages) openFirstProductByHref() bool {
+	result, err := pl.Page.Evaluate(`(() => { const a = document.querySelector('a[href*="/marketplace/item/"]'); return a ? a.href : ""; })()`)
+	if err != nil {
+		LogError0("OpenFirstProduct", "Error evaluating selector", "error", err)
+		return false
+	}
+
+	href, ok := result.(string)
+	if !ok || href == "" {
+		LogWarn0("OpenFirstProduct", "no marketplace item link found on page")
+		return false
+	}
+
+	LogInfo0("OpenFirstProduct", "opening", "url", href)
+	if err := pl.Page.Goto(href); err != nil {
+		LogError0("OpenFirstProduct", "Error Goto", "url", href, "error", err)
+		return false
+	}
+	return true
 }

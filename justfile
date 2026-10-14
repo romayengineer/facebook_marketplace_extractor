@@ -49,12 +49,12 @@ run *args:
     go run ./{{src}} {{args}}
 
 # Search Marketplace for a keyword, e.g. `just search "macbook m1"`
-search keyword:
-    go run ./{{src}} -action=search -keywords="{{keyword}}"
+search keyword *args:
+    go run ./{{src}} -action=search -keywords="{{keyword}}" {{args}}
 
-# Pull full descriptions for listings whose title matches a keyword
-pull-description keyword:
-    go run ./{{src}} -action=pull_description -title-keywords="{{keyword}}"
+# Pull full descriptions for a search, optionally filtered by title keyword
+pull-description keyword *args:
+    go run ./{{src}} -action=pull_description -keywords="{{keyword}}" {{args}}
 
 # Visit each known listing to fetch details
 get-details:

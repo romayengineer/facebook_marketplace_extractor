@@ -141,6 +141,9 @@ func IsErrorRateLimit(data any) bool {
 	return false
 }
 
+// ProductDetailsValid reports whether the GraphQL payload is a Marketplace PDP
+// (product detail page) response. See ProductDetailsGet for the requirements to
+// obtain a PDP response containing `redacted_description`.
 func ProductDetailsValid(data any) bool {
 	id := GetKey(data, "data.viewer.marketplace_product_details_page.target.id")
 	return id != nil
@@ -180,6 +183,37 @@ func GetLocationAttrs(location any) Location {
 	}
 }
 
+// ProductDetailsGet maps a Facebook Marketplace PDP (product detail page) GraphQL
+// response to MarketplaceItemDetails.
+//
+// The field we care about most is Description, which Facebook returns as
+// `redacted_description` (the lead text shown at the top of a listing). Obtaining it
+// has hard requirements:
+//
+//  1. Authenticated session. The request must run against a logged-in Facebook
+//     session; otherwise the PDP response is a login wall with no description.
+//     In practice this means launching with a Chrome profile that already has the
+//     session (FME_USER_DATA_DIR) - see docs/redacted_description.md.
+//
+//  2. A real PDP request must be triggered. `MarketplacePDPContainerQuery` is only
+//     sent when a listing is actually opened in the browser via a client-side click
+//     on a search result. A plain URL navigation (Goto) does NOT reliably trigger it,
+//     which is why Pages.OpenFirstProduct clicks the first item link after the search.
+//
+//  3. The response must be intercepted. ContextEventHandlers.OnResponse captures
+//     requests to https://www.facebook.com/api/graphql/ and writes the body to
+//     data/MarketplacePDPContainerQuery/*.json (the friendly name is read from the
+//     request post-data field `fb_api_req_friendly_name`).
+//
+//  4. The description is read from the dotted path:
+//     data.viewer.marketplace_product_details_page.target.redacted_description.text
+//
+//  5. ProcessData merges non-nil fields into data/__Details/detail_<id>.json, so the
+//     description is added to the listing record already created from the search feed.
+//
+// The same intercepted request also provides the reusable headers + post-data that
+// RunRequestDecompress replays (with variables.targetId replaced) to fetch details for
+// the other listings.
 func ProductDetailsGet(data any) ([]MarketplaceItemDetails, error) {
 	detail := GetKey(data, "data.viewer.marketplace_product_details_page")
 	if detail == nil {
