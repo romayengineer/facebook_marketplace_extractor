@@ -7,40 +7,34 @@ import (
 )
 
 type ScrapperImpl struct {
-	BlockImages                 bool
-	ScrollDownOnSearch          bool
-	OpenProductAfterSearch      bool
-	ScrollSeconds               int
-	SearchKewords               string
-	StartTimeToProcess          int64
-	PullDescriptionWithKeywords string
+	BlockImages        bool
+	ScrollDownOnSearch bool
+	ScrollSeconds      int
+	DelayMs            int
+	SearchKewords      string
+	StartTimeToProcess int64
 }
 
 func NewScrapper(flags Flags) ScrapperImpl {
 	var blockImages bool
 	var ScrollDownOnSearch bool
-	var OpenProductAfterSearch bool
 	switch flags.action {
 	case "search":
 		blockImages = true
 		ScrollDownOnSearch = true
-		OpenProductAfterSearch = true
 	case "pull_description":
 		blockImages = true
-		ScrollDownOnSearch = true
-		OpenProductAfterSearch = true
 	default:
 		blockImages = false
 		ScrollDownOnSearch = false
 	}
 	return ScrapperImpl{
-		BlockImages:                 blockImages,
-		ScrollDownOnSearch:          ScrollDownOnSearch,
-		OpenProductAfterSearch:      OpenProductAfterSearch,
-		ScrollSeconds:               flags.scrollSeconds,
-		StartTimeToProcess:          0,
-		SearchKewords:               flags.keywords,
-		PullDescriptionWithKeywords: flags.titleKeywords,
+		BlockImages:        blockImages,
+		ScrollDownOnSearch: ScrollDownOnSearch,
+		ScrollSeconds:      flags.scrollSeconds,
+		DelayMs:            flags.delayMs,
+		StartTimeToProcess: 0,
+		SearchKewords:      flags.keywords,
 	}
 }
 
@@ -50,25 +44,20 @@ func (s *ScrapperImpl) Begin() (ContextWrapperInterface, error) {
 		return nil, fmt.Errorf("error NewConfig: %v", err)
 	}
 
-	fmt.Println("STEP: starting playwright wrapper")
 	playwrightWrapper, err := NewPlaywrightWrapper()
 	if err != nil {
 		return nil, fmt.Errorf("error NewPlaywrightWrapper: %v", err)
 	}
-	fmt.Println("STEP: playwright wrapper ready")
 
 	var ctx ContextWrapperInterface
 	if config.UserDataDir != "" {
-		fmt.Println("STEP: launching persistent context")
 		ctx, err = playwrightWrapper.LaunchPersistentContext(config.UserDataDir, config.BrowserChannel, config.ProfileDirectory, false)
 		if err != nil {
 			return nil, fmt.Errorf("error LaunchPersistentContext: %v", err)
 		}
-		fmt.Println("STEP: persistent context launched")
 		if err := EnsureLoggedIn(ctx); err != nil {
 			return nil, fmt.Errorf("error EnsureLoggedIn: %v", err)
 		}
-		fmt.Println("STEP: logged in")
 	} else {
 		browser, err := playwrightWrapper.NewBrowser(false)
 		if err != nil {
@@ -102,12 +91,93 @@ func (s *ScrapperImpl) SearchProducts() {
 		LogError0("SearchProducts", "Error in MarketpaceSearch", "error", err)
 	}
 
-	if s.OpenProductAfterSearch {
-		fmt.Println("Opening first product to trigger MarketplacePDPContainerQuery...")
-		pages.OpenFirstProduct()
+	WaitingForInput()
+}
+
+// PullDescriptions fetches the description (redacted_description) for every detail
+// file that is missing one. It only needs to open a listing once, to capture the
+// MarketplacePDPContainerQuery request template; the rest is replayed via ctx.Fetch.
+// See docs/redacted_description.md.
+func (s *ScrapperImpl) PullDescriptions() {
+	ctx, err := s.Begin()
+	if err != nil {
+		LogError0("PullDescriptions", "Error in Begin", "error", err)
+		os.Exit(1)
+	}
+	defer ctx.Close()
+
+	page, _ := ctx.NewPage()
+	pages, _ := NewPages(page)
+
+	if err := pages.MarketplaceHome(); err != nil {
+		LogError0("PullDescriptions", "Error opening marketplace", "error", err)
+		return
 	}
 
-	WaitingForInput()
+	fmt.Println("Opening a listing to capture the PDP request template...")
+	if !pages.OpenFirstProduct() {
+		LogError0("PullDescriptions", "could not open a listing to capture the PDP template")
+		return
+	}
+
+	template := waitForPDPTemplate(30)
+	if template == nil {
+		LogError0("PullDescriptions", "did not capture the PDP request template in time")
+		return
+	}
+
+	pulled := 0
+	rateLimited := false
+	ForEachDetail(func(filePath string, jsonData map[string]any) bool {
+		description := GetKey(jsonData, "Description")
+		if description != nil && description != "" {
+			return true
+		}
+
+		productId := GetKey(jsonData, "ID")
+		if productId == nil {
+			return true
+		}
+		productIdStr, ok := productId.(string)
+		if !ok {
+			return true
+		}
+
+		gotRateLimit, err := FetchPDP(page, template, productIdStr)
+		if err != nil {
+			LogError0("PullDescriptions", "Error fetching PDP", "productId", productIdStr, "error", err)
+			return true
+		}
+		if gotRateLimit {
+			LogWarn0("PullDescriptions", "rate limit reached, stopping", "pulled", pulled)
+			rateLimited = true
+			return false
+		}
+
+		pulled++
+		if pulled%50 == 0 {
+			LogInfo0("PullDescriptions", "progress", "pulled", pulled)
+		}
+		if s.DelayMs > 0 {
+			time.Sleep(time.Duration(s.DelayMs) * time.Millisecond)
+		}
+		return true
+	}, false)
+
+	LogInfo0("PullDescriptions", "finished", "pulled", pulled, "rateLimited", rateLimited)
+
+	ProcessData(0)
+}
+
+func waitForPDPTemplate(timeoutSeconds int) *PDPTemplate {
+	deadline := time.Now().Add(time.Duration(timeoutSeconds) * time.Second)
+	for time.Now().Before(deadline) {
+		if template, ok := GetPDPTemplate(); ok {
+			return template
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+	return nil
 }
 
 func (s *ScrapperImpl) GetDetails() {
@@ -151,7 +221,7 @@ func main() {
 	case "search":
 		scrapper.SearchProducts()
 	case "pull_description":
-		scrapper.SearchProducts()
+		scrapper.PullDescriptions()
 	case "get_details":
 		scrapper.GetDetails()
 	case "process_data":

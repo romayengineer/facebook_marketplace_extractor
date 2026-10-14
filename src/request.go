@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/mxschmitt/playwright-go"
 )
@@ -77,164 +76,98 @@ func RunRequest(ctx ContextWrapperInterface, pwRequest playwright.Request, heade
 	return RunRequestWithData(ctx, pwRequest, data, headersSimple)
 }
 
-func RunRequestDecompress(ctx ContextWrapperInterface, pwRequest playwright.Request, shouldSkipRequest ShouldProcess, scrapper *ScrapperImpl) (playwright.APIResponse, error) {
-
-	var err error
-	var newResponse playwright.APIResponse
-	var requestCounter int
-
-	LogInfo0("RunRequestDecompress", "starting", "requestCounter", requestCounter)
-	lastTimestamp, _ := ProcessData(0)
-
-	ForEachDetail(func(filePath string, jsonData map[string]any) bool {
-
-		description := GetKey(jsonData, "Description")
-		if description != nil {
-			return true
-		}
-
-		price := toFloat(GetKey(jsonData, "PriceAmount"))
-		if price < 10000 {
-			return true
-		}
-
-		productId := GetKey(jsonData, "ID")
-		if productId == nil {
-			return true
-		}
-
-		cityName1 := GetKey(jsonData, "LocationGeocodeCityName1")
-		if cityName1 == nil {
-			return true
-		}
-
-		cityName1Str, ok := cityName1.(string)
-		if !ok {
-			return true
-		}
-
-		// only search in this city
-		if cityName1Str != "Ciudad de Buenos Aires" {
-			return true
-		}
-
-		if scrapper.PullDescriptionWithKeywords != "" {
-			title := GetKey(jsonData, "Title")
-			if title == nil {
-				return true
-			}
-
-			titleStr, ok := title.(string)
-			if !ok {
-				return true
-			}
-
-			// only search for this keywords
-			if !strings.Contains(strings.ToLower(titleStr), scrapper.PullDescriptionWithKeywords) {
-				return true
-			}
-		}
-
-		shouldSkipRequest.postDataMap.SetJsonString("variables", "targetId", productId)
-
-		newResponse, err = RunRequestDecompressOne(ctx, pwRequest, shouldSkipRequest)
-
-		time.Sleep(1 * time.Second)
-
-		requestCounter++
-
-		if (requestCounter % 20) == 0 {
-			time.Sleep(3 * time.Second)
-			LogInfo0("RunRequestDecompress", "checkpoint", "requestCounter", requestCounter)
-			lastTimestamp, _ = ProcessData(lastTimestamp)
-		}
-
-		return true
-
-	}, false)
-
-	time.Sleep(3 * time.Second)
-	LogInfo0("RunRequestDecompress", "finished", "requestCounter", requestCounter)
-	lastTimestamp, _ = ProcessData(lastTimestamp)
-
-	return newResponse, err
+// headerReplaySkip lists headers captured from the original request that must not be
+// replayed: their values are tied to the original body/session and cause the request
+// to be rejected (e.g. a stale content-length produces a small error response).
+var headerReplaySkip = map[string]struct{}{
+	"content-length":    {},
+	"content-encoding":  {},
+	"host":              {},
+	"connection":        {},
+	"transfer-encoding": {},
+	"accept-encoding":   {},
 }
 
-func RunRequestDecompressOne(ctx ContextWrapperInterface, pwRequest playwright.Request, shouldSkipRequest ShouldProcess) (playwright.APIResponse, error) {
-	friendlyNameToProcess := "MarketplacePDPContainerQuery"
-
-	if shouldSkipRequest.friendlyName != friendlyNameToProcess {
-		return nil, nil
+func ReplayHeaders(headers map[string]string) map[string]string {
+	out := map[string]string{}
+	for key, value := range headers {
+		if _, skip := headerReplaySkip[strings.ToLower(key)]; skip {
+			continue
+		}
+		out[key] = value
 	}
-
-	shouldSkipRequest.postDataMap.Print()
-	postData, _ := GetPostData(shouldSkipRequest.postDataMap)
-
-	response, err := RunRequestWithData(ctx, pwRequest, postData, false)
-	if err != nil {
-		return response, err
-	}
-
-	body, err := response.Body()
-	if err != nil {
-		return response, fmt.Errorf("Error response.Body(): %w\n", err)
-	}
-
-	bodyDecompressed, err := Decompress(body)
-	if err != nil {
-		return response, err
-	}
-
-	LogDebug0("RunRequestDecompressOne", "Body decompressed", "size", len(bodyDecompressed))
-
-	jsonDatas, err := ExtractJsonFromBody(bodyDecompressed)
-	if err != nil {
-		LogError0("RunRequestDecompressOne", "Error ExtractJsonFromBody()", "error", err)
-		return response, err
-	}
-
-	_, err = WriteJsonResponse(jsonDatas, friendlyNameToProcess)
-	if err != nil {
-		LogError0("RunRequestDecompressOne", "Error WriteJsonResponse()", "error", err)
-		return response, err
-	}
-
-	return response, nil
+	return out
 }
 
-func CompareResponses(response playwright.Response, newResponse playwright.APIResponse) (bool, error) {
+func mapKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
 
-	if newResponse == nil {
-		return false, fmt.Errorf("Error in CompareResponses, newResponse is null")
+// FetchPDP replays the captured MarketplacePDPContainerQuery template for a single
+// product by replacing variables.targetId and running the request inside the
+// logged-in page (so it uses the browser's own cookies, origin and CSRF tokens).
+// It persists the response and reports whether it was a rate-limit error.
+//
+// The request must run in the page: Facebook rejects the replayed GraphQL request
+// with error 1357054 when it is issued outside the page context (e.g. via an
+// APIRequestContext), even though the body and headers are identical.
+func FetchPDP(page PageWrapperInterface, template *PDPTemplate, productId string) (bool, error) {
+	postDataMap := template.PostDataMap.Clone()
+	if err := postDataMap.SetJsonString("variables", "targetId", productId); err != nil {
+		return false, fmt.Errorf("error setting targetId: %w", err)
 	}
 
-	body, err := response.Body()
+	postData, err := GetPostData(postDataMap)
 	if err != nil {
-		return false, fmt.Errorf("Error response.Body(): %w\n", err)
+		return false, fmt.Errorf("error building post data: %w", err)
 	}
 
-	newBody, err := newResponse.Body()
+	headers := map[string]any{}
+	for key, value := range ReplayHeaders(template.Headers) {
+		headers[key] = value
+	}
+
+	result, err := page.Evaluate(`async (opts) => {
+		const response = await fetch(opts.url, {
+			method: opts.method,
+			headers: opts.headers,
+			body: opts.body,
+			credentials: "include",
+		});
+		return await response.text();
+	}`, map[string]any{
+		"url":     template.URL,
+		"method":  template.Method,
+		"headers": headers,
+		"body":    postData,
+	})
 	if err != nil {
-		return false, fmt.Errorf("Error newResponse.Body(): %w\n", err)
+		return false, fmt.Errorf("error evaluating fetch: %w", err)
 	}
 
-	bodyDecoded := string(body)
+	bodyStr, ok := result.(string)
+	if !ok {
+		return false, fmt.Errorf("unexpected fetch result type %T", result)
+	}
 
-	var newBodyDecoded string
-	decompressed, err := DecompressZstd(newBody)
+	body := []byte(strings.TrimPrefix(bodyStr, "for (;;);"))
+	jsonDatas, err := ExtractJsonFromBody(body)
 	if err != nil {
-		newBodyDecoded = string(newBody)
-	} else {
-		newBodyDecoded = string(decompressed)
+		return false, fmt.Errorf("error ExtractJsonFromBody: %w", err)
 	}
 
-	if AreStringsEqual(bodyDecoded, newBodyDecoded) {
-		LogInfo0("CompareResponses", "Response bodies are identical")
-		return true, nil
-	} else {
-		bodyDecodedLen := len(bodyDecoded)
-		newBodyDecodedLen := len(newBodyDecoded)
-		LogWarn0("CompareResponses", "Response bodies differ", "originalLength", bodyDecodedLen, "newLength", newBodyDecodedLen)
-		return false, nil
+	for _, jsonData := range jsonDatas {
+		if IsErrorRateLimit(jsonData) {
+			return true, nil
+		}
 	}
+
+	if _, err := WriteJsonResponse(jsonDatas, "MarketplacePDPContainerQuery"); err != nil {
+		return false, fmt.Errorf("error WriteJsonResponse: %w", err)
+	}
+	return false, nil
 }

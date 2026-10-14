@@ -212,8 +212,8 @@ func GetLocationAttrs(location any) Location {
 //     description is added to the listing record already created from the search feed.
 //
 // The same intercepted request also provides the reusable headers + post-data that
-// RunRequestDecompress replays (with variables.targetId replaced) to fetch details for
-// the other listings.
+// FetchPDP replays (with variables.targetId replaced) to fetch details for the other
+// listings in the pull_description flow.
 func ProductDetailsGet(data any) ([]MarketplaceItemDetails, error) {
 	detail := GetKey(data, "data.viewer.marketplace_product_details_page")
 	if detail == nil {

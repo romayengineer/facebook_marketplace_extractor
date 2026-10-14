@@ -62,6 +62,14 @@ func (om *OrderedMap) Keys() []string {
 	return om.order
 }
 
+func (om OrderedMap) Clone() OrderedMap {
+	clone := NewOrderedMap()
+	for _, key := range om.order {
+		clone.Set(key, om.data[key])
+	}
+	return clone
+}
+
 func (om *OrderedMap) Print() {
 	for _, key := range om.Keys() {
 		value, _ := om.Get(key)

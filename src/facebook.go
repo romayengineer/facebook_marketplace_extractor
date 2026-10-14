@@ -28,12 +28,10 @@ func WaitingForInput() {
 }
 
 func EnsureLoggedIn(ctx ContextWrapperInterface) error {
-	fmt.Println("STEP: getting pages")
 	ctxPages, err := ctx.Pages()
 	if err != nil {
 		return fmt.Errorf("error Pages: %v", err)
 	}
-	fmt.Printf("STEP: got %d pages\n", len(ctxPages))
 
 	var page PageWrapperInterface
 	if len(ctxPages) > 0 {
@@ -45,14 +43,9 @@ func EnsureLoggedIn(ctx ContextWrapperInterface) error {
 		}
 	}
 
-	fmt.Println("STEP: navigating to facebook")
 	if err := page.Goto("https://www.facebook.com"); err != nil {
 		return fmt.Errorf("error Goto: %v", err)
 	}
-	urlAny, _ := page.Evaluate("location.href")
-	fmt.Printf("STEP: navigated, url=%v\n", urlAny)
-	docCookie, _ := page.Evaluate("document.cookie")
-	fmt.Printf("STEP: document.cookie=%v\n", docCookie)
 
 	pages, _ := NewPages(page)
 	fmt.Println("Waiting for Facebook session...")

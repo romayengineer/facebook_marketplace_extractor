@@ -28,17 +28,18 @@ func GetPostDataMap(request playwright.Request) (OrderedMap, error) {
 	return om, nil
 }
 
+// GetPostData rebuilds an application/x-www-form-urlencoded body from the parsed
+// post-data map. GetPostDataMap already unescaped the values, so we must re-encode
+// them here - previously the value was unescaped a second time, which corrupted the
+// payload (and it was never re-encoded as a form body).
 func GetPostData(postData OrderedMap) (string, error) {
-	postDataParts := []string{}
+	params := url.Values{}
 	for _, key := range postData.Keys() {
 		value, exists := postData.Get(key)
 		if !exists {
 			continue
 		}
-		part := fmt.Sprintf("%s=%s", key, value)
-		postDataParts = append(postDataParts, part)
+		params.Set(key, value)
 	}
-	postDataStr := strings.Join(postDataParts, "&")
-	postDataUnscaped, err := url.QueryUnescape(postDataStr)
-	return postDataUnscaped, err
+	return params.Encode(), nil
 }

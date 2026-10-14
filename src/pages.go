@@ -18,6 +18,7 @@ type PagesInterface interface {
 	IsInHomePage() bool
 	WaitForHomePage(timeoutSeconds int) bool
 	MarketpaceSearch(searchKeyworkds string, scrollDown bool, scrollSeconds int) error
+	MarketplaceHome() error
 	OpenFirstProduct() bool
 	GoToProduct(id string) error
 }
@@ -106,6 +107,10 @@ func (pl *Pages) MarketpaceSearch(searchKeyworkds string, scrollDown bool, scrol
 		return pl.ScrollDown(scrollSeconds)
 	}
 	return nil
+}
+
+func (pl *Pages) MarketplaceHome() error {
+	return pl.Page.Goto("https://www.facebook.com/marketplace/")
 }
 
 func (pl *Pages) GoToProduct(id string) error {

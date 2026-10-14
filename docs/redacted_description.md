@@ -52,22 +52,42 @@ Extracted in `ProductDetailsGet` (`src/product.go`) into `MarketplaceItemDetails
    record at `data/__Details/detail_<id>.json` (the `FileStore` only overwrites
    non-nil fields, so it adds the description to the entry created from the search feed).
 
-## Flow (search action)
+## Flow
 
+Two separate commands:
+
+### `search` — collect listings
 1. Log in with the seeded Chrome profile (`FME_USER_DATA_DIR`).
 2. `MarketpaceSearch` navigates to the Marketplace search URL and scrolls
    (bounded by `-scroll-seconds`).
 3. Search responses are captured as `CometMarketplaceSearchContentPaginationQuery`.
-4. `Pages.OpenFirstProduct` clicks the first listing → triggers
-   `MarketplacePDPContainerQuery`.
-5. `OnResponse` captures that PDP response containing `redacted_description`.
-6. `ProcessData` writes/merges it into `data/__Details/detail_<id>.json`.
+4. `save`/`process_data` extracts them into `data/__Details/detail_<id>.json`
+   (without descriptions).
 
-## Notes / limitations
+### `pull_description` — fetch missing descriptions
+1. Log in, open the Marketplace home, and `Pages.OpenFirstProduct` clicks the first
+   listing → triggers `MarketplacePDPContainerQuery`. Any listing works; it only needs
+   to exist so we can capture the request.
+2. `ContextEventHandlers.OnResponse` captures that first PDP request as a reusable
+   template (`URL`, `method`, `headers`, post-data with `variables.targetId`).
+3. For every `data/__Details/detail_<id>.json` **missing** a description,
+   `FetchPDP` clones the template, sets `variables.targetId` to that listing's id,
+   and replays the request **inside the page** (a `fetch(...)` executed via
+   `page.Evaluate` with `credentials: "include"`). It must run in the page: Facebook
+   rejects the replayed GraphQL request (error `1357054`) when it is issued outside
+   the page context, even with an identical body/headers.
+4. `FetchPDP` writes each response to `data/MarketplacePDPContainerQuery/`, stopping
+   early if Facebook returns the rate-limit error.
+5. `ProcessData` runs once at the end and merges the descriptions into the detail files.
 
-- The PDP request that is triggered by the click also provides the reusable headers
-  and post-data (`targetId`) that `RunRequestDecompress` replays to fetch details for
-  the other listings.
-- Only the item that is actually **opened** is guaranteed to return a full
-  description. The bulk replay path currently returns small/empty responses for the
-  other listings, so those may be missing a description until that path is fixed.
+Run it with `just pull-description` (optionally `-delay-ms=N`).
+
+## Notes
+
+- `ReplayHeaders` drops `content-length`/`content-encoding`/`host` from the captured
+  headers (they belong to the original body); `GetPostData` rebuilds a correctly
+  form-encoded body.
+- Pulling stops (without failing the run) on the rate-limit error, so a very large
+  batch may need more than one run. Use `-delay-ms` to slow it down if needed.
+
+

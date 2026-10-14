@@ -52,9 +52,9 @@ run *args:
 search keyword *args:
     go run ./{{src}} -action=search -keywords="{{keyword}}" {{args}}
 
-# Pull full descriptions for a search, optionally filtered by title keyword
-pull-description keyword *args:
-    go run ./{{src}} -action=pull_description -keywords="{{keyword}}" {{args}}
+# Pull descriptions for all details missing one (opens any listing to grab the PDP template)
+pull-description *args:
+    go run ./{{src}} -action=pull_description {{args}}
 
 # Visit each known listing to fetch details
 get-details:

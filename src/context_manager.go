@@ -69,6 +69,35 @@ type ShouldProcess struct {
 	friendlyName string
 }
 
+// PDPTemplate is the reusable request captured from a real MarketplacePDPContainerQuery.
+// It is used to replay the query for other listings (with variables.targetId replaced).
+type PDPTemplate struct {
+	URL         string
+	Method      string
+	Headers     map[string]string
+	PostDataMap OrderedMap
+}
+
+var (
+	pdpTemplateMu sync.Mutex
+	pdpTemplate   *PDPTemplate
+)
+
+func SetPDPTemplate(template PDPTemplate) {
+	pdpTemplateMu.Lock()
+	defer pdpTemplateMu.Unlock()
+	if pdpTemplate == nil {
+		pdpTemplate = &template
+		LogInfo0("SetPDPTemplate", "captured PDP request template", "url", template.URL, "headerKeys", mapKeys(template.Headers), "postKeys", template.PostDataMap.Keys())
+	}
+}
+
+func GetPDPTemplate() (*PDPTemplate, bool) {
+	pdpTemplateMu.Lock()
+	defer pdpTemplateMu.Unlock()
+	return pdpTemplate, pdpTemplate != nil
+}
+
 func ShouldSkipRequest(request playwright.Request) ShouldProcess {
 	url := request.URL()
 	if url != "https://www.facebook.com/api/graphql/" {
@@ -136,24 +165,19 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 		}
 		// MarketplacePDPContainerQuery responses carry the listing description
 		// (redacted_description). A PDP request is only sent when a listing is opened
-		// in the browser, so the scraper clicks the first search result
-		// (Pages.OpenFirstProduct) to obtain this template. Reuse the captured request
-		// to fetch details for every known product. See docs/redacted_description.md.
-		if shouldSkipRequest.friendlyName != "MarketplacePDPContainerQuery" {
-			return
+		// in the browser, so we capture this first request as a reusable template and
+		// replay it for the other listings (see FetchPDP / PullDescriptions).
+		// See docs/redacted_description.md.
+		if shouldSkipRequest.friendlyName == "MarketplacePDPContainerQuery" {
+			if headers, err := GetHeaders(request, false); err == nil {
+				SetPDPTemplate(PDPTemplate{
+					URL:         request.URL(),
+					Method:      request.Method(),
+					Headers:     headers,
+					PostDataMap: shouldSkipRequest.postDataMap.Clone(),
+				})
+			}
 		}
-		newResponse, err := RunRequestDecompress(ceh.ctx, request, shouldSkipRequest, ceh.scrapper)
-		if err != nil {
-			LogError0("OnResponse", "Error in RunRequestDecompress", "error", err)
-			return
-		}
-		CompareResponses(resp, newResponse)
-		// newResponse, err = RunRequest(ceh.ctx, request, true)
-		// if err != nil {
-		// 	log.Printf("Error in RunRequest: %v", err)
-		// 	return
-		// }
-		// CompareResponses(resp, newResponse)
 	}(response)
 }
 
