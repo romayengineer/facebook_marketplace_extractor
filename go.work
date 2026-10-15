@@ -1,0 +1,10 @@
+go 1.25.0
+
+use (
+	./core
+	./marketplace
+	./browser
+	./store
+	./capture
+	./cmd/facebook-extractor
+)

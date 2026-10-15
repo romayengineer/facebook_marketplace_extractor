@@ -1,13 +1,17 @@
-package main
+package pages
 
 import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/romayengineer/facebook_marketplace_extractor/browser/driver"
+	"github.com/romayengineer/facebook_marketplace_extractor/core/logging"
+	"github.com/romayengineer/facebook_marketplace_extractor/marketplace/model"
 )
 
 type Pages struct {
-	Page           PageWrapperInterface
+	Page           driver.PageWrapperInterface
 	InputUsername  string
 	InputPassword  string
 	ButtonLogIn    string
@@ -24,7 +28,7 @@ type PagesInterface interface {
 	GoToProduct(id string) error
 }
 
-func NewPages(page PageWrapperInterface) (PagesInterface, error) {
+func NewPages(page driver.PageWrapperInterface) (PagesInterface, error) {
 	pages := Pages{
 		Page:           page,
 		InputUsername:  "input[name=email]",
@@ -77,7 +81,7 @@ func (pl *Pages) ScrollDown(maxSeconds int) error {
 	start := time.Now()
 	for {
 		if maxSeconds > 0 && time.Since(start) >= time.Duration(maxSeconds)*time.Second {
-			LogInfo0("ScrollDown", "max scroll time reached", "seconds", maxSeconds, "maxScrollHeight", maxScrollHeight)
+			logging.LogInfo0("ScrollDown", "max scroll time reached", "seconds", maxSeconds, "maxScrollHeight", maxScrollHeight)
 			return nil
 		}
 		scrollHeight, _ := pl.Page.Evaluate("document.body.scrollHeight")
@@ -85,13 +89,13 @@ func (pl *Pages) ScrollDown(maxSeconds int) error {
 			if intHeight > maxScrollHeight {
 				failCounter = 0
 				maxScrollHeight = intHeight
-				LogDebug0("ScrollDown", "maxScrollHeight", "height", maxScrollHeight)
+				logging.LogDebug0("ScrollDown", "maxScrollHeight", "height", maxScrollHeight)
 			} else {
 				failCounter++
 			}
 		}
 		if failCounter >= maxFailCounter {
-			LogInfo0("ScrollDown", "maxScrollHeight did not increase", "failCounter", failCounter, "maxScrollHeight", maxScrollHeight)
+			logging.LogInfo0("ScrollDown", "maxScrollHeight did not increase", "failCounter", failCounter, "maxScrollHeight", maxScrollHeight)
 			return nil
 		}
 		time.Sleep(1 * time.Second)
@@ -115,8 +119,8 @@ func (pl *Pages) MarketplaceHome() error {
 }
 
 func (pl *Pages) GoToProduct(id string) error {
-	baseUrl := ProductIDTolink(id)
-	LogInfo0("GoToProduct", "Goto", "url", baseUrl)
+	baseUrl := model.ProductIDTolink(id)
+	logging.LogInfo0("GoToProduct", "Goto", "url", baseUrl)
 	return pl.Page.Goto(baseUrl)
 }
 
@@ -129,10 +133,10 @@ func (pl *Pages) GoToProduct(id string) error {
 func (pl *Pages) OpenFirstProduct() bool {
 	link := pl.Page.Locator(`a[href*="/marketplace/item/"]`).Nth(0)
 	if err := link.Click(); err != nil {
-		LogWarn0("OpenFirstProduct", "click failed, falling back to direct navigation", "error", err)
+		logging.LogWarn0("OpenFirstProduct", "click failed, falling back to direct navigation", "error", err)
 		return pl.openFirstProductByHref()
 	}
-	LogInfo0("OpenFirstProduct", "clicked first product link")
+	logging.LogInfo0("OpenFirstProduct", "clicked first product link")
 	return true
 }
 
@@ -145,29 +149,29 @@ func (pl *Pages) OpenProduct(index int) bool {
 	}
 	link := pl.Page.Locator(`a[href*="/marketplace/item/"]`).Nth(index)
 	if err := link.Click(); err != nil {
-		LogWarn0("OpenProduct", "click failed", "index", index, "error", err)
+		logging.LogWarn0("OpenProduct", "click failed", "index", index, "error", err)
 		return false
 	}
-	LogInfo0("OpenProduct", "clicked product link", "index", index)
+	logging.LogInfo0("OpenProduct", "clicked product link", "index", index)
 	return true
 }
 
 func (pl *Pages) openFirstProductByHref() bool {
 	result, err := pl.Page.Evaluate(`(() => { const a = document.querySelector('a[href*="/marketplace/item/"]'); return a ? a.href : ""; })()`)
 	if err != nil {
-		LogError0("OpenFirstProduct", "Error evaluating selector", "error", err)
+		logging.LogError0("OpenFirstProduct", "Error evaluating selector", "error", err)
 		return false
 	}
 
 	href, ok := result.(string)
 	if !ok || href == "" {
-		LogWarn0("OpenFirstProduct", "no marketplace item link found on page")
+		logging.LogWarn0("OpenFirstProduct", "no marketplace item link found on page")
 		return false
 	}
 
-	LogInfo0("OpenFirstProduct", "opening", "url", href)
+	logging.LogInfo0("OpenFirstProduct", "opening", "url", href)
 	if err := pl.Page.Goto(href); err != nil {
-		LogError0("OpenFirstProduct", "Error Goto", "url", href, "error", err)
+		logging.LogError0("OpenFirstProduct", "Error Goto", "url", href, "error", err)
 		return false
 	}
 	return true

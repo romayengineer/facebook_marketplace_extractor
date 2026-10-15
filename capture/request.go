@@ -1,10 +1,15 @@
-package main
+package capture
 
 import (
 	"fmt"
 	"strings"
 
 	"github.com/mxschmitt/playwright-go"
+	"github.com/romayengineer/facebook_marketplace_extractor/browser/driver"
+	"github.com/romayengineer/facebook_marketplace_extractor/core/jsonutil"
+	"github.com/romayengineer/facebook_marketplace_extractor/core/logging"
+	"github.com/romayengineer/facebook_marketplace_extractor/marketplace/model"
+	"github.com/romayengineer/facebook_marketplace_extractor/store/filestore"
 )
 
 func GetHeaders(request playwright.Request, simple bool) (map[string]string, error) {
@@ -33,7 +38,7 @@ func GetHeaders(request playwright.Request, simple bool) (map[string]string, err
 	return headers, nil
 }
 
-func RunRequestWithData(ctx ContextWrapperInterface, pwRequest playwright.Request, data string, headersSimple bool) (playwright.APIResponse, error) {
+func RunRequestWithData(ctx driver.ContextWrapperInterface, pwRequest playwright.Request, data string, headersSimple bool) (playwright.APIResponse, error) {
 	url := pwRequest.URL()
 	method := pwRequest.Method()
 
@@ -42,10 +47,10 @@ func RunRequestWithData(ctx ContextWrapperInterface, pwRequest playwright.Reques
 		return nil, fmt.Errorf("Error in GetHeaders: %w\n", err)
 	}
 
-	LogDebug0("RunRequest", "request", "url", url, "method", method)
-	LogDebug0("RunRequest", "request headers", "count", len(headers))
+	logging.LogDebug0("RunRequest", "request", "url", url, "method", method)
+	logging.LogDebug0("RunRequest", "request headers", "count", len(headers))
 	for h, v := range headers {
-		LogDebug0("RunRequest", "header", "key", h, "value", v)
+		logging.LogDebug0("RunRequest", "header", "key", h, "value", v)
 	}
 
 	response, err := ctx.Fetch(url,
@@ -60,15 +65,15 @@ func RunRequestWithData(ctx ContextWrapperInterface, pwRequest playwright.Reques
 	}
 
 	responseHeaders := response.Headers()
-	LogDebug0("RunRequest", "response headers", "count", len(responseHeaders))
+	logging.LogDebug0("RunRequest", "response headers", "count", len(responseHeaders))
 	for h, v := range responseHeaders {
-		LogDebug0("RunRequest", "response header", "key", h, "value", v)
+		logging.LogDebug0("RunRequest", "response header", "key", h, "value", v)
 	}
 
 	return response, nil
 }
 
-func RunRequest(ctx ContextWrapperInterface, pwRequest playwright.Request, headersSimple bool) (playwright.APIResponse, error) {
+func RunRequest(ctx driver.ContextWrapperInterface, pwRequest playwright.Request, headersSimple bool) (playwright.APIResponse, error) {
 	data, err := pwRequest.PostData()
 	if err != nil {
 		return nil, fmt.Errorf("Error in PostData: %w\n", err)
@@ -115,7 +120,7 @@ func mapKeys(m map[string]string) []string {
 // The request must run in the page: Facebook rejects the replayed GraphQL request
 // with error 1357054 when it is issued outside the page context (e.g. via an
 // APIRequestContext), even though the body and headers are identical.
-func FetchPDP(page PageWrapperInterface, template *PDPTemplate, productId string) (bool, error) {
+func FetchPDP(page driver.PageWrapperInterface, template *PDPTemplate, productId string) (bool, error) {
 	postDataMap := template.PostDataMap.Clone()
 	if err := postDataMap.SetJsonString("variables", "targetId", productId); err != nil {
 		return false, fmt.Errorf("error setting targetId: %w", err)
@@ -155,18 +160,18 @@ func FetchPDP(page PageWrapperInterface, template *PDPTemplate, productId string
 	}
 
 	body := []byte(strings.TrimPrefix(bodyStr, "for (;;);"))
-	jsonDatas, err := ExtractJsonFromBody(body)
+	jsonDatas, err := jsonutil.ExtractJsonFromBody(body)
 	if err != nil {
 		return false, fmt.Errorf("error ExtractJsonFromBody: %w", err)
 	}
 
 	for _, jsonData := range jsonDatas {
-		if IsErrorRateLimit(jsonData) {
+		if model.IsErrorRateLimit(jsonData) {
 			return true, nil
 		}
 	}
 
-	if _, err := WriteJsonResponseById(jsonDatas, "MarketplacePDPContainerQuery", productId); err != nil {
+	if _, err := filestore.WriteJsonResponseById(jsonDatas, "MarketplacePDPContainerQuery", productId); err != nil {
 		return false, fmt.Errorf("error WriteJsonResponseById: %w", err)
 	}
 	return false, nil

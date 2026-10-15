@@ -1,9 +1,10 @@
-package main
+package filestore
 
 import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/romayengineer/facebook_marketplace_extractor/marketplace/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +17,7 @@ func TestFileStoreGet(t *testing.T) {
 	store.SetDir(tmpDir)
 
 	// Create test data
-	testData := MarketplaceItemDetails{
+	testData := model.MarketplaceItemDetails{
 		ID:            "123",
 		Title:         "Test Product",
 		Description:   "Test Description",
@@ -63,7 +64,7 @@ func TestFileStoreSave(t *testing.T) {
 	assert.Equal(t, nil, data.Title)
 	assert.Equal(t, nil, data.Description)
 
-	testData := MarketplaceItemDetails{
+	testData := model.MarketplaceItemDetails{
 		ID:          "123",
 		Title:       "Test Product",
 		Description: "Test Description",

@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"database/sql"
@@ -12,6 +12,9 @@ import (
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/models"
 	"github.com/pocketbase/pocketbase/models/schema"
+	"github.com/romayengineer/facebook_marketplace_extractor/core/logging"
+	"github.com/romayengineer/facebook_marketplace_extractor/marketplace/model"
+	"github.com/romayengineer/facebook_marketplace_extractor/store/filestore"
 )
 
 type PocketBaseDB struct {
@@ -40,17 +43,17 @@ func (db *PocketBaseDB) Start() error {
 
 	// Bootstrap creates the database tables if they don't exist
 	if err := db.app.Bootstrap(); err != nil {
-		LogError0("Start", "bootstrap failed", "error", err)
+		logging.LogError0("Start", "bootstrap failed", "error", err)
 		return fmt.Errorf("failed to bootstrap pocketbase: %v", err)
 	}
 
 	// Ensure products collection exists
 	if err := db.ensureProductsCollection(); err != nil {
-		LogError0("Start", "failed to ensure products collection", "error", err)
+		logging.LogError0("Start", "failed to ensure products collection", "error", err)
 		return fmt.Errorf("failed to ensure products collection: %v", err)
 	}
 
-	LogInfo0("Start", "database initialized successfully")
+	logging.LogInfo0("Start", "database initialized successfully")
 	return nil
 }
 
@@ -58,11 +61,11 @@ func (db *PocketBaseDB) ensureProductsCollection() error {
 	// Try to find existing collection
 	collection, err := db.app.Dao().FindCollectionByNameOrId("products")
 	if err == nil {
-		LogDebug0("ensureProductsCollection", "products collection already exists")
+		logging.LogDebug0("ensureProductsCollection", "products collection already exists")
 		return nil
 	}
 
-	LogInfo0("ensureProductsCollection", "creating products collection")
+	logging.LogInfo0("ensureProductsCollection", "creating products collection")
 
 	// Create new collection
 	collection = &models.Collection{
@@ -117,11 +120,11 @@ func (db *PocketBaseDB) ensureProductsCollection() error {
 		return fmt.Errorf("failed to create products collection: %v", err)
 	}
 
-	LogInfo0("ensureProductsCollection", "products collection created successfully")
+	logging.LogInfo0("ensureProductsCollection", "products collection created successfully")
 	return nil
 }
 
-func SetProductFields(record *models.Record, product MarketplaceItemDetails) error {
+func SetProductFields(record *models.Record, product model.MarketplaceItemDetails) error {
 	if record == nil {
 		return fmt.Errorf("record is nil")
 	}
@@ -149,7 +152,7 @@ func SetProductFields(record *models.Record, product MarketplaceItemDetails) err
 	return nil
 }
 
-func (db *PocketBaseDB) UpsertProduct(product MarketplaceItemDetails) (sql.Result, error) {
+func (db *PocketBaseDB) UpsertProduct(product model.MarketplaceItemDetails) (sql.Result, error) {
 
 	facebookID := toString(product.ID)
 
@@ -211,14 +214,14 @@ func (db *PocketBaseDB) UpsertProduct(product MarketplaceItemDetails) (sql.Resul
 	}).Execute()
 
 	if err != nil {
-		LogError0("SaveProduct", "failed to upsert product", "facebook_id", facebookID, "error", err)
+		logging.LogError0("SaveProduct", "failed to upsert product", "facebook_id", facebookID, "error", err)
 		return result, err
 	}
 
 	return result, nil
 }
 
-func (db *PocketBaseDB) GetProductID(product MarketplaceItemDetails) (string, error) {
+func (db *PocketBaseDB) GetProductID(product model.MarketplaceItemDetails) (string, error) {
 
 	facebookID := toString(product.ID)
 
@@ -231,34 +234,34 @@ func (db *PocketBaseDB) GetProductID(product MarketplaceItemDetails) (string, er
 	}).One(&result)
 
 	if err != nil {
-		LogError0("SaveProduct", "failed to retrieve product id", "facebook_id", facebookID, "error", err)
+		logging.LogError0("SaveProduct", "failed to retrieve product id", "facebook_id", facebookID, "error", err)
 		return "", err
 	}
 
 	return result.ID, nil
 }
 
-func (db *PocketBaseDB) SaveProduct(product MarketplaceItemDetails) (string, error) {
+func (db *PocketBaseDB) SaveProduct(product model.MarketplaceItemDetails) (string, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
 	db.UpsertProduct(product)
 	productID, _ := db.GetProductID(product)
 
-	LogDebug0("SaveProduct", "product saved", "productID", productID, "facebook_id", product.ID)
+	logging.LogDebug0("SaveProduct", "product saved", "productID", productID, "facebook_id", product.ID)
 	return productID, nil
 }
 
-func (db *PocketBaseDB) SaveProducts(products []MarketplaceItemDetails) (int, error) {
+func (db *PocketBaseDB) SaveProducts(products []model.MarketplaceItemDetails) (int, error) {
 	count := 0
 	for _, product := range products {
 		if _, err := db.SaveProduct(product); err != nil {
-			LogError0("SaveProducts", "error saving product", "facebook_id", product.ID, "error", err)
+			logging.LogError0("SaveProducts", "error saving product", "facebook_id", product.ID, "error", err)
 			continue
 		}
 		count++
 	}
-	LogInfo0("SaveProducts", "batch save completed", "count", count, "total", len(products))
+	logging.LogInfo0("SaveProducts", "batch save completed", "count", count, "total", len(products))
 	return count, nil
 }
 
@@ -322,11 +325,11 @@ func toFloat(v any) float64 {
 	case string:
 		num, err := strconv.ParseFloat(v.(string), 64)
 		if err != nil {
-			LogFatal("cannot convert to float")
+			logging.LogFatal("cannot convert to float")
 		}
 		return num
 	default:
-		LogFatal("cannot convert to float")
+		logging.LogFatal("cannot convert to float")
 	}
 	return 0
 }
@@ -345,11 +348,11 @@ func toInt64(v any) int64 {
 	case string:
 		num, err := strconv.ParseInt(v.(string), 10, 64)
 		if err != nil {
-			LogFatal("cannot convert to int")
+			logging.LogFatal("cannot convert to int")
 		}
 		return num
 	default:
-		LogFatal("cannot convert to int")
+		logging.LogFatal("cannot convert to int")
 	}
 	return 0
 }
@@ -397,22 +400,22 @@ func ProcessDataInDB() (int64, error) {
 		return filesProcessedCounter, err
 	}
 
-	ForEachDetail(func(filePath string, jsonData map[string]any) bool {
+	filestore.ForEachDetail(func(filePath string, jsonData map[string]any) bool {
 
 		// description := GetKey(jsonData, "Description")
 		// if description == nil {
 		// 	return true
 		// }
 
-		product := ToMarketplaceItemDetails(jsonData)
+		product := model.ToMarketplaceItemDetails(jsonData)
 		productIdDb, err := dbInstance.SaveProduct(product)
 
 		if err != nil {
-			LogError0("ProcessDataInDB", "Error in dbInstance.SaveProduct", err)
+			logging.LogError0("ProcessDataInDB", "Error in dbInstance.SaveProduct", err)
 			return false
 		}
 
-		LogInfo0("ProcessDataInDB", "saved product in db", "productIdDb", productIdDb, "product.ID", product.ID)
+		logging.LogInfo0("ProcessDataInDB", "saved product in db", "productIdDb", productIdDb, "product.ID", product.ID)
 
 		filesProcessedCounter += 1
 
@@ -420,7 +423,7 @@ func ProcessDataInDB() (int64, error) {
 
 	}, true)
 
-	LogInfo0("ProcessDataInDB", "all files processed", "filesProcessedCounter", filesProcessedCounter)
+	logging.LogInfo0("ProcessDataInDB", "all files processed", "filesProcessedCounter", filesProcessedCounter)
 
 	return filesProcessedCounter, nil
 }

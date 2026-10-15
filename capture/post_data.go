@@ -1,15 +1,17 @@
-package main
+package capture
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
 
 	"github.com/mxschmitt/playwright-go"
+	"github.com/romayengineer/facebook_marketplace_extractor/core/orderedmap"
 )
 
-func GetPostDataMap(request playwright.Request) (OrderedMap, error) {
-	om := NewOrderedMap()
+func GetPostDataMap(request playwright.Request) (orderedmap.OrderedMap, error) {
+	om := orderedmap.NewOrderedMap()
 	data, err := request.PostData()
 	if err != nil {
 		return om, fmt.Errorf("error in req.PostData: %w\n", err)
@@ -32,7 +34,7 @@ func GetPostDataMap(request playwright.Request) (OrderedMap, error) {
 // post-data map. GetPostDataMap already unescaped the values, so we must re-encode
 // them here - previously the value was unescaped a second time, which corrupted the
 // payload (and it was never re-encoded as a form body).
-func GetPostData(postData OrderedMap) (string, error) {
+func GetPostData(postData orderedmap.OrderedMap) (string, error) {
 	params := url.Values{}
 	for _, key := range postData.Keys() {
 		value, exists := postData.Get(key)
@@ -42,4 +44,20 @@ func GetPostData(postData OrderedMap) (string, error) {
 		params.Set(key, value)
 	}
 	return params.Encode(), nil
+}
+
+// GetPostDataTargetId extracts variables.targetId from a parsed GraphQL post-data map.
+func GetPostDataTargetId(postData orderedmap.OrderedMap) string {
+	varsStr, ok := postData.Get("variables")
+	if !ok {
+		return ""
+	}
+
+	var vars map[string]any
+	if err := json.Unmarshal([]byte(varsStr), &vars); err != nil {
+		return ""
+	}
+
+	targetId, _ := vars["targetId"].(string)
+	return targetId
 }

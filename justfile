@@ -1,39 +1,40 @@
 set shell := ["bash", "-cu"]
 
 binary := "facebook-extractor"
-src := "src"
+cmd := "cmd/facebook-extractor"
+modules := "core marketplace browser store capture cmd/facebook-extractor"
 
 # List available recipes
 default:
     @just --list
 
-# Download and tidy module dependencies
+# Download and tidy dependencies for every module
 tidy:
-    go mod tidy
+    @for m in {{modules}}; do echo "tidy $m"; (cd "$m" && go mod tidy); done
 
-# Format Go source
+# Format Go source in every module
 fmt:
-    go fmt ./...
+    @for m in {{modules}}; do (cd "$m" && go fmt ./...); done
 
-# Run the Go vet static analyzer
+# Run the Go vet static analyzer in every module
 vet:
-    go vet ./...
+    @for m in {{modules}}; do (cd "$m" && go vet ./...); done
 
-# Run golangci-lint
+# Run golangci-lint in every module
 lint:
-    golangci-lint run ./...
+    @for m in {{modules}}; do (cd "$m" && golangci-lint run ./...); done
 
-# Run the test suite
+# Run the test suite in every module
 test:
-    go test ./...
+    @for m in {{modules}}; do (cd "$m" && go test ./...); done
 
-# Run the test suite with coverage
+# Run the test suite with coverage in every module
 cover:
-    go test -cover ./...
+    @for m in {{modules}}; do (cd "$m" && go test -cover ./...); done
 
 # Build the scraper binary
 build: tidy
-    go build -o {{binary}} ./{{src}}
+    go build -o {{binary}} ./{{cmd}}
 
 # Install the scraper binary into $GOBIN (defaults to $GOPATH/bin)
 install: build
@@ -46,39 +47,39 @@ install: build
 
 # Run the scraper with arbitrary flags, e.g. `just run -action=serve`
 run *args:
-    go run ./{{src}} {{args}}
+    go run ./{{cmd}} {{args}}
 
 # Search Marketplace for a keyword, e.g. `just search "macbook m1"`
 search keyword *args:
-    go run ./{{src}} -action=search -keywords="{{keyword}}" {{args}}
+    go run ./{{cmd}} -action=search -keywords="{{keyword}}" {{args}}
 
 # Pull descriptions for all details missing one (opens any listing to grab the PDP template)
 pull-description *args:
-    go run ./{{src}} -action=pull_description {{args}}
+    go run ./{{cmd}} -action=pull_description {{args}}
 
 # Remove duplicate PDP responses, keeping the newest per product id
 dedupe-pdp:
-    go run ./{{src}} -action=dedupe_pdp
+    go run ./{{cmd}} -action=dedupe_pdp
 
 # Visit each known listing to fetch details
 get-details:
-    go run ./{{src}} -action=get_details
+    go run ./{{cmd}} -action=get_details
 
 # Extract products from scraped responses into the database
 save:
-    go run ./{{src}} -action=save
+    go run ./{{cmd}} -action=save
 
 # Extract listings from raw responses into data/__Details (no descriptions)
 process-data:
-    go run ./{{src}} -action=process_data
+    go run ./{{cmd}} -action=process_data
 
 # Backfill missing URLs on existing detail files
 fill-empty:
-    go run ./{{src}} -action=fill_empty
+    go run ./{{cmd}} -action=fill_empty
 
 # Serve the PocketBase admin/web UI
 serve:
-    go run ./{{src}} -action=serve
+    go run ./{{cmd}} -action=serve
 
 # Archive the scraped data directory
 backup:

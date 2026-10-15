@@ -1,4 +1,4 @@
-package main
+package capture
 
 import (
 	"net/url"
@@ -7,10 +7,17 @@ import (
 	"sync"
 
 	"github.com/mxschmitt/playwright-go"
+	"github.com/romayengineer/facebook_marketplace_extractor/browser/driver"
+	"github.com/romayengineer/facebook_marketplace_extractor/core/codec"
+	"github.com/romayengineer/facebook_marketplace_extractor/core/jsonutil"
+	"github.com/romayengineer/facebook_marketplace_extractor/core/logging"
+	"github.com/romayengineer/facebook_marketplace_extractor/core/orderedmap"
+	"github.com/romayengineer/facebook_marketplace_extractor/marketplace/model"
+	"github.com/romayengineer/facebook_marketplace_extractor/store/filestore"
 )
 
 var mu sync.RWMutex
-var lastPostDataMap OrderedMap
+var lastPostDataMap orderedmap.OrderedMap
 var friendlyNamesToSkipSet = map[string]struct{}{
 	"CometActorGatewayHandlerQuery":                                              {},
 	"CometClassicHomeLeftRailContainerQuery":                                     {},
@@ -58,14 +65,13 @@ var friendlyNamesToSkipSet = map[string]struct{}{
 }
 
 type ContextEventHandlers struct {
-	ctx              ContextWrapperInterface
-	scrapper         *ScrapperImpl
+	ctx              driver.ContextWrapperInterface
 	extensionsToSkip map[string]struct{}
 }
 
 type ShouldProcess struct {
 	skip         bool
-	postDataMap  OrderedMap
+	postDataMap  orderedmap.OrderedMap
 	friendlyName string
 }
 
@@ -75,7 +81,7 @@ type PDPTemplate struct {
 	URL         string
 	Method      string
 	Headers     map[string]string
-	PostDataMap OrderedMap
+	PostDataMap orderedmap.OrderedMap
 }
 
 var (
@@ -88,7 +94,7 @@ func SetPDPTemplate(template PDPTemplate) {
 	defer pdpTemplateMu.Unlock()
 	if pdpTemplate == nil {
 		pdpTemplate = &template
-		LogInfo0("SetPDPTemplate", "captured PDP request template", "url", template.URL, "headerKeys", mapKeys(template.Headers), "postKeys", template.PostDataMap.Keys())
+		logging.LogInfo0("SetPDPTemplate", "captured PDP request template", "url", template.URL, "headerKeys", mapKeys(template.Headers), "postKeys", template.PostDataMap.Keys())
 	}
 }
 
@@ -125,20 +131,20 @@ func (ceh *ContextEventHandlers) OnRequest(request playwright.Request) {
 		}
 		newResponse, err := RunRequest(ceh.ctx, req, false)
 		if err != nil {
-			LogError0("OnRequest", "Error in RunRequest", "error", err)
+			logging.LogError0("OnRequest", "Error in RunRequest", "error", err)
 			return
 		}
 		body, err := newResponse.Body()
 		if err != nil {
-			LogError0("OnRequest", "Error newResponse.Body()", "error", err)
+			logging.LogError0("OnRequest", "Error newResponse.Body()", "error", err)
 		}
-		LogDebug0("OnRequest", " body original", "size", len(body))
-		body, err = DecompressBrotli(body)
+		logging.LogDebug0("OnRequest", " body original", "size", len(body))
+		body, err = codec.DecompressBrotli(body)
 		if err != nil {
-			LogError0("OnRequest", "Error DecompressBrotli()", "error", err)
+			logging.LogError0("OnRequest", "Error DecompressBrotli()", "error", err)
 			return
 		}
-		LogDebug0("OnRequest", " body decompressed", "size", len(body))
+		logging.LogDebug0("OnRequest", " body decompressed", "size", len(body))
 	}(request)
 }
 
@@ -151,12 +157,12 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 		}
 		body, err := resp.Body()
 		if err != nil {
-			LogError0("OnResponse", "Error resp.Body()", "error", err)
+			logging.LogError0("OnResponse", "Error resp.Body()", "error", err)
 			return
 		}
-		jsonDatas, err := ExtractJsonFromBody(body)
+		jsonDatas, err := jsonutil.ExtractJsonFromBody(body)
 		if err != nil {
-			LogError0("OnResponse", "Error ExtractJsonFromBody()", "error", err)
+			logging.LogError0("OnResponse", "Error ExtractJsonFromBody()", "error", err)
 			return
 		}
 
@@ -168,7 +174,7 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 		if shouldSkipRequest.friendlyName == "MarketplacePDPContainerQuery" {
 			rateLimited := false
 			for _, jsonData := range jsonDatas {
-				if IsErrorRateLimit(jsonData) {
+				if model.IsErrorRateLimit(jsonData) {
 					rateLimited = true
 					break
 				}
@@ -177,16 +183,16 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 			if rateLimited {
 				// Do not persist a rate-limit error as if it were a listing response:
 				// it has no target.id and would pollute the PDP dir.
-				LogWarn0("OnResponse", "PDP response was rate limited, not saving")
+				logging.LogWarn0("OnResponse", "PDP response was rate limited, not saving")
 			} else {
 				// Write idempotently by targetId so the click response and the replayed
 				// response for the same product collapse into one file.
 				if targetId := GetPostDataTargetId(shouldSkipRequest.postDataMap); targetId != "" {
-					if _, err := WriteJsonResponseById(jsonDatas, shouldSkipRequest.friendlyName, targetId); err != nil {
-						LogError0("OnResponse", "Error WriteJsonResponseById()", "error", err)
+					if _, err := filestore.WriteJsonResponseById(jsonDatas, shouldSkipRequest.friendlyName, targetId); err != nil {
+						logging.LogError0("OnResponse", "Error WriteJsonResponseById()", "error", err)
 					}
-				} else if _, err := WriteJsonResponse(jsonDatas, shouldSkipRequest.friendlyName); err != nil {
-					LogError0("OnResponse", "Error WriteJsonResponse()", "error", err)
+				} else if _, err := filestore.WriteJsonResponse(jsonDatas, shouldSkipRequest.friendlyName); err != nil {
+					logging.LogError0("OnResponse", "Error WriteJsonResponse()", "error", err)
 				}
 			}
 
@@ -201,8 +207,8 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 			return
 		}
 
-		if _, err = WriteJsonResponse(jsonDatas, shouldSkipRequest.friendlyName); err != nil {
-			LogError0("OnResponse", "Error WriteJsonResponse()", "error", err)
+		if _, err = filestore.WriteJsonResponse(jsonDatas, shouldSkipRequest.friendlyName); err != nil {
+			logging.LogError0("OnResponse", "Error WriteJsonResponse()", "error", err)
 		}
 	}(response)
 }
@@ -216,16 +222,16 @@ func GetExtension(path string) string {
 func ParseURL(urlString string) {
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
-		LogError0("ParseURL", "Error parsing URL", "error", err)
+		logging.LogError0("ParseURL", "Error parsing URL", "error", err)
 		return
 	}
 
-	LogDebug0("ParseURL", "URL details", "scheme", parsedURL.Scheme, "host", parsedURL.Host, "port", parsedURL.Port(), "path", parsedURL.Path)
+	logging.LogDebug0("ParseURL", "URL details", "scheme", parsedURL.Scheme, "host", parsedURL.Host, "port", parsedURL.Port(), "path", parsedURL.Path)
 
 	if parsedURL.RawQuery != "" {
 		query := parsedURL.Query()
 		for key, values := range query {
-			LogDebug0("ParseURL", "Query param", "key", key, "values", values)
+			logging.LogDebug0("ParseURL", "Query param", "key", key, "values", values)
 		}
 	}
 }
@@ -240,7 +246,7 @@ func (ceh *ContextEventHandlers) Route(r playwright.Route) {
 	urlString := request.URL()
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
-		LogError0("Route", "Error parsing URL", "error", err)
+		logging.LogError0("Route", "Error parsing URL", "error", err)
 		r.Continue()
 		return
 	}
@@ -253,11 +259,10 @@ func (ceh *ContextEventHandlers) Route(r playwright.Route) {
 	r.Continue()
 }
 
-func SetContextEventHandlers(ctx ContextWrapperInterface, s *ScrapperImpl) {
+func SetContextEventHandlers(ctx driver.ContextWrapperInterface, blockImages bool) {
 
 	contextEventHandlers := ContextEventHandlers{
-		ctx:      ctx,
-		scrapper: s,
+		ctx: ctx,
 		extensionsToSkip: map[string]struct{}{
 			".jpg":  {},
 			".webp": {},
@@ -267,7 +272,7 @@ func SetContextEventHandlers(ctx ContextWrapperInterface, s *ScrapperImpl) {
 		},
 	}
 
-	if s.BlockImages {
+	if blockImages {
 		// if contextEventHandlers.Route is enabled then the response
 		// from graphqh is invalid because there are missing headers
 		// but it does not matter on search

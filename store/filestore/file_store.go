@@ -1,4 +1,4 @@
-package main
+package filestore
 
 import (
 	"encoding/json"
@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"sync"
+
+	"github.com/romayengineer/facebook_marketplace_extractor/marketplace/model"
 )
 
 const DataDir = "data"
@@ -25,10 +27,10 @@ type FileStore[T any] interface {
 	Save(data T) (*T, error)
 }
 
-func NewProductFileStore(productId string) FileStore[MarketplaceItemDetails] {
+func NewProductFileStore(productId string) FileStore[model.MarketplaceItemDetails] {
 	fileName := fmt.Sprintf("detail_%v.json", productId)
 	fileDir := fmt.Sprintf("%v/__Details", DataDir)
-	return &FileStoreImpl[MarketplaceItemDetails]{id: productId, fileName: fileName, fileDir: fileDir}
+	return &FileStoreImpl[model.MarketplaceItemDetails]{id: productId, fileName: fileName, fileDir: fileDir}
 }
 
 func (pfs *FileStoreImpl[T]) SetDir(dir string) {

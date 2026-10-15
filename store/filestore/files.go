@@ -1,4 +1,4 @@
-package main
+package filestore
 
 import (
 	"encoding/json"
@@ -11,9 +11,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/romayengineer/facebook_marketplace_extractor/core/jsonutil"
+	"github.com/romayengineer/facebook_marketplace_extractor/core/logging"
+	"github.com/romayengineer/facebook_marketplace_extractor/marketplace/model"
 )
 
-func SaveProductsIfAny(products []MarketplaceItemDetails) bool {
+func SaveProductsIfAny(products []model.MarketplaceItemDetails) bool {
 	if len(products) > 0 {
 		for _, product := range products {
 			store := NewProductFileStore(product.ID.(string))
@@ -31,7 +35,7 @@ func ProcessData(StartTimeToProcess int64) (int64, error) {
 	var filesDeletedCounter int
 	var gotRateLimit bool
 
-	productExtractors := NewProductExtractors()
+	productExtractors := model.NewProductExtractors()
 	filesReadCounter := ForEachResponse(func(filePath string, jsonData map[string]any) bool {
 		lastFilePath = filePath
 
@@ -46,20 +50,17 @@ func ProcessData(StartTimeToProcess int64) (int64, error) {
 
 		filesProcessedCounter += 1
 
-		for _, extractor := range productExtractors.extractors {
-			product, _ := extractor.extractor(jsonData)
-			if hasAny := SaveProductsIfAny(product); hasAny == true {
-				return true
-			}
+		if hasAny := SaveProductsIfAny(productExtractors.ExtractAll(jsonData)); hasAny == true {
+			return true
 		}
 
-		if IsErrorRateLimit(jsonData) {
+		if model.IsErrorRateLimit(jsonData) {
 			gotRateLimit = true
 		}
 
-		LogDebug0("ProcessData", "no product found, deleting file", "path", filePath)
+		logging.LogDebug0("ProcessData", "no product found, deleting file", "path", filePath)
 		if err := os.Remove(filePath); err != nil {
-			LogError0("ProcessData", "error deleting file", "path", filePath, "error", err)
+			logging.LogError0("ProcessData", "error deleting file", "path", filePath, "error", err)
 		}
 
 		filesDeletedCounter += 1
@@ -70,10 +71,10 @@ func ProcessData(StartTimeToProcess int64) (int64, error) {
 
 	lastTimestamp, _ = GetTimestamp(lastFilePath)
 
-	LogInfo0("ProcessData", "all files processed", "lastTimestamp", lastTimestamp, "filesProcessedCounter", filesProcessedCounter, "filesReadCounter", filesReadCounter, "filesDeletedCounter", filesDeletedCounter)
+	logging.LogInfo0("ProcessData", "all files processed", "lastTimestamp", lastTimestamp, "filesProcessedCounter", filesProcessedCounter, "filesReadCounter", filesReadCounter, "filesDeletedCounter", filesDeletedCounter)
 
 	if gotRateLimit {
-		LogWarn0("ProcessData", "got rate limit")
+		logging.LogWarn0("ProcessData", "got rate limit")
 	}
 
 	return lastTimestamp, nil
@@ -82,67 +83,16 @@ func ProcessData(StartTimeToProcess int64) (int64, error) {
 func GetTimestamp(filePath string) (int64, error) {
 	lastFilePathParts := strings.SplitN(filepath.Base(filePath), "_", 3)
 	if len(lastFilePathParts) < 2 {
-		LogWarn0("GetTimestamp", "filePath does not have time", "filePath", filePath)
+		logging.LogWarn0("GetTimestamp", "filePath does not have time", "filePath", filePath)
 		return 0, fmt.Errorf("filePath does not have time")
 	}
 	lastTimestampStr := lastFilePathParts[1]
 	lastTimestamp, err := strconv.ParseInt(lastTimestampStr, 10, 64)
 	if err != nil {
-		LogError0("GetTimestamp", "cound not get timestamp", "filePath", filePath)
+		logging.LogError0("GetTimestamp", "cound not get timestamp", "filePath", filePath)
 		return 0, fmt.Errorf("cound not get timestamp %s\n", filePath)
 	}
 	return lastTimestamp, nil
-}
-
-func GetKey(data any, path string) any {
-	keys := strings.Split(path, ".")
-
-	current := data
-	for _, key := range keys {
-		dataMap, ok := current.(map[string]any)
-		if !ok {
-			// err := fmt.Errorf("cannot access key %q: not a map", key)
-			// fmt.Println(err)
-			return nil
-		}
-
-		value, ok := dataMap[key]
-		if !ok {
-			// err := fmt.Errorf("key %q not found", key)
-			// fmt.Println(err)
-			return nil
-		}
-		current = value
-	}
-
-	return current
-}
-
-func ExtractJsonFromBody(body []byte) ([]any, error) {
-	jsonDatas := []any{}
-	// make sure the first byte is { (open curly brakets)
-	if len(body) == 0 || body[0] != '{' {
-		return jsonDatas, nil
-	}
-
-	var jsonData any
-	if err := json.Unmarshal(body, &jsonData); err == nil {
-		jsonDatas = append(jsonDatas, jsonData)
-		return jsonDatas, nil
-	}
-
-	var lineData any
-	for line := range strings.SplitSeq(string(body), "\n") {
-		if len(line) == 0 || line[0] != '{' {
-			continue
-		}
-		lineByte := []byte(line)
-		if err := json.Unmarshal(lineByte, &lineData); err == nil {
-			jsonDatas = append(jsonDatas, lineData)
-		}
-	}
-
-	return jsonDatas, nil
 }
 
 func WriteJsonResponse(jsonDatas []any, friendly_name string) (int, error) {
@@ -246,7 +196,7 @@ func GetFilePaths(prefix string, sortit bool) []string {
 	})
 
 	if err != nil {
-		LogError0("GetFilePaths", "Error reading data directory", "error", err)
+		logging.LogError0("GetFilePaths", "Error reading data directory", "error", err)
 		os.Exit(1)
 	}
 
@@ -276,13 +226,13 @@ func ForEachJsonInData(prefix string, process func(filePath string, jsonData map
 
 		body, err := os.ReadFile(filePath)
 		if err != nil {
-			LogError0("ForEachJsonInData", "Error reading file", "path", filePath, "error", err)
+			logging.LogError0("ForEachJsonInData", "Error reading file", "path", filePath, "error", err)
 			continue
 		}
 
 		var jsonData map[string]any
 		if err := json.Unmarshal(body, &jsonData); err != nil {
-			LogError0("ForEachJsonInData", "Error parsing JSON", "path", filePath, "error", err)
+			logging.LogError0("ForEachJsonInData", "Error parsing JSON", "path", filePath, "error", err)
 			continue
 		}
 
@@ -335,7 +285,7 @@ func LoadPDPProductIds() map[string]struct{} {
 			continue
 		}
 
-		id := GetKey(jsonData, "data.viewer.marketplace_product_details_page.target.id")
+		id := jsonutil.GetKey(jsonData, "data.viewer.marketplace_product_details_page.target.id")
 		if idStr, ok := id.(string); ok {
 			ids[idStr] = struct{}{}
 		}
@@ -350,7 +300,7 @@ func DedupePDP() {
 	dir := filepath.Join(DataDir, pdpDirName)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		LogError0("DedupePDP", "cannot read PDP dir", "dir", dir, "error", err)
+		logging.LogError0("DedupePDP", "cannot read PDP dir", "dir", dir, "error", err)
 		return
 	}
 
@@ -368,7 +318,7 @@ func DedupePDP() {
 		if err := json.Unmarshal(body, &jsonData); err != nil {
 			continue
 		}
-		id := GetKey(jsonData, "data.viewer.marketplace_product_details_page.target.id")
+		id := jsonutil.GetKey(jsonData, "data.viewer.marketplace_product_details_page.target.id")
 		idStr, ok := id.(string)
 		if !ok {
 			continue
@@ -393,23 +343,23 @@ func DedupePDP() {
 			if err := os.Remove(path); err == nil {
 				deleted++
 			} else {
-				LogWarn0("DedupePDP", "could not remove", "path", path, "error", err)
+				logging.LogWarn0("DedupePDP", "could not remove", "path", path, "error", err)
 			}
 		}
 	}
 
-	LogInfo0("DedupePDP", "finished", "uniqueIds", len(byID), "deleted", deleted)
+	logging.LogInfo0("DedupePDP", "finished", "uniqueIds", len(byID), "deleted", deleted)
 }
 
 func FillEmpty() {
 
 	ForEachDetail(func(filePath string, jsonData map[string]any) bool {
-		productUrl := GetKey(jsonData, "URL")
+		productUrl := jsonutil.GetKey(jsonData, "URL")
 		if productUrl != nil {
 			return true
 		}
 
-		productId := GetKey(jsonData, "ID")
+		productId := jsonutil.GetKey(jsonData, "ID")
 		if productId == nil {
 			return true
 		}
@@ -420,12 +370,12 @@ func FillEmpty() {
 			return true
 		}
 
-		productUrl = ProductIDTolink(productIdStr)
+		productUrl = model.ProductIDTolink(productIdStr)
 
 		jsonData["URL"] = productUrl
 
 		store := NewProductFileStore(productIdStr)
-		store.Save(ToMarketplaceItemDetails(jsonData))
+		store.Save(model.ToMarketplaceItemDetails(jsonData))
 
 		return true
 	}, false)

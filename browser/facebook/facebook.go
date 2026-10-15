@@ -1,20 +1,29 @@
-package main
+package facebook
 
 import (
 	"bufio"
 	"fmt"
 	"os"
+
+	"github.com/romayengineer/facebook_marketplace_extractor/browser/driver"
+	"github.com/romayengineer/facebook_marketplace_extractor/browser/pages"
+	"github.com/romayengineer/facebook_marketplace_extractor/browser/session"
 )
 
+type UserCredentials struct {
+	Username string
+	Password string
+}
+
 type FacebookScrapperInterface interface {
-	Login(userCredentials UserCredentials) (ContextWrapperInterface, error)
+	Login(userCredentials UserCredentials) (driver.ContextWrapperInterface, error)
 }
 
 type FacebookScrapper struct {
-	Browser BrowserWrapperInterface
+	Browser driver.BrowserWrapperInterface
 }
 
-func NewFacebookScrapper(browser BrowserWrapperInterface) FacebookScrapperInterface {
+func NewFacebookScrapper(browser driver.BrowserWrapperInterface) FacebookScrapperInterface {
 	facebookScrapper := FacebookScrapper{
 		Browser: browser,
 	}
@@ -27,13 +36,13 @@ func WaitingForInput() {
 	scanner.Scan()
 }
 
-func EnsureLoggedIn(ctx ContextWrapperInterface) error {
+func EnsureLoggedIn(ctx driver.ContextWrapperInterface) error {
 	ctxPages, err := ctx.Pages()
 	if err != nil {
 		return fmt.Errorf("error Pages: %v", err)
 	}
 
-	var page PageWrapperInterface
+	var page driver.PageWrapperInterface
 	if len(ctxPages) > 0 {
 		page = ctxPages[0]
 	} else {
@@ -47,7 +56,7 @@ func EnsureLoggedIn(ctx ContextWrapperInterface) error {
 		return fmt.Errorf("error Goto: %v", err)
 	}
 
-	pages, _ := NewPages(page)
+	pages, _ := pages.NewPages(page)
 	fmt.Println("Waiting for Facebook session...")
 	if !pages.WaitForHomePage(600) {
 		urlAny, _ := page.Evaluate("location.href")
@@ -58,9 +67,9 @@ func EnsureLoggedIn(ctx ContextWrapperInterface) error {
 	return nil
 }
 
-func (fs *FacebookScrapper) Login(userCredentials UserCredentials) (ContextWrapperInterface, error) {
+func (fs *FacebookScrapper) Login(userCredentials UserCredentials) (driver.ContextWrapperInterface, error) {
 
-	savedSession := LoadSession()
+	savedSession := session.LoadSession()
 	if savedSession != nil {
 		fmt.Println("Loading existing session...")
 		ctx, err := fs.Browser.NewContext(savedSession, false)
@@ -70,7 +79,7 @@ func (fs *FacebookScrapper) Login(userCredentials UserCredentials) (ContextWrapp
 				// Verify session is still valid
 				err = page.Goto("https://www.facebook.com")
 				if err == nil {
-					pages, _ := NewPages(page)
+					pages, _ := pages.NewPages(page)
 					if pages.IsInHomePage() {
 						fmt.Println("Session restored successfully")
 						page.Close()
@@ -82,7 +91,7 @@ func (fs *FacebookScrapper) Login(userCredentials UserCredentials) (ContextWrapp
 			ctx.Close()
 		}
 		fmt.Println("session expired, deletting")
-		DeleteSession()
+		session.DeleteSession()
 	}
 
 	fmt.Println("creating new session")
@@ -125,7 +134,7 @@ func (fs *FacebookScrapper) Login(userCredentials UserCredentials) (ContextWrapp
 		return nil, fmt.Errorf("error clicking Log In button: %v", err)
 	}
 
-	pages, _ := NewPages(page)
+	pages, _ := pages.NewPages(page)
 	fmt.Println("Waiting for login to complete (solve any captcha in the browser)...")
 	if !pages.WaitForHomePage(600) {
 		return nil, fmt.Errorf("not in home page")
@@ -137,7 +146,7 @@ func (fs *FacebookScrapper) Login(userCredentials UserCredentials) (ContextWrapp
 		return nil, fmt.Errorf("error: could not get session: %v\n", err)
 	}
 
-	err = SaveSession(storageState)
+	err = session.SaveSession(storageState)
 	if err != nil {
 		return nil, fmt.Errorf("error: could not save session: %v\n", err)
 	}
