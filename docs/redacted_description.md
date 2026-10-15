@@ -102,5 +102,27 @@ creates duplicates. If duplicates ever appear, `just dedupe-pdp` removes them
 - Pulling stops (without failing the run) on the rate-limit error, so a very large
   batch may need more than one run. Use `-delay-ms` to slow it down if needed.
 
+## Facebook throttling (`1675004`)
+
+Facebook sometimes answers the PDP GraphQL request with HTTP 200 and
+`{"errors":[{"message":"Rate limit exceeded","severity":"CRITICAL","code":1675004}]}`.
+While this is active, Facebook also serves its error page ("This page isn't available
+right now") for listing pages, so no PDP request is issued at all.
+
+This is an account/session-level throttle (not something the browser can bypass):
+
+- Requests are **paced** by default (`-delay-ms`, default 1000 ms) to avoid tripping it.
+- On a rate-limited reply the run **waits and retries** with exponential backoff
+  (`-rate-limit-wait`, default 300 s; `-max-rate-limit-wait`, default 1800 s) instead
+  of aborting, so it self-recovers from short throttles.
+- If the limit does not clear within the budget the run stops cleanly (exit 0) and all
+  progress is saved; re-run later to continue. Do not hammer it — according to Meta's
+  behaviour, repeated retries can extend the block.
+- Rate-limited responses are not written to disk, and if one listing's page errors
+  during template capture the tool tries the next listing.
+
+If a run keeps yielding `pulled=0`, the account is under a longer block: wait (minutes
+to hours) before retrying, and avoid running back-to-back.
+
 
 

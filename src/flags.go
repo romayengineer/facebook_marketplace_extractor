@@ -8,11 +8,13 @@ import (
 )
 
 type Flags struct {
-	action        string
-	keywords      string
-	logLevel      string
-	scrollSeconds int
-	delayMs       int
+	action                  string
+	keywords                string
+	logLevel                string
+	scrollSeconds           int
+	delayMs                 int
+	rateLimitWaitSeconds    int
+	maxRateLimitWaitSeconds int
 }
 
 func NewFlags() Flags {
@@ -20,7 +22,9 @@ func NewFlags() Flags {
 	keywords := flag.String("keywords", "", "Keywords to search for (required when -action is search)")
 	logLevel := flag.String("log-level", "debug", "Log level: debug, info, warn, error")
 	scrollSeconds := flag.Int("scroll-seconds", 60, "Max seconds to scroll search results before opening a product")
-	delayMs := flag.Int("delay-ms", 0, "Delay in milliseconds between replayed description requests (action=pull_description)")
+	delayMs := flag.Int("delay-ms", 1000, "Delay in milliseconds between replayed description requests (action=pull_description)")
+	rateLimitWaitSeconds := flag.Int("rate-limit-wait", 300, "Seconds to wait before retrying a rate-limited request (action=pull_description; 0 disables waiting)")
+	maxRateLimitWaitSeconds := flag.Int("max-rate-limit-wait", 1800, "Max total seconds to keep waiting for the rate limit to clear within a run (action=pull_description)")
 	flag.Parse()
 
 	if strings.ToLower(*action) == "search" && *keywords == "" {
@@ -46,10 +50,12 @@ func NewFlags() Flags {
 	})))
 
 	return Flags{
-		action:        *action,
-		keywords:      *keywords,
-		logLevel:      *logLevel,
-		scrollSeconds: *scrollSeconds,
-		delayMs:       *delayMs,
+		action:                  *action,
+		keywords:                *keywords,
+		logLevel:                *logLevel,
+		scrollSeconds:           *scrollSeconds,
+		delayMs:                 *delayMs,
+		rateLimitWaitSeconds:    *rateLimitWaitSeconds,
+		maxRateLimitWaitSeconds: *maxRateLimitWaitSeconds,
 	}
 }

@@ -20,6 +20,7 @@ type PagesInterface interface {
 	MarketpaceSearch(searchKeyworkds string, scrollDown bool, scrollSeconds int) error
 	MarketplaceHome() error
 	OpenFirstProduct() bool
+	OpenProduct(index int) bool
 	GoToProduct(id string) error
 }
 
@@ -132,6 +133,22 @@ func (pl *Pages) OpenFirstProduct() bool {
 		return pl.openFirstProductByHref()
 	}
 	LogInfo0("OpenFirstProduct", "clicked first product link")
+	return true
+}
+
+// OpenProduct clicks the listing link at the given index. Used when capturing the PDP
+// template: if one listing fails to load (e.g. Facebook serves its error page), we try
+// the next one.
+func (pl *Pages) OpenProduct(index int) bool {
+	if index == 0 {
+		return pl.OpenFirstProduct()
+	}
+	link := pl.Page.Locator(`a[href*="/marketplace/item/"]`).Nth(index)
+	if err := link.Click(); err != nil {
+		LogWarn0("OpenProduct", "click failed", "index", index, "error", err)
+		return false
+	}
+	LogInfo0("OpenProduct", "clicked product link", "index", index)
 	return true
 }
 

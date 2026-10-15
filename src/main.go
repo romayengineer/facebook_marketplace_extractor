@@ -2,17 +2,20 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"time"
 )
 
 type ScrapperImpl struct {
-	BlockImages        bool
-	ScrollDownOnSearch bool
-	ScrollSeconds      int
-	DelayMs            int
-	SearchKewords      string
-	StartTimeToProcess int64
+	BlockImages             bool
+	ScrollDownOnSearch      bool
+	ScrollSeconds           int
+	DelayMs                 int
+	RateLimitWaitSeconds    int
+	MaxRateLimitWaitSeconds int
+	SearchKewords           string
+	StartTimeToProcess      int64
 }
 
 func NewScrapper(flags Flags) ScrapperImpl {
@@ -29,12 +32,14 @@ func NewScrapper(flags Flags) ScrapperImpl {
 		ScrollDownOnSearch = false
 	}
 	return ScrapperImpl{
-		BlockImages:        blockImages,
-		ScrollDownOnSearch: ScrollDownOnSearch,
-		ScrollSeconds:      flags.scrollSeconds,
-		DelayMs:            flags.delayMs,
-		StartTimeToProcess: 0,
-		SearchKewords:      flags.keywords,
+		BlockImages:             blockImages,
+		ScrollDownOnSearch:      ScrollDownOnSearch,
+		ScrollSeconds:           flags.scrollSeconds,
+		DelayMs:                 flags.delayMs,
+		RateLimitWaitSeconds:    flags.rateLimitWaitSeconds,
+		MaxRateLimitWaitSeconds: flags.maxRateLimitWaitSeconds,
+		StartTimeToProcess:      0,
+		SearchKewords:           flags.keywords,
 	}
 }
 
@@ -128,14 +133,9 @@ func (s *ScrapperImpl) PullDescriptions() {
 	}
 
 	fmt.Println("Opening a listing to capture the PDP request template...")
-	if !pages.OpenFirstProduct() {
-		LogError0("PullDescriptions", "could not open a listing to capture the PDP template")
-		return
-	}
-
-	template := waitForPDPTemplate(30)
+	template := s.capturePDPTemplate(pages, page)
 	if template == nil {
-		LogError0("PullDescriptions", "did not capture the PDP request template in time")
+		LogError0("PullDescriptions", "did not capture the PDP request template", "hint", "Facebook is likely throttling this session (error 1675004); wait and retry later")
 		return
 	}
 
@@ -144,6 +144,7 @@ func (s *ScrapperImpl) PullDescriptions() {
 
 	pulled := 0
 	skipped := 0
+	waitedSeconds := 0
 	rateLimited := false
 	ForEachDetail(func(filePath string, jsonData map[string]any) bool {
 		description := GetKey(jsonData, "Description")
@@ -166,13 +167,14 @@ func (s *ScrapperImpl) PullDescriptions() {
 			return true
 		}
 
-		gotRateLimit, err := FetchPDP(page, template, productIdStr)
+		gotRateLimit, waited, err := s.fetchPDPWithBackoff(page, template, productIdStr)
+		waitedSeconds += waited
 		if err != nil {
 			LogError0("PullDescriptions", "Error fetching PDP", "productId", productIdStr, "error", err)
 			return true
 		}
 		if gotRateLimit {
-			LogWarn0("PullDescriptions", "rate limit reached, stopping", "pulled", pulled)
+			LogWarn0("PullDescriptions", "rate limit did not clear, stopping", "pulled", pulled, "waitedSec", waitedSeconds)
 			rateLimited = true
 			return false
 		}
@@ -194,6 +196,76 @@ func (s *ScrapperImpl) PullDescriptions() {
 	}
 
 	ProcessData(0)
+}
+
+// fetchPDPWithBackoff fetches a PDP and, if Facebook rate-limits the request (error
+// code 1675004), waits and retries the same product until the limit clears or the
+// per-run waiting budget (MaxRateLimitWaitSeconds) is exhausted. This makes a
+// transient throttle pause the run instead of aborting it, while still saving all
+// progress if the limit does not clear. Returns (rateLimited, waitedSeconds, err).
+func (s *ScrapperImpl) fetchPDPWithBackoff(page PageWrapperInterface, template *PDPTemplate, productId string) (bool, int, error) {
+	waited := 0
+	wait := s.RateLimitWaitSeconds
+	for {
+		gotRateLimit, err := FetchPDP(page, template, productId)
+		if err != nil {
+			return false, waited, err
+		}
+		if !gotRateLimit {
+			return false, waited, nil
+		}
+
+		if s.RateLimitWaitSeconds <= 0 {
+			return true, waited, nil
+		}
+		if waited+wait > s.MaxRateLimitWaitSeconds {
+			return true, waited, nil
+		}
+
+		// Exponential backoff (capped) so frequent retries do not keep the throttle
+		// alive. A little jitter avoids retrying in lockstep.
+		jitter := rand.Intn(wait/4 + 1)
+		sleepFor := wait + jitter
+		LogWarn0("PullDescriptions", "rate limited, waiting before retry", "productId", productId, "waitSec", sleepFor, "waitedSec", waited)
+		time.Sleep(time.Duration(sleepFor) * time.Second)
+		waited += sleepFor
+
+		wait *= 2
+		if wait > 600 {
+			wait = 600
+		}
+	}
+}
+
+// capturePDPTemplate clicks listings until the browser issues a
+// MarketplacePDPContainerQuery, which provides the reusable request template. If one
+// listing does not produce the request (e.g. Facebook throttles it and serves the
+// error page), it returns to the Marketplace home and tries the next listing.
+func (s *ScrapperImpl) capturePDPTemplate(pages PagesInterface, page PageWrapperInterface) *PDPTemplate {
+	const maxAttempts = 6
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		if attempt > 0 {
+			if err := pages.MarketplaceHome(); err != nil {
+				LogWarn0("PullDescriptions", "could not return to marketplace", "attempt", attempt, "error", err)
+			}
+			time.Sleep(2 * time.Second)
+		}
+
+		if !pages.OpenProduct(attempt) {
+			LogWarn0("PullDescriptions", "could not open a listing for the template", "attempt", attempt)
+			continue
+		}
+
+		if template := waitForPDPTemplate(15); template != nil {
+			return template
+		}
+
+		if throttled, _ := page.Evaluate(`document.body.innerText.includes("This page isn't available right now")`); throttled == true {
+			LogWarn0("PullDescriptions", "Facebook is serving its error page for this session (likely throttled, code 1675004)")
+		}
+		LogWarn0("PullDescriptions", "no PDP request captured, trying another listing", "attempt", attempt)
+	}
+	return nil
 }
 
 func waitForPDPTemplate(timeoutSeconds int) *PDPTemplate {
