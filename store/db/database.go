@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -32,12 +33,30 @@ var dbOnce sync.Once
 func GetPocketBaseDB() (*PocketBaseDB, error) {
 	var err error
 	dbOnce.Do(func() {
-		pb := pocketbase.New()
+		pb := pocketbase.NewWithConfig(pocketbase.Config{
+			DefaultDataDir: dataDir(),
+		})
 		dbInstance = &PocketBaseDB{
 			app: pb,
 		}
 	})
 	return dbInstance, err
+}
+
+// dataDir resolves the PocketBase data directory. PocketBase defaults it to a
+// path next to the executable, which under `go run` is the Go build cache — so
+// `just save`/`just serve` would scatter the database outside the project.
+// Anchoring it to the working directory (the repo root under just) keeps pb_data
+// where .gitignore expects it. Override with FME_PB_DATA_DIR.
+func dataDir() string {
+	if dir := os.Getenv("FME_PB_DATA_DIR"); dir != "" {
+		return dir
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		return "pb_data"
+	}
+	return filepath.Join(wd, "pb_data")
 }
 
 func (db *PocketBaseDB) Start() error {
