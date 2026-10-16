@@ -9,9 +9,13 @@ import (
 	"sync"
 
 	"github.com/mozillazg/go-unidecode"
+	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
+	"github.com/pocketbase/pocketbase/migrations"
+	"github.com/pocketbase/pocketbase/migrations/logs"
 	"github.com/pocketbase/pocketbase/models"
 	"github.com/pocketbase/pocketbase/models/schema"
+	"github.com/pocketbase/pocketbase/tools/migrate"
 	"github.com/romayengineer/facebook_marketplace_extractor/core/logging"
 	"github.com/romayengineer/facebook_marketplace_extractor/marketplace/model"
 	"github.com/romayengineer/facebook_marketplace_extractor/store/filestore"
@@ -47,6 +51,15 @@ func (db *PocketBaseDB) Start() error {
 		return fmt.Errorf("failed to bootstrap pocketbase: %v", err)
 	}
 
+	// Bootstrap only opens the databases; the built-in migrations (which create
+	// `_collections` and friends) are applied by the serve command, not by Bootstrap.
+	// Running them here makes `just save` work on a fresh clone without needing
+	// `just serve` first. Runner.Up is idempotent, so this is safe on every start.
+	if err := db.runMigrations(); err != nil {
+		logging.LogError0("Start", "migrations failed", "error", err)
+		return fmt.Errorf("failed to run pocketbase migrations: %v", err)
+	}
+
 	// Ensure products collection exists
 	if err := db.ensureProductsCollection(); err != nil {
 		logging.LogError0("Start", "failed to ensure products collection", "error", err)
@@ -54,6 +67,30 @@ func (db *PocketBaseDB) Start() error {
 	}
 
 	logging.LogInfo0("Start", "database initialized successfully")
+	return nil
+}
+
+// runMigrations applies PocketBase's app and logs migrations, mirroring what
+// apis.Serve does before starting the HTTP server.
+func (db *PocketBaseDB) runMigrations() error {
+	connections := []struct {
+		db   *dbx.DB
+		list migrate.MigrationsList
+	}{
+		{db.app.DB(), migrations.AppMigrations},
+		{db.app.LogsDB(), logs.LogsMigrations},
+	}
+
+	for _, c := range connections {
+		runner, err := migrate.NewRunner(c.db, c.list)
+		if err != nil {
+			return err
+		}
+		if _, err := runner.Up(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
