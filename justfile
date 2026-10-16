@@ -96,6 +96,11 @@ backup:
     set -euo pipefail
     time 7z a "../data_$(date +%s).zip" data/
 
+# Sync the scraped data/ dir with a remote host (push by default; merge, no delete).
+# See `just sync --help` for flags (--pull, --delete, --dry-run, --save, --host, --dir).
+sync *args:
+    @./scripts/sync.sh {{args}}
+
 # Create the Python virtualenv for the ml pipeline
 ml-venv:
     python3 -m venv ml/.venv

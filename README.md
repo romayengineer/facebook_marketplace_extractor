@@ -70,10 +70,31 @@ you to log in first. Without a profile it also accepts `FME_USERNAME`/`FME_PASSW
 | `just dedupe-pdp` | Remove duplicate PDP responses (keeps newest per id) |
 | `just serve` | PocketBase admin/web UI on http://127.0.0.1:8090/_/ |
 | `just save` | Import `data/__Details` into PocketBase (creates the DB if needed) |
+| `just sync` | Push `data/` to a remote host (merge; see below) |
 | `just build` / `just test` / `just lint` / `just vet` | Build and quality gates |
 | `just ml-install` / `just ml-train` | Python price-model pipeline |
 
 `just search` pauses on `waiting for input:` — press Enter to finish.
+
+## Syncing data to a server
+
+`just sync` rsyncs the scraped `data/` directory to a remote machine that has the
+same repo/branch cloned. It **merges by default** — files that exist only on the
+remote are kept — so it is safe to re-run.
+
+```bash
+just sync --dry-run        # show what would transfer
+just sync                  # push local data/ to the remote
+just sync --save           # push, then `just save` on the remote (import to PocketBase)
+just sync --pull           # pull the remote data/ back down
+just sync --delete         # mirror exactly (removes remote-only files — destructive)
+```
+
+Target defaults to `maxi@192.168.0.235` with the project at
+`~/Projects/romayengineer/facebook_marketplace_extractor`, and can be set with the
+`FME_SYNC_REMOTE` / `FME_SYNC_REMOTE_DIR` environment variables (or `.env`) or
+overridden per-run with `--host` / `--dir`. The `.env` is never copied: each
+machine keeps its own Chrome-profile path.
 
 ## Troubleshooting
 
