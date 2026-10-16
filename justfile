@@ -8,6 +8,15 @@ modules := "core marketplace browser store capture cmd/facebook-extractor"
 default:
     @just --list
 
+# One-time setup after cloning: Chrome profile, .env, deps, build, and browsers.
+# Safe to re-run; see `just setup --help` for flags.
+setup *args:
+    @./scripts/setup.sh {{args}}
+
+# Diagnose a partial or broken setup (read-only; never changes anything)
+doctor:
+    @./scripts/doctor.sh
+
 # Download and tidy dependencies for every module
 tidy:
     @for m in {{modules}}; do echo "tidy $m"; (cd "$m" && go mod tidy); done

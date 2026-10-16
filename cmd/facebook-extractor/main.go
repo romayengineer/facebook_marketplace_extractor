@@ -288,6 +288,26 @@ func waitForPDPTemplate(timeoutSeconds int) *capture.PDPTemplate {
 	return nil
 }
 
+// InstallDrivers downloads the Playwright driver and Chromium ahead of time, so the
+// (large, one-off) download happens during `just setup` instead of inside the first
+// scrape. It reuses the exact install step Begin performs and is safe to re-run:
+// already-downloaded artifacts are kept. It needs neither a .env nor a Facebook
+// session, so it can run right after cloning.
+func (s *ScrapperImpl) InstallDrivers() {
+	fmt.Println("Installing Playwright driver and Chromium (this may take a while)...")
+
+	wrapper, err := driver.NewPlaywrightWrapper()
+	if err != nil {
+		logging.LogFatal(fmt.Sprintf("could not install playwright drivers: %v", err))
+	}
+
+	if err := wrapper.Stop(); err != nil {
+		logging.LogError0("InstallDrivers", "could not stop playwright", "error", err)
+	}
+
+	logging.LogInfo0("InstallDrivers", "playwright driver and chromium are installed")
+}
+
 func (s *ScrapperImpl) GetDetails() {
 	ctx, err := s.Begin()
 	if err != nil {
@@ -328,6 +348,8 @@ func main() {
 	switch flags.action {
 	case "search":
 		scrapper.SearchProducts()
+	case "install_drivers":
+		scrapper.InstallDrivers()
 	case "pull_description":
 		scrapper.PullDescriptions()
 	case "get_details":

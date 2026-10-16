@@ -20,7 +20,7 @@ type Flags struct {
 }
 
 func NewFlags() Flags {
-	action := flag.String("action", "search", "Action to perform: search, process_data, get_details, save")
+	action := flag.String("action", "search", "Action to perform: search, pull_description, get_details, save, process_data, dedupe_pdp, fill_empty, install_drivers, serve")
 	keywords := flag.String("keywords", "", "Keywords to search for (required when -action is search)")
 	logLevel := flag.String("log-level", "debug", "Log level: debug, info, warn, error")
 	scrollSeconds := flag.Int("scroll-seconds", 60, "Max seconds to scroll search results before opening a product")
