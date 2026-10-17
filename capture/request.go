@@ -174,5 +174,10 @@ func FetchPDP(page driver.PageWrapperInterface, template *PDPTemplate, productId
 	if _, err := filestore.WriteJsonResponseById(jsonDatas, "MarketplacePDPContainerQuery", productId); err != nil {
 		return false, fmt.Errorf("error WriteJsonResponseById: %w", err)
 	}
+
+	// Merge the description into data/__Details immediately so it is filled as soon
+	// as the response arrives, even if the run is interrupted before ProcessData.
+	filestore.SaveProductsFrom(jsonDatas)
+
 	return false, nil
 }

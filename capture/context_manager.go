@@ -194,6 +194,10 @@ func (ceh *ContextEventHandlers) OnResponse(response playwright.Response) {
 				} else if _, err := filestore.WriteJsonResponse(jsonDatas, shouldSkipRequest.friendlyName); err != nil {
 					logging.LogError0("OnResponse", "Error WriteJsonResponse()", "error", err)
 				}
+
+				// Merge the description into data/__Details immediately, so the listing
+				// opened to capture the template is filled without waiting for ProcessData.
+				filestore.SaveProductsFrom(jsonDatas)
 			}
 
 			if headers, err := GetHeaders(request, false); err == nil {

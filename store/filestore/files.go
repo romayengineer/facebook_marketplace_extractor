@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/romayengineer/facebook_marketplace_extractor/core/jsonutil"
@@ -17,8 +18,14 @@ import (
 	"github.com/romayengineer/facebook_marketplace_extractor/marketplace/model"
 )
 
+// saveMu serializes detail-file read-modify-write so concurrent saves (e.g. the
+// synchronous FetchPDP merge and the async OnResponse merge) cannot interleave.
+var saveMu sync.Mutex
+
 func SaveProductsIfAny(products []model.MarketplaceItemDetails) bool {
 	if len(products) > 0 {
+		saveMu.Lock()
+		defer saveMu.Unlock()
 		for _, product := range products {
 			store := NewProductFileStore(product.ID.(string))
 			store.Save(product)
@@ -26,6 +33,20 @@ func SaveProductsIfAny(products []model.MarketplaceItemDetails) bool {
 		return true
 	}
 	return false
+}
+
+// SaveProductsFrom extracts products from in-memory response JSON and merges them
+// into data/__Details, so a freshly fetched PDP updates its detail record immediately
+// instead of waiting for the next ProcessData pass.
+func SaveProductsFrom(jsonDatas []any) int {
+	productExtractors := model.NewProductExtractors()
+	saved := 0
+	for _, jsonData := range jsonDatas {
+		if SaveProductsIfAny(productExtractors.ExtractAll(jsonData)) {
+			saved++
+		}
+	}
+	return saved
 }
 
 func ProcessData(StartTimeToProcess int64) (int64, error) {

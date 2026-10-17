@@ -72,7 +72,8 @@ Two commands, normally run in order:
    listing → triggers `MarketplacePDPContainerQuery`. Any listing works; it only needs
    to exist so we can capture the request.
 3. `ContextEventHandlers.OnResponse` captures that first PDP request as a reusable
-   template (`URL`, `method`, `headers`, post-data with `variables.targetId`).
+   template (`URL`, `method`, `headers`, post-data with `variables.targetId`) and
+   merges that listing's description immediately (`SaveProductsFrom`).
 4. For every `data/__Details/detail_<id>.json` **missing** a description,
    `FetchPDP` clones the template, sets `variables.targetId` to that listing's id,
    and replays the request **inside the page** (a `fetch(...)` executed via
@@ -80,8 +81,11 @@ Two commands, normally run in order:
    rejects the replayed GraphQL request (error `1357054`) when it is issued outside
    the page context, even with an identical body/headers.
 5. `FetchPDP` writes each response to `data/MarketplacePDPContainerQuery/`, stopping
-   early if Facebook returns the rate-limit error.
-6. `ProcessData` runs once at the end and merges the descriptions into the detail files.
+   early if Facebook returns the rate-limit error. As soon as a response arrives its
+   description is merged into the matching `data/__Details/detail_<id>.json` (via
+   `SaveProductsFrom`), so descriptions are filled incrementally during the run.
+6. `ProcessData` runs once at the end as a safety net (it is no longer required for the
+   descriptions to appear).
 
 Run it with `just pull-description` (optionally `-delay-ms=N`).
 
