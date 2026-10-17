@@ -17,27 +17,31 @@ import (
 // 127.0.0.1 gives the browser a real origin and the tiles load normally.
 func runHeatmapServe(flags Flags) {
 	result, err := pipeline.RunFileHeatmap(pipeline.Options{
-		Dir:     flags.dir,
-		CellDeg: flags.cellDeg,
-		OutBase: flags.out,
+		Dir:      flags.dir,
+		CellDeg:  flags.cellDeg,
+		OutBase:  flags.out,
+		Map:      flags.mapID,
+		MapToken: flags.mapToken,
 	})
 	if err != nil {
 		logging.LogError0("runHeatmapServe", "heat map failed", "error", err)
 		return
 	}
 
-	fmt.Printf("heat map written\n")
+	fmt.Printf("heat map written (map: %s)\n", result.MapID)
 	fmt.Printf("  products:  %d (of %d scanned, %d skipped)\n",
 		result.Stats.Valid, result.Stats.Scanned, result.Stats.Skipped)
 	fmt.Printf("  cells:     %d (peak %d, cell %.4f deg)\n",
 		len(result.Grid.Cells), result.Grid.MaxCount, result.Grid.Options.CellDeg)
 
 	dir := filepath.Dir(result.HTMLPath)
-	url := fmt.Sprintf("http://%s/%s", flags.addr, filepath.Base(result.HTMLPath))
-	fmt.Printf("\nserving %s at %s\n", dir, url)
+	fmt.Printf("\nserving %s at:\n", dir)
+	for _, p := range result.HTMLPaths {
+		fmt.Printf("  http://%s/%s\n", flags.addr, filepath.Base(p))
+	}
 	fmt.Printf("press Ctrl+C to stop\n")
 
-	logging.LogInfo0("runHeatmapServe", "serving heat map", "dir", dir, "url", url)
+	logging.LogInfo0("runHeatmapServe", "serving heat map", "dir", dir, "addr", flags.addr, "html", result.HTMLPaths)
 
 	if err := http.ListenAndServe(flags.addr, noCache(http.FileServer(http.Dir(dir)))); err != nil {
 		logging.LogError0("runHeatmapServe", "http server stopped", "error", err)

@@ -1,46 +1,20 @@
 package heatmap
 
-import (
-	"bytes"
-	_ "embed"
-	"fmt"
-	"html/template"
-)
+import "html/template"
 
-type htmlData struct {
+// templateData is the shared contract every map template renders. Templates pick
+// the fields they need (Token is only used by providers that require a key).
+type templateData struct {
 	Title    string
 	Total    int
 	Cells    int
 	MaxCount int
 	CellDeg  float64
 	GeoJSON  template.JS
+	Token    string
 }
 
-//go:embed template.html
-var htmlTemplateSource string
-
-var htmlTemplate = template.Must(template.New("heatmap").Parse(htmlTemplateSource))
-
-// HTML renders a single self-contained page (Leaflet + the grid embedded as a
-// JS literal) that shows the counts as a choropleth heat map. It only needs
-// network access for the basemap tiles and the Leaflet CDN.
+// HTML renders the grid with the default map. Use RenderHTML to pick a map.
 func (g Grid) HTML(title string) ([]byte, error) {
-	geo, err := g.GeoJSON()
-	if err != nil {
-		return nil, fmt.Errorf("render geojson: %w", err)
-	}
-
-	var buf bytes.Buffer
-	data := htmlData{
-		Title:    title,
-		Total:    g.Total,
-		Cells:    len(g.Cells),
-		MaxCount: g.MaxCount,
-		CellDeg:  g.Options.CellDeg,
-		GeoJSON:  template.JS(geo),
-	}
-	if err := htmlTemplate.Execute(&buf, data); err != nil {
-		return nil, fmt.Errorf("render html: %w", err)
-	}
-	return buf.Bytes(), nil
+	return g.RenderHTML(DefaultMapID, MapOptions{Title: title})
 }

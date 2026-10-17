@@ -343,6 +343,11 @@ func main() {
 	flags := NewFlags()
 	logging.LogInfo0("main", "flags", "action", flags.action)
 
+	if flags.listMaps {
+		printMaps()
+		return
+	}
+
 	scrapper := NewScrapper(flags)
 
 	switch flags.action {

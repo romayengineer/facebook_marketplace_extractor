@@ -91,13 +91,18 @@ description-stats:
     go run ./{{cmd}} -action=description_stats
 
 # Build a product-density heat map (GeoJSON + HTML) from data/__Details.
-# Tune the grid with `just heatmap -cell=0.005`; output goes to data/analytics/.
+# Pick a basemap with `just heatmap -map=leaflet-esri` (or -map=all), tune the
+# grid with -cell=0.005; output goes to data/analytics/.
 # Opening the .html as a file can block map tiles; prefer `just heatmap-serve`.
 heatmap *args:
     go run ./{{cmd}} -action=heatmap {{args}}
 
-# Build the heat map and serve it on http://127.0.0.1:8799/heatmap.html
-# (serving avoids browsers blocking OSM tiles for file:// pages).
+# List the available heat map renderers (-map=<id>)
+heatmap-maps:
+    go run ./{{cmd}} -action=heatmap -list-maps
+
+# Build the heat map and serve it on http://127.0.0.1:8799/<file>.html
+# (serving avoids browsers blocking some basemaps for file:// pages).
 heatmap-serve *args:
     go run ./{{cmd}} -action=heatmap_serve {{args}}
 

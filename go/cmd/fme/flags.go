@@ -21,6 +21,9 @@ type Flags struct {
 	out                     string
 	dir                     string
 	addr                    string
+	mapID                   string
+	mapToken                string
+	listMaps                bool
 }
 
 func NewFlags() Flags {
@@ -35,6 +38,9 @@ func NewFlags() Flags {
 	out := flag.String("out", "data/analytics/heatmap", "Heat map output base path without extension (action=heatmap)")
 	dir := flag.String("dir", "", "Detail files directory (action=heatmap; default data/__Details)")
 	addr := flag.String("addr", "127.0.0.1:8799", "HTTP listen address for action=heatmap_serve")
+	mapID := flag.String("map", "leaflet-carto", "Heat map renderer id, or \"all\" (action=heatmap; see -list-maps)")
+	mapToken := flag.String("map-token", "", "API token for map providers that need one (falls back to the provider env var)")
+	listMaps := flag.Bool("list-maps", false, "List available heat map renderers and exit")
 	flag.Parse()
 
 	if strings.ToLower(*action) == "search" && *keywords == "" {
@@ -71,5 +77,8 @@ func NewFlags() Flags {
 		out:                     *out,
 		dir:                     *dir,
 		addr:                    *addr,
+		mapID:                   *mapID,
+		mapToken:                *mapToken,
+		listMaps:                *listMaps,
 	}
 }
