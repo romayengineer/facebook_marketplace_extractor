@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/logging"
+	"github.com/romayengineer/fme/go/core/logging"
 	"github.com/saintfish/chardet"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"

@@ -3,7 +3,7 @@ go 1.25.0
 use (
 	./go/browser
 	./go/capture
-	./go/cmd/facebook-extractor
+	./go/cmd/fme
 	./go/core
 	./go/marketplace
 	./go/store

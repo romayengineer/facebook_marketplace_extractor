@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/jsonutil"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/logging"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/marketplace/model"
+	"github.com/romayengineer/fme/go/core/jsonutil"
+	"github.com/romayengineer/fme/go/core/logging"
+	"github.com/romayengineer/fme/go/marketplace/model"
 )
 
 // saveMu serializes detail-file read-modify-write so concurrent saves (e.g. the

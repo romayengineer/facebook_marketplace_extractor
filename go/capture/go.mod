@@ -1,13 +1,13 @@
-module github.com/romayengineer/facebook_marketplace_extractor/go/capture
+module github.com/romayengineer/fme/go/capture
 
 go 1.25.0
 
 require (
 	github.com/mxschmitt/playwright-go v0.6201.1
-	github.com/romayengineer/facebook_marketplace_extractor/go/browser v0.0.0
-	github.com/romayengineer/facebook_marketplace_extractor/go/core v0.0.0
-	github.com/romayengineer/facebook_marketplace_extractor/go/marketplace v0.0.0
-	github.com/romayengineer/facebook_marketplace_extractor/go/store v0.0.0
+	github.com/romayengineer/fme/go/browser v0.0.0
+	github.com/romayengineer/fme/go/core v0.0.0
+	github.com/romayengineer/fme/go/marketplace v0.0.0
+	github.com/romayengineer/fme/go/store v0.0.0
 )
 
 require (
@@ -19,10 +19,10 @@ require (
 	golang.org/x/text v0.37.0 // indirect
 )
 
-replace github.com/romayengineer/facebook_marketplace_extractor/go/browser => ../browser
+replace github.com/romayengineer/fme/go/browser => ../browser
 
-replace github.com/romayengineer/facebook_marketplace_extractor/go/core => ../core
+replace github.com/romayengineer/fme/go/core => ../core
 
-replace github.com/romayengineer/facebook_marketplace_extractor/go/marketplace => ../marketplace
+replace github.com/romayengineer/fme/go/marketplace => ../marketplace
 
-replace github.com/romayengineer/facebook_marketplace_extractor/go/store => ../store
+replace github.com/romayengineer/fme/go/store => ../store

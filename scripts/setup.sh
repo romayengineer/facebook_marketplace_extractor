@@ -283,14 +283,14 @@ fi
 if [ "$SKIP_BUILD" -eq 0 ]; then
     step "Building the scraper"
     just build
-    ok "built $ROOT_DIR/facebook-extractor"
+    ok "built $ROOT_DIR/fme"
 fi
 
 # --- 5. playwright driver + chromium ----------------------------------------
 
 if [ "$SKIP_DRIVERS" -eq 0 ]; then
     step "Installing the Playwright driver and Chromium"
-    go run ./go/cmd/facebook-extractor -action=install_drivers
+    go run ./go/cmd/fme -action=install_drivers
     ok "browser runtime ready"
 else
     warn "skipped the Playwright install; the first scrape will download it instead"

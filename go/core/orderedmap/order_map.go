@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/logging"
+	"github.com/romayengineer/fme/go/core/logging"
 )
 
 type OrderedMap struct {

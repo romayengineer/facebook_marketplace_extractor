@@ -1,4 +1,4 @@
-module github.com/romayengineer/facebook_marketplace_extractor/go/core
+module github.com/romayengineer/fme/go/core
 
 go 1.25.0
 

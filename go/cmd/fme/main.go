@@ -6,14 +6,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/romayengineer/facebook_marketplace_extractor/go/browser/driver"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/browser/facebook"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/browser/pages"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/capture"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/jsonutil"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/logging"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/store/db"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/store/filestore"
+	"github.com/romayengineer/fme/go/browser/driver"
+	"github.com/romayengineer/fme/go/browser/facebook"
+	"github.com/romayengineer/fme/go/browser/pages"
+	"github.com/romayengineer/fme/go/capture"
+	"github.com/romayengineer/fme/go/core/jsonutil"
+	"github.com/romayengineer/fme/go/core/logging"
+	"github.com/romayengineer/fme/go/store/db"
+	"github.com/romayengineer/fme/go/store/filestore"
 )
 
 type ScrapperImpl struct {

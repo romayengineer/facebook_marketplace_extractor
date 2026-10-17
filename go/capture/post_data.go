@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/mxschmitt/playwright-go"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/orderedmap"
+	"github.com/romayengineer/fme/go/core/orderedmap"
 )
 
 func GetPostDataMap(request playwright.Request) (orderedmap.OrderedMap, error) {

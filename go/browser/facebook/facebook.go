@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/romayengineer/facebook_marketplace_extractor/go/browser/driver"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/browser/pages"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/browser/session"
+	"github.com/romayengineer/fme/go/browser/driver"
+	"github.com/romayengineer/fme/go/browser/pages"
+	"github.com/romayengineer/fme/go/browser/session"
 )
 
 type UserCredentials struct {

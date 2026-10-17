@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/browser/facebook"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/logging"
+	"github.com/romayengineer/fme/go/browser/facebook"
+	"github.com/romayengineer/fme/go/core/logging"
 )
 
 type Config struct {

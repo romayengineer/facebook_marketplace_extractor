@@ -142,8 +142,8 @@ fi
 
 section "Build and data"
 
-if [ -x "$ROOT_DIR/facebook-extractor" ]; then
-    pass "binary built: facebook-extractor"
+if [ -x "$ROOT_DIR/fme" ]; then
+    pass "binary built: fme"
 else
     warn "binary not built"
     fix "just build"

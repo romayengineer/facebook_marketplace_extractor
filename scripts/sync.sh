@@ -13,7 +13,7 @@
 # Configuration (environment variables, all optional):
 #   FME_SYNC_REMOTE       SSH target of the server (default: maxi@192.168.0.235)
 #   FME_SYNC_REMOTE_DIR   Project dir on the server, relative to its $HOME
-#                         (default: Projects/romayengineer/facebook_marketplace_extractor)
+#                         (default: Projects/romayengineer/fme)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -52,7 +52,7 @@ Options:
 Configuration (environment variables, all optional):
   FME_SYNC_REMOTE       SSH target of the server (default: maxi@192.168.0.235)
   FME_SYNC_REMOTE_DIR   Project dir on the server, relative to its $HOME
-                        (default: Projects/romayengineer/facebook_marketplace_extractor)
+                        (default: Projects/romayengineer/fme)
 EOF
     exit "${1:-0}"
 }
@@ -91,7 +91,7 @@ REMOTE="${HOST_OVERRIDE:-${FME_SYNC_REMOTE:-$(env_value FME_SYNC_REMOTE)}}"
 REMOTE="${REMOTE:-maxi@192.168.0.235}"
 
 REMOTE_DIR="${DIR_OVERRIDE:-${FME_SYNC_REMOTE_DIR:-$(env_value FME_SYNC_REMOTE_DIR)}}"
-REMOTE_DIR="${REMOTE_DIR:-Projects/romayengineer/facebook_marketplace_extractor}"
+REMOTE_DIR="${REMOTE_DIR:-Projects/romayengineer/fme}"
 
 # Relative remote paths resolve against the remote $HOME; strip a leading ./
 REMOTE_DIR="${REMOTE_DIR#./}"

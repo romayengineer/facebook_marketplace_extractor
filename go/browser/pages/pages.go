@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/romayengineer/facebook_marketplace_extractor/go/browser/driver"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/logging"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/marketplace/model"
+	"github.com/romayengineer/fme/go/browser/driver"
+	"github.com/romayengineer/fme/go/core/logging"
+	"github.com/romayengineer/fme/go/marketplace/model"
 )
 
 type Pages struct {

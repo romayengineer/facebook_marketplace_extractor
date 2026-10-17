@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/logging"
+	"github.com/romayengineer/fme/go/core/logging"
 )
 
 type Flags struct {

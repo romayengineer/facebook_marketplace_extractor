@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	"github.com/mxschmitt/playwright-go"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/browser/driver"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/jsonutil"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/logging"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/marketplace/model"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/store/filestore"
+	"github.com/romayengineer/fme/go/browser/driver"
+	"github.com/romayengineer/fme/go/core/jsonutil"
+	"github.com/romayengineer/fme/go/core/logging"
+	"github.com/romayengineer/fme/go/marketplace/model"
+	"github.com/romayengineer/fme/go/store/filestore"
 )
 
 func GetHeaders(request playwright.Request, simple bool) (map[string]string, error) {

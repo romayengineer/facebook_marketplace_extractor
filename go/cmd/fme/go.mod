@@ -1,13 +1,13 @@
-module github.com/romayengineer/facebook_marketplace_extractor/go/cmd/facebook-extractor
+module github.com/romayengineer/fme/go/cmd/fme
 
 go 1.25.0
 
 require (
 	github.com/joho/godotenv v1.5.1
-	github.com/romayengineer/facebook_marketplace_extractor/go/browser v0.0.0
-	github.com/romayengineer/facebook_marketplace_extractor/go/capture v0.0.0
-	github.com/romayengineer/facebook_marketplace_extractor/go/core v0.0.0
-	github.com/romayengineer/facebook_marketplace_extractor/go/store v0.0.0
+	github.com/romayengineer/fme/go/browser v0.0.0
+	github.com/romayengineer/fme/go/capture v0.0.0
+	github.com/romayengineer/fme/go/core v0.0.0
+	github.com/romayengineer/fme/go/store v0.0.0
 )
 
 require (
@@ -64,7 +64,7 @@ require (
 	github.com/pocketbase/dbx v1.10.1 // indirect
 	github.com/pocketbase/pocketbase v0.21.3 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/romayengineer/facebook_marketplace_extractor/go/marketplace v0.0.0 // indirect
+	github.com/romayengineer/fme/go/marketplace v0.0.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/cobra v1.8.0 // indirect
@@ -102,12 +102,12 @@ require (
 	modernc.org/token v1.1.0 // indirect
 )
 
-replace github.com/romayengineer/facebook_marketplace_extractor/go/browser => ../../browser
+replace github.com/romayengineer/fme/go/browser => ../../browser
 
-replace github.com/romayengineer/facebook_marketplace_extractor/go/capture => ../../capture
+replace github.com/romayengineer/fme/go/capture => ../../capture
 
-replace github.com/romayengineer/facebook_marketplace_extractor/go/core => ../../core
+replace github.com/romayengineer/fme/go/core => ../../core
 
-replace github.com/romayengineer/facebook_marketplace_extractor/go/marketplace => ../../marketplace
+replace github.com/romayengineer/fme/go/marketplace => ../../marketplace
 
-replace github.com/romayengineer/facebook_marketplace_extractor/go/store => ../../store
+replace github.com/romayengineer/fme/go/store => ../../store

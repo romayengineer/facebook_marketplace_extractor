@@ -1,4 +1,4 @@
-module github.com/romayengineer/facebook_marketplace_extractor/go/store
+module github.com/romayengineer/fme/go/store
 
 go 1.25.0
 
@@ -7,8 +7,8 @@ require (
 	github.com/mozillazg/go-unidecode v0.2.0
 	github.com/pocketbase/dbx v1.10.1
 	github.com/pocketbase/pocketbase v0.21.3
-	github.com/romayengineer/facebook_marketplace_extractor/go/core v0.0.0
-	github.com/romayengineer/facebook_marketplace_extractor/go/marketplace v0.0.0
+	github.com/romayengineer/fme/go/core v0.0.0
+	github.com/romayengineer/fme/go/marketplace v0.0.0
 	github.com/stretchr/testify v1.11.1
 )
 
@@ -99,6 +99,6 @@ require (
 	modernc.org/token v1.1.0 // indirect
 )
 
-replace github.com/romayengineer/facebook_marketplace_extractor/go/core => ../core
+replace github.com/romayengineer/fme/go/core => ../core
 
-replace github.com/romayengineer/facebook_marketplace_extractor/go/marketplace => ../marketplace
+replace github.com/romayengineer/fme/go/marketplace => ../marketplace

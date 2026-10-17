@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/jsonutil"
+	"github.com/romayengineer/fme/go/core/jsonutil"
 )
 
 type AttributeData struct {

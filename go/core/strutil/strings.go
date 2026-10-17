@@ -1,6 +1,6 @@
 package strutil
 
-import "github.com/romayengineer/facebook_marketplace_extractor/go/core/logging"
+import "github.com/romayengineer/fme/go/core/logging"
 
 func AreStringsEqual(s1, s2 string) bool {
 

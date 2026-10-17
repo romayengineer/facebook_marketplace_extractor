@@ -11,7 +11,7 @@ from a separate Product Detail Page (PDP) request. See
 ## Quick start
 
 ```bash
-git clone <repo> && cd facebook_marketplace_extractor
+git clone <repo> && cd fme
 just setup          # one time, right after cloning
 just doctor         # verify the setup
 just search "macbook m1"
@@ -92,7 +92,7 @@ just sync --delete         # mirror exactly (removes remote-only files — destr
 ```
 
 Target defaults to `maxi@192.168.0.235` with the project at
-`~/Projects/romayengineer/facebook_marketplace_extractor`, and can be set with the
+`~/Projects/romayengineer/fme`, and can be set with the
 `FME_SYNC_REMOTE` / `FME_SYNC_REMOTE_DIR` environment variables (or `.env`) or
 overridden per-run with `--host` / `--dir`. The `.env` is never copied: each
 machine keeps its own Chrome-profile path.
@@ -115,13 +115,13 @@ Run `just doctor` first; it prints the exact fix for anything it finds.
 ## Layout
 
 ```
-go/cmd/facebook-extractor   CLI entrypoint (flags, actions, orchestration)
-go/browser/                 Playwright driver wrapper, Facebook login, page helpers
-go/capture/                 Response interception and PDP request replay
-go/marketplace/model        Product model and URL helpers
-go/store/filestore          data/ JSON store + extraction pipeline (ProcessData)
-go/store/db                 PocketBase integration (serve, save)
-go/core/                    Logging, JSON, codec, string utilities
-ml/                         Python price-prediction pipeline
-scripts/                    setup.sh, doctor.sh
+go/cmd/fme            CLI entrypoint (flags, actions, orchestration)
+go/browser/           Playwright driver wrapper, Facebook login, page helpers
+go/capture/           Response interception and PDP request replay
+go/marketplace/model  Product model and URL helpers
+go/store/filestore    data/ JSON store + extraction pipeline (ProcessData)
+go/store/db           PocketBase integration (serve, save)
+go/core/              Logging, JSON, codec, string utilities
+ml/                   Python price-prediction pipeline
+scripts/              setup.sh, doctor.sh
 ```

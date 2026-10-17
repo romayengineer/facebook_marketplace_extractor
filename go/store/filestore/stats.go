@@ -3,7 +3,7 @@ package filestore
 import (
 	"fmt"
 
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/jsonutil"
+	"github.com/romayengineer/fme/go/core/jsonutil"
 )
 
 // DescriptionStats summarizes how many detail records have a description.

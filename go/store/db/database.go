@@ -17,9 +17,9 @@ import (
 	"github.com/pocketbase/pocketbase/models"
 	"github.com/pocketbase/pocketbase/models/schema"
 	"github.com/pocketbase/pocketbase/tools/migrate"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/logging"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/marketplace/model"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/store/filestore"
+	"github.com/romayengineer/fme/go/core/logging"
+	"github.com/romayengineer/fme/go/marketplace/model"
+	"github.com/romayengineer/fme/go/store/filestore"
 )
 
 type PocketBaseDB struct {

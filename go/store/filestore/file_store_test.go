@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/marketplace/model"
+	"github.com/romayengineer/fme/go/marketplace/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

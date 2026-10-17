@@ -1,11 +1,11 @@
-module github.com/romayengineer/facebook_marketplace_extractor/go/browser
+module github.com/romayengineer/fme/go/browser
 
 go 1.25.0
 
 require (
 	github.com/mxschmitt/playwright-go v0.6201.1
-	github.com/romayengineer/facebook_marketplace_extractor/go/core v0.0.0
-	github.com/romayengineer/facebook_marketplace_extractor/go/marketplace v0.0.0
+	github.com/romayengineer/fme/go/core v0.0.0
+	github.com/romayengineer/fme/go/marketplace v0.0.0
 )
 
 require (
@@ -14,6 +14,6 @@ require (
 	github.com/stretchr/testify v1.11.1 // indirect
 )
 
-replace github.com/romayengineer/facebook_marketplace_extractor/go/core => ../core
+replace github.com/romayengineer/fme/go/core => ../core
 
-replace github.com/romayengineer/facebook_marketplace_extractor/go/marketplace => ../marketplace
+replace github.com/romayengineer/fme/go/marketplace => ../marketplace

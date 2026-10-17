@@ -7,13 +7,13 @@ import (
 	"sync"
 
 	"github.com/mxschmitt/playwright-go"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/browser/driver"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/codec"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/jsonutil"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/logging"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/orderedmap"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/marketplace/model"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/store/filestore"
+	"github.com/romayengineer/fme/go/browser/driver"
+	"github.com/romayengineer/fme/go/core/codec"
+	"github.com/romayengineer/fme/go/core/jsonutil"
+	"github.com/romayengineer/fme/go/core/logging"
+	"github.com/romayengineer/fme/go/core/orderedmap"
+	"github.com/romayengineer/fme/go/marketplace/model"
+	"github.com/romayengineer/fme/go/store/filestore"
 )
 
 var mu sync.RWMutex

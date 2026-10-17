@@ -8,7 +8,7 @@ import (
 
 	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/zstd"
-	"github.com/romayengineer/facebook_marketplace_extractor/go/core/logging"
+	"github.com/romayengineer/fme/go/core/logging"
 )
 
 type DecompressorFunc func(data []byte) ([]byte, error)

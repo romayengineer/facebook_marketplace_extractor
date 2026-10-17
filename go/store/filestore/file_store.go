@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/romayengineer/facebook_marketplace_extractor/go/marketplace/model"
+	"github.com/romayengineer/fme/go/marketplace/model"
 )
 
 const DataDir = "data"
