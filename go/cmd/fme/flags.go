@@ -20,10 +20,11 @@ type Flags struct {
 	cellDeg                 float64
 	out                     string
 	dir                     string
+	addr                    string
 }
 
 func NewFlags() Flags {
-	action := flag.String("action", "search", "Action to perform: search, pull_description, get_details, save, process_data, dedupe_pdp, fill_empty, description_stats, heatmap, install_drivers, serve")
+	action := flag.String("action", "search", "Action to perform: search, pull_description, get_details, save, process_data, dedupe_pdp, fill_empty, description_stats, heatmap, heatmap_serve, install_drivers, serve")
 	keywords := flag.String("keywords", "", "Keywords to search for (required when -action is search)")
 	logLevel := flag.String("log-level", "debug", "Log level: debug, info, warn, error")
 	scrollSeconds := flag.Int("scroll-seconds", 60, "Max seconds to scroll search results before opening a product")
@@ -33,6 +34,7 @@ func NewFlags() Flags {
 	cellDeg := flag.Float64("cell", 0.01, "Heat map grid cell size in degrees (action=heatmap)")
 	out := flag.String("out", "data/analytics/heatmap", "Heat map output base path without extension (action=heatmap)")
 	dir := flag.String("dir", "", "Detail files directory (action=heatmap; default data/__Details)")
+	addr := flag.String("addr", "127.0.0.1:8799", "HTTP listen address for action=heatmap_serve")
 	flag.Parse()
 
 	if strings.ToLower(*action) == "search" && *keywords == "" {
@@ -68,5 +70,6 @@ func NewFlags() Flags {
 		cellDeg:                 *cellDeg,
 		out:                     *out,
 		dir:                     *dir,
+		addr:                    *addr,
 	}
 }

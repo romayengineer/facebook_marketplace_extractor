@@ -28,6 +28,7 @@ func runHeatmap(flags Flags) {
 		result.Stats.Valid, result.Stats.Scanned, result.Stats.Skipped)
 	fmt.Printf("  cells:     %d (peak %d, cell %.4f deg)\n",
 		len(result.Grid.Cells), result.Grid.MaxCount, result.Grid.Options.CellDeg)
+	fmt.Printf("\ntip: open the .html directly, or run `just heatmap-serve` if map tiles are blocked\n")
 
 	logging.LogInfo0("runHeatmap", "heat map written",
 		"geojson", result.GeoJSONPath, "html", result.HTMLPath,

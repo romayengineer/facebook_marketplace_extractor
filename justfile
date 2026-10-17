@@ -92,8 +92,14 @@ description-stats:
 
 # Build a product-density heat map (GeoJSON + HTML) from data/__Details.
 # Tune the grid with `just heatmap -cell=0.005`; output goes to data/analytics/.
+# Opening the .html as a file can block map tiles; prefer `just heatmap-serve`.
 heatmap *args:
     go run ./{{cmd}} -action=heatmap {{args}}
+
+# Build the heat map and serve it on http://127.0.0.1:8799/heatmap.html
+# (serving avoids browsers blocking OSM tiles for file:// pages).
+heatmap-serve *args:
+    go run ./{{cmd}} -action=heatmap_serve {{args}}
 
 # Serve the PocketBase admin/web UI
 serve:
