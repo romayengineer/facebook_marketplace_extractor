@@ -369,6 +369,8 @@ func main() {
 		filestore.FillEmpty()
 	case "description_stats":
 		filestore.PrintDescriptionStats(filestore.ComputeDescriptionStats())
+	case "heatmap":
+		runHeatmap(flags)
 	default:
 		logging.LogError0("main", "Unknown action", "action", flags.action)
 		os.Exit(1)

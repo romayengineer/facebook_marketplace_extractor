@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/joho/godotenv v1.5.1
+	github.com/romayengineer/fme/go/analytics v0.0.0
 	github.com/romayengineer/fme/go/browser v0.0.0
 	github.com/romayengineer/fme/go/capture v0.0.0
 	github.com/romayengineer/fme/go/core v0.0.0
@@ -101,6 +102,8 @@ require (
 	modernc.org/strutil v1.2.0 // indirect
 	modernc.org/token v1.1.0 // indirect
 )
+
+replace github.com/romayengineer/fme/go/analytics => ../../analytics
 
 replace github.com/romayengineer/fme/go/browser => ../../browser
 

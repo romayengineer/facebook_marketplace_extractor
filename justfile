@@ -2,7 +2,7 @@ set shell := ["bash", "-cu"]
 
 binary := "fme"
 cmd := "go/cmd/fme"
-modules := "go/core go/marketplace go/browser go/store go/capture go/cmd/fme"
+modules := "go/analytics go/core go/marketplace go/browser go/store go/capture go/cmd/fme"
 
 # List available recipes
 default:
@@ -89,6 +89,11 @@ fill-empty:
 # Report how many data/__Details listings have no description
 description-stats:
     go run ./{{cmd}} -action=description_stats
+
+# Build a product-density heat map (GeoJSON + HTML) from data/__Details.
+# Tune the grid with `just heatmap -cell=0.005`; output goes to data/analytics/.
+heatmap *args:
+    go run ./{{cmd}} -action=heatmap {{args}}
 
 # Serve the PocketBase admin/web UI
 serve:
