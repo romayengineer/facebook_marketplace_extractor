@@ -86,6 +86,10 @@ process-data:
 fill-empty:
     go run ./{{cmd}} -action=fill_empty
 
+# Report how many data/__Details listings have no description
+description-stats:
+    go run ./{{cmd}} -action=description_stats
+
 # Serve the PocketBase admin/web UI
 serve:
     go run ./{{cmd}} -action=serve

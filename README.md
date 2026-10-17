@@ -67,6 +67,7 @@ you to log in first. Without a profile it also accepts `FME_USERNAME`/`FME_PASSW
 | `just search "macbook m1"` | Collect listings for a keyword into `data/__Details` |
 | `just pull-description` | Fill missing `Description` fields via the PDP request |
 | `just process-data` | Re-extract listings from captured responses (no browser) |
+| `just description-stats` | Report how many `data/__Details` listings have no description |
 | `just dedupe-pdp` | Remove duplicate PDP responses (keeps newest per id) |
 | `just serve` | PocketBase admin/web UI on http://127.0.0.1:8090/_/ |
 | `just save` | Import `data/__Details` into PocketBase (creates the DB if needed) |
