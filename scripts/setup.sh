@@ -290,7 +290,7 @@ fi
 
 if [ "$SKIP_DRIVERS" -eq 0 ]; then
     step "Installing the Playwright driver and Chromium"
-    go run ./cmd/facebook-extractor -action=install_drivers
+    go run ./go/cmd/facebook-extractor -action=install_drivers
     ok "browser runtime ready"
 else
     warn "skipped the Playwright install; the first scrape will download it instead"

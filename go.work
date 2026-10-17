@@ -1,10 +1,10 @@
 go 1.25.0
 
 use (
-	./core
-	./marketplace
-	./browser
-	./store
-	./capture
-	./cmd/facebook-extractor
+	./go/browser
+	./go/capture
+	./go/cmd/facebook-extractor
+	./go/core
+	./go/marketplace
+	./go/store
 )

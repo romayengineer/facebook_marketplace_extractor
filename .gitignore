@@ -13,5 +13,5 @@ __pycache__
 /draft
 /pb_data
 /facebook-extractor
-/cmd/facebook-extractor/facebook-extractor
+/go/cmd/facebook-extractor/facebook-extractor
 /main

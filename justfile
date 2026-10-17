@@ -1,8 +1,8 @@
 set shell := ["bash", "-cu"]
 
 binary := "facebook-extractor"
-cmd := "cmd/facebook-extractor"
-modules := "core marketplace browser store capture cmd/facebook-extractor"
+cmd := "go/cmd/facebook-extractor"
+modules := "go/core go/marketplace go/browser go/store go/capture go/cmd/facebook-extractor"
 
 # List available recipes
 default:

@@ -115,13 +115,13 @@ Run `just doctor` first; it prints the exact fix for anything it finds.
 ## Layout
 
 ```
-cmd/facebook-extractor   CLI entrypoint (flags, actions, orchestration)
-browser/                 Playwright driver wrapper, Facebook login, page helpers
-capture/                 Response interception and PDP request replay
-marketplace/model        Product model and URL helpers
-store/filestore          data/ JSON store + extraction pipeline (ProcessData)
-store/db                 PocketBase integration (serve, save)
-core/                    Logging, JSON, codec, string utilities
-ml/                      Python price-prediction pipeline
-scripts/                 setup.sh, doctor.sh
+go/cmd/facebook-extractor   CLI entrypoint (flags, actions, orchestration)
+go/browser/                 Playwright driver wrapper, Facebook login, page helpers
+go/capture/                 Response interception and PDP request replay
+go/marketplace/model        Product model and URL helpers
+go/store/filestore          data/ JSON store + extraction pipeline (ProcessData)
+go/store/db                 PocketBase integration (serve, save)
+go/core/                    Logging, JSON, codec, string utilities
+ml/                         Python price-prediction pipeline
+scripts/                    setup.sh, doctor.sh
 ```
